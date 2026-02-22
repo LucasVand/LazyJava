@@ -17,7 +17,9 @@ fn main() -> Result<()> {
 
     match args.command {
         LazyJavaCommand::Run { args: run_args } => run_java(&root, run_args, &args.global_args)?,
-        LazyJavaCommand::Build {} => build_java(&root)?,
+        LazyJavaCommand::Build { args: build_args } => {
+            build_java(&root, build_args, &args.global_args)?
+        }
         LazyJavaCommand::Clean {} => clean(&root, &args.global_args)?,
     }
 

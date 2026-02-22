@@ -17,7 +17,7 @@ pub fn run_java(
     println!("{:?}", args.args);
     if !args.no_build {
         println_verbose("Building Java", global);
-        build_java(root).map_err(|e| RunError::BuildError(e))?;
+        build_java(root, args.build_args, global).map_err(|e| RunError::BuildError(e))?;
     }
 
     println_verbose("Finding build folder", global);

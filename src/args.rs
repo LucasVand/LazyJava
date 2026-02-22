@@ -1,5 +1,7 @@
 use clap::{Parser, Subcommand};
 
+use crate::{BUILD_FOLDER, SRC_FOLDER};
+
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 #[command(propagate_version = true)]
@@ -20,7 +22,10 @@ pub enum LazyJavaCommand {
         args: RunArgs,
     },
     /// Compile a java project
-    Build {},
+    Build {
+        #[command(flatten)]
+        args: BuildArgs,
+    },
     /// Clean the java build folder
     Clean {},
 }
@@ -35,6 +40,20 @@ pub struct RunArgs {
 
     #[arg(long = "args", short = 'a', num_args = 1..)]
     pub args: Vec<String>,
+
+    #[command(flatten)]
+    pub build_args: BuildArgs,
+}
+
+#[derive(Debug, Parser)]
+pub struct BuildArgs {
+    /// Where to find the java files to compile
+    #[arg(long = "source", short = 's', default_value_t = SRC_FOLDER.to_string())]
+    pub source: String,
+
+    /// Where to save the compiled java files
+    #[arg(long = "build", short = 'b', default_value_t = BUILD_FOLDER.to_string())]
+    pub build: String,
 }
 
 #[derive(Debug, Parser)]
