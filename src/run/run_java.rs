@@ -7,6 +7,7 @@ use crate::{
     find_root::find_file_in_dir,
     processes::execute_java,
     run::run_error::RunError,
+    utils::println_verbose,
 };
 
 pub fn run_java(
@@ -14,7 +15,6 @@ pub fn run_java(
     args: RunArgs,
     global: &LazyJavaGlobalArgs,
 ) -> Result<(), RunError> {
-    println!("{:?}", args.args);
     if !args.no_build {
         println_verbose("Building Java", global);
         build_java(root, args.build_args, global).map_err(|e| RunError::BuildError(e))?;
@@ -25,17 +25,17 @@ pub fn run_java(
         path: root.to_str().unwrap().to_string(),
         os_error: e,
     })?;
+    println_verbose(
+        &format!(
+            "Found source directory ({})",
+            build.path().to_str().unwrap()
+        ),
+        &global,
+    );
 
     println_verbose("Executing java", global);
     execute_java(&args.class, &build.path(), &args.args)
         .map_err(|_e| RunError::NoMainClass(args.class))?;
 
     return Ok(());
-}
-
-fn println_verbose(msg: &str, global: &LazyJavaGlobalArgs) {
-    if !global.verbose {
-        return;
-    }
-    println!("{}", msg);
 }
