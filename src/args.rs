@@ -29,10 +29,10 @@ pub enum LazyJavaCommand {
     /// Clean the java build folder
     Clean {},
 }
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct RunArgs {
     /// The main class to run
-    pub class: String,
+    pub class: Option<String>,
 
     /// Skip the compile step and run from build folder
     #[arg(long = "no-build", short = 'n')]
@@ -45,7 +45,7 @@ pub struct RunArgs {
     pub build_args: BuildArgs,
 }
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct BuildArgs {
     /// Where to find the java files to compile
     #[arg(long = "source", short = 's', default_value_t = SRC_FOLDER.to_string())]

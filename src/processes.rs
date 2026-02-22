@@ -3,16 +3,26 @@ use std::{
     path::{self, PathBuf},
     process::{Command, ExitStatus, Stdio},
 };
+fn compile_command(src: &str, build: &str) -> String {
+    if cfg!(target_os = "windows") {
+        format!(
+            r#"for /r {} %f in (*.java) do javac -d {} "%f""#,
+            src, build
+        )
+    } else {
+        format!(
+            r#"find {} -name "*.java" -exec javac -d {} {{}} +"#,
+            src, build
+        )
+    }
+}
 
 pub fn compile_java(src: &PathBuf, dest: &PathBuf) -> Result<ExitStatus, io::Error> {
     let ab_src = path::absolute(src)?;
     let ab_dest = path::absolute(dest)?;
 
-    let command = format!(
-        r#"find {} -name "*.java" -exec javac -d {} {{}} +"#,
-        ab_src.to_str().unwrap(),
-        ab_dest.to_str().unwrap()
-    );
+    let command = compile_command(ab_src.to_str().unwrap(), ab_dest.to_str().unwrap());
+
     let output = Command::new("sh")
         .arg("-c")
         .arg(command)
