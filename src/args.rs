@@ -1,10 +1,11 @@
 use clap::{Parser, Subcommand};
 
-use crate::{BUILD_FOLDER, SRC_FOLDER};
+use crate::{BUILD_FOLDER, LIB_FOLDER, SRC_FOLDER};
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 #[command(propagate_version = true)]
+#[derive(Debug, Clone)]
 pub struct LazyJavaArgs {
     /// Operation to execute
     #[command(subcommand)]
@@ -14,7 +15,7 @@ pub struct LazyJavaArgs {
     pub global_args: LazyJavaGlobalArgs,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug, Clone)]
 pub enum LazyJavaCommand {
     /// Compile and run a java main class
     Run {
@@ -28,6 +29,11 @@ pub enum LazyJavaCommand {
     },
     /// Clean the java build folder
     Clean {},
+    /// Finds all main classes and prints them
+    Find {
+        #[command(flatten)]
+        args: FindArgs,
+    },
 }
 #[derive(Debug, Parser, Clone)]
 pub struct RunArgs {
@@ -46,18 +52,24 @@ pub struct RunArgs {
 }
 
 #[derive(Debug, Parser, Clone)]
-pub struct BuildArgs {
-    /// Where to find the java files to compile
-    #[arg(long = "source", short = 's', default_value_t = SRC_FOLDER.to_string())]
-    pub source: String,
+pub struct BuildArgs {}
+#[derive(Debug, Parser, Clone)]
+pub struct FindArgs {}
 
-    /// Where to save the compiled java files
-    #[arg(long = "build", short = 'b', default_value_t = BUILD_FOLDER.to_string())]
-    pub build: String,
-}
-
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct LazyJavaGlobalArgs {
     #[arg(short, long, global = true)]
     pub verbose: bool,
+
+    /// Where to find the java files to compile
+    #[arg(long = "source", short = 's', default_value_t = SRC_FOLDER.to_string(), global = true)]
+    pub source: String,
+
+    /// Where to save the compiled java files
+    #[arg(long = "build", short = 'b', default_value_t = BUILD_FOLDER.to_string(), global = true)]
+    pub build: String,
+
+    /// Where to look for extra packages
+    #[arg(long = "lib", short = 'l', default_value_t = LIB_FOLDER.to_string(), global = true)]
+    pub lib: String,
 }
