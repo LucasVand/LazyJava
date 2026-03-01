@@ -2,18 +2,43 @@ use std::io;
 
 use thiserror::Error;
 
-use crate::{
-    build::build_error::BuildError, clean::clean_error::CleanError, run::run_error::RunError,
-};
-
 #[derive(Error, Debug)]
 pub enum LazyJavaError {
-    #[error("Error Running: {0}")]
-    RunError(#[from] RunError),
-    #[error("Error Building: {0}")]
-    BuildError(#[from] BuildError),
-    #[error("Error Cleaning: {0}")]
-    CleanError(#[from] CleanError),
-    #[error("Error Finding: {0}")]
-    FindError(#[from] io::Error),
+    #[error(r#"Could not find build directory at \n\t{0}\n try changing the build location, or add the directory"#)]
+    NoBuild(String),
+
+    #[error(r#"Could not find source directory at \n\t{0}\n try changing the source location, or add the directory"#)]
+    NoSource(String),
+
+    #[error(r#"Could not find lib directory at \n\t{0}\n try changing the lib location, or add the directory"#)]
+    NoLib(String),
+
+    #[error(r#"Could not find main class {0}, try changing the specified main class, or create a new one with name {0}"#)]
+    InvalidMainClass(String),
+
+    #[error("Could not read current directory, {0}")]
+    NoCurrentDir(io::Error),
+
+    #[error(
+        "Could not locate root, no root markers were found, try adding in a root marker or manually specify a root"
+    )]
+    NoRoot,
+
+    #[error("Unable to find main classes, {0}")]
+    CouldntFindMains(io::Error),
+
+    #[error("Unable to remove build directory when cleaning, {0}")]
+    NoRemoveBuild(io::Error),
+
+    #[error("Unable to create new build directory when cleaning, {0}")]
+    NoCreateBuild(io::Error),
+
+    #[error("Errors while compiling java files")]
+    CompilationErrors,
+
+    #[error("Unable to run commands to compile java, {0}")]
+    UnableToCompile(io::Error),
+
+    #[error("Unable to prompt user to select main class")]
+    PromptError,
 }

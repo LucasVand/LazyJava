@@ -18,15 +18,18 @@ pub struct LazyJava {
 }
 
 impl LazyJava {
-    pub fn new() -> Result<LazyJava, io::Error> {
-        let current = env::current_dir()?;
+    pub fn new() -> Result<LazyJava, LazyJavaError> {
+        let current = env::current_dir().map_err(|e| return LazyJavaError::NoCurrentDir(e))?;
         let args = LazyJavaArgs::parse();
-        let root = find_root(&current)?;
+        let root = find_root(&current).map_err(|_e| return LazyJavaError::NoRoot)?;
 
-        let src = find_file_in_dir(&root, &args.global_args.source)?;
-        let build = find_file_in_dir(&root, &args.global_args.build)?;
+        let src = find_file_in_dir(&root, &args.global_args.source)
+            .map_err(|_e| return LazyJavaError::NoSource(args.global_args.source.clone()))?;
+        let build = find_file_in_dir(&root, &args.global_args.build)
+            .map_err(|_e| return LazyJavaError::NoBuild(args.global_args.build.clone()))?;
 
-        let lib = find_file_in_dir(&root, &args.global_args.lib)?;
+        let lib = find_file_in_dir(&root, &args.global_args.lib)
+            .map_err(|_e| return LazyJavaError::NoLib(args.global_args.lib.clone()))?;
 
         let lazy_java = LazyJava {
             src: src.path(),

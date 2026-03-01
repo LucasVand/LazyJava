@@ -1,18 +1,12 @@
 use std::fs;
 
-use crate::{clean::clean_error::CleanError, lazy_java::LazyJava};
+use crate::{lazy_java::LazyJava, lazy_java_error::LazyJavaError};
 
 impl LazyJava {
-    pub fn clean(&self) -> Result<(), CleanError> {
-        fs::remove_dir_all(&self.build).map_err(|e| CleanError::NoRemove {
-            path: self.root.to_str().unwrap().to_string(),
-            os_error: e,
-        })?;
+    pub fn clean(&self) -> Result<(), LazyJavaError> {
+        fs::remove_dir_all(&self.build).map_err(|e| return LazyJavaError::NoRemoveBuild(e))?;
 
-        fs::create_dir(&self.build).map_err(|e| CleanError::NoCreate {
-            path: self.root.to_str().unwrap().to_string(),
-            os_error: e,
-        })?;
+        fs::create_dir(&self.build).map_err(|e| return LazyJavaError::NoCreateBuild(e))?;
 
         return Ok(());
     }

@@ -1,10 +1,12 @@
-use std::io;
-
-use crate::{args::FindArgs, find_main::find_main_classes, lazy_java::LazyJava};
+use crate::{
+    args::FindArgs, find_main::find_main_classes, lazy_java::LazyJava,
+    lazy_java_error::LazyJavaError,
+};
 
 impl LazyJava {
-    pub fn find(&self, _args: &FindArgs) -> Result<(), io::Error> {
-        let mains = find_main_classes(&self.src)?;
+    pub fn find(&self, _args: &FindArgs) -> Result<(), LazyJavaError> {
+        let mains =
+            find_main_classes(&self.src).map_err(|e| return LazyJavaError::CouldntFindMains(e))?;
 
         for main in mains {
             println!(
