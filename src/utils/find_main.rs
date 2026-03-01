@@ -1,13 +1,6 @@
-use std::{
-    ffi::OsStr,
-    fs, io,
-    path::{self, PathBuf},
-    sync::LazyLock,
-};
+use std::{ffi::OsStr, fs, io, path::PathBuf, sync::LazyLock};
 
 use regex::{Captures, Regex, RegexBuilder};
-
-use crate::utils::println_verbose;
 
 #[derive(Debug)]
 pub struct MainClass {

@@ -1,5 +1,6 @@
 use crate::{
-    args::RunArgs, lazy_java::LazyJava, lazy_java_error::LazyJavaError, processes::execute_java,
+    args::RunArgs, lazy_java::LazyJava, lazy_java_error::LazyJavaError,
+    utils::processes::execute_java,
 };
 
 impl LazyJava {

@@ -2,11 +2,8 @@ pub mod args;
 pub mod build;
 pub mod clean;
 pub mod find;
-pub mod find_main;
-pub mod find_root;
 pub mod lazy_java;
 pub mod lazy_java_error;
-pub mod processes;
 pub mod run;
 pub mod utils;
 

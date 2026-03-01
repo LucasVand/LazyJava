@@ -1,6 +1,8 @@
 use inquire::Select;
 
-use crate::{find_main::find_main_classes, lazy_java::LazyJava, lazy_java_error::LazyJavaError};
+use crate::{
+    lazy_java::LazyJava, lazy_java_error::LazyJavaError, utils::find_main::find_main_classes,
+};
 
 impl LazyJava {
     pub fn interactive_find_main(&self) -> Result<String, LazyJavaError> {

@@ -1,11 +1,11 @@
-use std::{env, error::Error, io, path::PathBuf};
+use std::{env, path::PathBuf};
 
 use clap::Parser;
 
 use crate::{
     args::{LazyJavaArgs, LazyJavaCommand},
-    find_root::{find_file_in_dir, find_root},
     lazy_java_error::LazyJavaError,
+    utils::find_root::{find_file_in_dir, find_root},
 };
 
 #[derive(Debug, Clone)]

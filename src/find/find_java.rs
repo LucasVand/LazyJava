@@ -1,6 +1,6 @@
 use crate::{
-    args::FindArgs, find_main::find_main_classes, lazy_java::LazyJava,
-    lazy_java_error::LazyJavaError,
+    args::FindArgs, lazy_java::LazyJava, lazy_java_error::LazyJavaError,
+    utils::find_main::find_main_classes,
 };
 
 impl LazyJava {
