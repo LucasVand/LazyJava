@@ -2,7 +2,7 @@ use crate::args::BuildArgs;
 use crate::lazy_java::LazyJava;
 
 use crate::lazy_java_error::LazyJavaError;
-use crate::processes::compile_java;
+use crate::utils::processes::compile_java;
 
 impl LazyJava {
     pub fn build(&self, _args: &BuildArgs) -> Result<(), LazyJavaError> {
