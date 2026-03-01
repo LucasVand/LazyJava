@@ -4,13 +4,15 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum LazyJavaError {
-    #[error(r#"Could not find build directory at \n\t{0}\n try changing the build location, or add the directory"#)]
+    #[error(r#"Could not find build directory {0}, try changing the build location, or add the directory"#)]
     NoBuild(String),
 
-    #[error(r#"Could not find source directory at \n\t{0}\n try changing the source location, or add the directory"#)]
+    #[error(r#"Could not find source directory {0}, try changing the source location, or add the directory"#)]
     NoSource(String),
 
-    #[error(r#"Could not find lib directory at \n\t{0}\n try changing the lib location, or add the directory"#)]
+    #[error(
+        r#"Could not find lib directory {0}, try changing the lib location, or add the directory"#
+    )]
     NoLib(String),
 
     #[error(r#"Could not find main class {0}, try changing the specified main class, or create a new one with name {0}"#)]
