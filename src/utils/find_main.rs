@@ -24,7 +24,7 @@ static MAIN_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 static CLASS_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     let re = RegexBuilder::new(
-        r#"^\s*(?:(?:public|static|abstract|final|private)\s+)*class\s+(?<class>\S*)\s+(?:extend.*)*\s*(?:implements.*)*\s*\{(?<content>[\s\S]*)\}"#,
+        r#"^\s*(?:(?:public|static|abstract|final)\s+)*class\s+(?<class>\S*)\s+(?:extend.*)*\s*(?:implements.*)*\s*\{(?<content>[\s\S]*)\}"#,
     ).multi_line(true).unicode(true).build();
     return re.unwrap();
 });
@@ -60,10 +60,12 @@ fn find_main_class(
     let classname = class.name("class").unwrap().as_str();
     let content = class.name("content").unwrap().as_str();
 
+    let mut removed_inner_content = content.to_string();
     let main = MAIN_REGEX.captures(content);
 
     let mut main_vec: Vec<MainClass> = Vec::new();
-    if let Some(_main) = main {
+    if let Some(cap) = main {
+        removed_inner_content.replace_range(cap.get_match().range(), "");
         let full_package = if package != "" {
             format!("{}.{}", package, classname)
         } else {
@@ -79,7 +81,7 @@ fn find_main_class(
         main_vec.push(class);
     }
 
-    if let Some(inner_class) = CLASS_REGEX.captures(content) {
+    if let Some(inner_class) = CLASS_REGEX.captures(&removed_inner_content) {
         let mut pack = package.to_string();
         pack.push_str(&format!(".{}", &classname));
 
@@ -108,4 +110,67 @@ fn find_java_files(root: &PathBuf) -> Result<Vec<PathBuf>, io::Error> {
         }
     }
     return Ok(java_files);
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{env, fs, io, path::PathBuf};
+
+    use crate::utils::find_main::{MainClass, find_main_classes};
+
+    #[test]
+    fn find_main_test() -> Result<(), io::Error> {
+        let mut current = env::current_dir()?;
+        current.push("test_filesystem");
+        current.push("find_main_classes_test");
+
+        let classes = find_main_classes(&current)?;
+
+        let expect1 = MainClass {
+            path: PathBuf::from("./test_filesystem/find_main_classes_test/Test1.java"),
+            classname: "Test1".to_string(),
+            full_package_name: "Test1".to_string(),
+        };
+        let expect2 = MainClass {
+            path: PathBuf::from("./test_filesystem/find_main_classes_test/Test2.java"),
+            classname: "Test2".to_string(),
+            full_package_name: "Test2".to_string(),
+        };
+        let expect3 = MainClass {
+            path: PathBuf::from("./test_filesystem/find_main_classes_test/Test3.java"),
+            classname: "Test3".to_string(),
+            full_package_name: "Test3".to_string(),
+        };
+        let expect4 = MainClass {
+            path: PathBuf::from("./test_filesystem/find_main_classes_test/Test4.java"),
+            classname: "Test4".to_string(),
+            full_package_name: "Test4".to_string(),
+        };
+        let expect5 = MainClass {
+            path: PathBuf::from("./test_filesystem/find_main_classes_test/dir1/Test5.java"),
+            classname: "Test5".to_string(),
+            full_package_name: "dir1.Test5".to_string(),
+        };
+
+        let expected = vec![expect3, expect2, expect4, expect1, expect5];
+
+        dbg!(&classes);
+        for index in 0..5 {
+            let main = &classes[index];
+            let expect = &expected[index];
+
+            let con_main = fs::canonicalize(&main.path)?;
+            let con_expec = fs::canonicalize(&expect.path)?;
+
+            assert_eq!(con_main, con_expec, "Paths did not match");
+            assert_eq!(main.classname, expect.classname, "Classnames did not match");
+            assert_eq!(
+                main.full_package_name, expect.full_package_name,
+                "Package names did not match"
+            );
+            println!("Passed Test {}", index);
+        }
+
+        return Ok(());
+    }
 }

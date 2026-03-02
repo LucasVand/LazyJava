@@ -53,3 +53,29 @@ pub fn execute_java(
 
     return Ok(output.status);
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{env, io};
+
+    use crate::utils::processes::{compile_java, execute_java};
+
+    #[test]
+    fn test_processes() -> Result<(), io::Error> {
+        let mut current = env::current_dir()?;
+        current.push("test_filesystem");
+        current.push("find_main_classes_test");
+
+        let src = current.clone();
+        current.push("build");
+        let build = current.clone();
+
+        let comp = compile_java(&src, &build);
+        let run = execute_java("Test1", &build, &Vec::new());
+
+        assert!(comp.is_ok(), "Compile Command was an error");
+        assert!(run.is_ok(), "Run Command was an error");
+
+        return Ok(());
+    }
+}
