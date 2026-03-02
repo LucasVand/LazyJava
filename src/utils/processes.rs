@@ -71,7 +71,7 @@ mod tests {
         let build = current.clone();
 
         let comp = compile_java(&src, &build);
-        let run = execute_java("Test1", &build, &Vec::new());
+        let run = execute_java("Test2", &build, &Vec::new());
 
         assert!(comp.is_ok(), "Compile Command was an error");
         assert!(run.is_ok(), "Run Command was an error");
