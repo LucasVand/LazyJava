@@ -157,8 +157,15 @@ mod tests {
         dbg!(&classes);
         for index in 0..5 {
             let main = &classes[index];
-            let expect = &expected[index];
+            let expect = expected.iter().find(|m| {
+                return m.full_package_name == main.full_package_name;
+            });
 
+            assert!(
+                expect.is_some(),
+                "Couldnt Find Expected Main Class Matching a Class Found "
+            );
+            let expect = expect.unwrap();
             let con_main = fs::canonicalize(&main.path)?;
             let con_expec = fs::canonicalize(&expect.path)?;
 
