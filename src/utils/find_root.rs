@@ -4,6 +4,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use crate::logger::logger::Logger;
+
 const ROOT_MARKERS: [&'static str; 5] = [
     ".git",
     "pom.xml",
@@ -13,6 +15,7 @@ const ROOT_MARKERS: [&'static str; 5] = [
 ];
 
 pub fn find_root(start: &Path) -> Result<PathBuf, io::Error> {
+    Logger::verbose_elog(&format!("Looking for root in {}", start.to_string_lossy()));
     let dirs = list_dir(start)?;
 
     for dir in dirs {
@@ -24,7 +27,10 @@ pub fn find_root(start: &Path) -> Result<PathBuf, io::Error> {
     }
     return match start.parent() {
         Some(parent) => Ok(find_root(parent)?),
-        None => Err(io::Error::new(ErrorKind::NotFound, "No root marker found")),
+        None => {
+            Logger::verbose_elog(&format!("No Parent of {}", start.to_string_lossy()));
+            Err(io::Error::new(ErrorKind::NotFound, "No root marker found"))
+        }
     };
 }
 pub fn find_file_in_dir(dir: &Path, search_name: &str) -> Result<DirEntry, io::Error> {
@@ -48,7 +54,10 @@ pub fn list_dir(path: &Path) -> Result<Vec<DirEntry>, io::Error> {
 mod tests {
     use std::{env, io};
 
-    use crate::utils::find_root::{find_file_in_dir, find_root};
+    use crate::{
+        logger::logger::Logger,
+        utils::find_root::{find_file_in_dir, find_root},
+    };
 
     #[test]
     fn find_file_test() -> Result<(), io::Error> {
@@ -71,6 +80,7 @@ mod tests {
 
     #[test]
     fn find_root_test() -> Result<(), io::Error> {
+        Logger::verbose(true);
         let mut current = env::current_dir()?;
         current.push("test_filesystem");
         current.push("find_root_test");
