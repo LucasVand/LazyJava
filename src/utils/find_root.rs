@@ -55,7 +55,10 @@ pub fn find_file_in_dir(dir: &Path, search_name: &str) -> Result<DirEntry, io::E
 }
 
 pub fn list_dir(path: &Path) -> Result<Vec<DirEntry>, io::Error> {
-    let dir = fs::read_dir(path)?;
+    let dir = fs::read_dir(path).map_err(|e| {
+        Logger::verbose_elog(&format!("Error opening {:?}", path));
+        return e;
+    })?;
     Logger::verbose_elog(&format!("Opened {:?}", path));
     return dir.collect();
 }
