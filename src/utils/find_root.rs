@@ -81,8 +81,11 @@ mod tests {
         current.push("dir2");
         let two_level = current.clone();
 
+        println!("Finding Root at {:?}", root);
         let find1 = find_root(&root);
+        println!("Finding Root at {:?}", one_level);
         let find2 = find_root(&one_level);
+        println!("Finding Root at {:?}", two_level);
         let find3 = find_root(&two_level);
 
         assert!(find1.is_ok(), "Could not find root at the root level");
