@@ -18,6 +18,7 @@ pub fn find_root(start: &Path) -> Result<PathBuf, io::Error> {
     Logger::verbose_elog(&format!("Looking for root in {}", start.to_string_lossy()));
     let dirs = list_dir(start)?;
 
+    Logger::verbose_elog(&format!("Files in dir {:?}", dirs));
     for dir in dirs {
         if let Some(name) = dir.file_name().to_str() {
             if ROOT_MARKERS.contains(&name) {
