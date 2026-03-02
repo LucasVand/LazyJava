@@ -76,6 +76,15 @@ mod tests {
         assert!(comp.is_ok(), "Compile Command was an error");
         assert!(run.is_ok(), "Run Command was an error");
 
+        assert!(
+            comp.unwrap().success(),
+            "Compile Command had a none zero exit code"
+        );
+        assert!(
+            run.unwrap().success(),
+            "Run Command had a none zero exit code"
+        );
+
         return Ok(());
     }
 }
