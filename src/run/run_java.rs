@@ -1,5 +1,5 @@
 use crate::{
-    args::RunArgs, lazy_java::LazyJava, lazy_java_error::LazyJavaError,
+    args::RunArgs, lazy_java::LazyJava, lazy_java_error::LazyJavaError, logger::logger::Logger,
     utils::processes::execute_java,
 };
 
@@ -9,9 +9,12 @@ impl LazyJava {
             Some(class) => class,
             None => &self.interactive_find_main()?,
         };
+        Logger::verbose_elog(&format!("Found a Class to Run {}", class));
+
         execute_java(class, &self.build, &args.args)
             .map_err(|_e| return LazyJavaError::InvalidMainClass(class.to_string()))?;
 
+        Logger::verbose_elog("Successfully Ran Java");
         return Ok(());
     }
 }

@@ -5,6 +5,7 @@ use clap::Parser;
 use crate::{
     args::{LazyJavaArgs, LazyJavaCommand},
     lazy_java_error::LazyJavaError,
+    logger::logger::Logger,
     utils::find_root::{find_file_in_dir, find_root},
 };
 
@@ -30,6 +31,8 @@ impl LazyJava {
 
         let lib = find_file_in_dir(&root, &args.global_args.lib)
             .map_err(|_e| return LazyJavaError::NoLib(args.global_args.lib.clone()))?;
+
+        Logger::verbose(args.global_args.verbose);
 
         let lazy_java = LazyJava {
             src: src.path(),
