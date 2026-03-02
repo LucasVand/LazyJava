@@ -21,12 +21,20 @@ pub fn find_root(start: &Path) -> Result<PathBuf, io::Error> {
     for dir in dirs {
         if let Some(name) = dir.file_name().to_str() {
             if ROOT_MARKERS.contains(&name) {
+                Logger::verbose_elog(&format!("Found root marker, {}", name));
                 return Ok(start.to_path_buf());
             }
         }
     }
     return match start.parent() {
-        Some(parent) => Ok(find_root(parent)?),
+        Some(parent) => {
+            Logger::verbose_elog(&format!(
+                "Found Parent of {} which is {}",
+                start.to_string_lossy(),
+                parent.to_string_lossy()
+            ));
+            Ok(find_root(parent)?)
+        }
         None => {
             Logger::verbose_elog(&format!("No Parent of {}", start.to_string_lossy()));
             Err(io::Error::new(ErrorKind::NotFound, "No root marker found"))
