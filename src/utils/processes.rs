@@ -6,13 +6,12 @@ use std::{
 fn compile_command(src: &str, build: &str) -> Result<Output, io::Error> {
     if cfg!(target_os = "windows") {
         let command = format!(
-            r#""javac -d {} (Get-ChildItem -Recurse -Filter *.java -Path {}).FullName""#,
+            r#"& {{javac -d "{}" (Get-ChildItem -Recurse -Filter *.java -Path "{}").FullName}}"#,
             build, src
         );
 
         return Command::new("powershell")
-            .arg("-Command")
-            .arg(command)
+            .args(["-Command", &command])
             .output();
     } else {
         let command = format!(
@@ -21,6 +20,25 @@ fn compile_command(src: &str, build: &str) -> Result<Output, io::Error> {
         );
 
         return Command::new("sh").arg("-c").arg(command).output();
+    }
+}
+fn run_command(build: &str, class: &str, args: &Vec<String>) -> Result<Output, io::Error> {
+    let command = format!(r#"java -classpath {} {}"#, build, class);
+    if cfg!(target_os = "windows") {
+        return Command::new("powershell")
+            .args(["-Command", &command])
+            .args(args)
+            .stdout(Stdio::inherit()) // Inherit the parent's stdout
+            .stderr(Stdio::inherit()) // Inherit the parent's stderr
+            .output();
+    } else {
+        return Command::new("sh")
+            .arg("-c")
+            .arg(command)
+            .args(args)
+            .stdout(Stdio::inherit()) // Inherit the parent's stdout
+            .stderr(Stdio::inherit()) // Inherit the parent's stderr
+            .output();
     }
 }
 
@@ -45,13 +63,7 @@ pub fn execute_java(
         ab_classpath.to_str().unwrap(),
         classname,
     );
-    let output = Command::new("sh")
-        .arg("-c")
-        .arg(command)
-        .args(args.as_slice())
-        .stdout(Stdio::inherit()) // Inherit the parent's stdout
-        .stderr(Stdio::inherit()) // Inherit the parent's stderr
-        .output()
+    let output = run_command(ab_classpath.to_str().unwrap(), classname, args)
         .expect("Run Command Failed");
 
     return Ok(output.status);
@@ -64,7 +76,29 @@ mod tests {
     use crate::utils::processes::{compile_java, execute_java};
 
     #[test]
-    fn test_processes() -> Result<(), io::Error> {
+    fn test_run() -> Result<(), io::Error> {
+        let mut current = env::current_dir()?;
+        current.push("test_filesystem");
+        current.push("find_main_classes_test");
+
+        let src = current.clone();
+        current.push("build");
+        let build = current.clone();
+
+        let run = execute_java("Test2", &build, &Vec::new());
+
+        assert!(run.is_ok(), "Run Command was an error");
+
+        assert!(
+            run.unwrap().success(),
+            "Run Command had a none zero exit code"
+        );
+
+        return Ok(());
+    }
+
+    #[test]
+    fn test_compile() -> Result<(), io::Error> {
         let mut current = env::current_dir()?;
         current.push("test_filesystem");
         current.push("find_main_classes_test");
@@ -74,18 +108,12 @@ mod tests {
         let build = current.clone();
 
         let comp = compile_java(&src, &build);
-        let run = execute_java("Test2", &build, &Vec::new());
 
         assert!(comp.is_ok(), "Compile Command was an error");
-        assert!(run.is_ok(), "Run Command was an error");
 
         assert!(
             comp.unwrap().success(),
             "Compile Command had a none zero exit code"
-        );
-        assert!(
-            run.unwrap().success(),
-            "Run Command had a none zero exit code"
         );
 
         return Ok(());
