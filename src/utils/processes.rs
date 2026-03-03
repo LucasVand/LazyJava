@@ -6,7 +6,7 @@ use std::{
 fn compile_command(src: &str, build: &str) -> Result<Output, io::Error> {
     if cfg!(target_os = "windows") {
         let command = format!(
-            r#"javac -d {} (Get-ChildItem -Recurse -Filter *.java -Path {}).FullName"#,
+            r#""javac -d {} (Get-ChildItem -Recurse -Filter *.java -Path {}).FullName""#,
             build, src
         );
 
