@@ -58,11 +58,7 @@ pub fn execute_java(
     args: &Vec<String>,
 ) -> Result<ExitStatus, io::Error> {
     let ab_classpath = path::absolute(classpath)?;
-    let command = format!(
-        "java -classpath {} {}",
-        ab_classpath.to_str().unwrap(),
-        classname,
-    );
+
     let output = run_command(ab_classpath.to_str().unwrap(), classname, args)
         .expect("Run Command Failed");
 
