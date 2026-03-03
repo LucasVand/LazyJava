@@ -1,19 +1,26 @@
 use std::{
     io,
     path::{self, PathBuf},
-    process::{Command, ExitStatus, Stdio},
+    process::{Command, ExitStatus, Output, Stdio},
 };
-fn compile_command(src: &str, build: &str) -> String {
+fn compile_command(src: &str, build: &str) -> Result<Output, io::Error> {
     if cfg!(target_os = "windows") {
-        format!(
-            r#"for /r {} %f in (*.java) do javac -d {} "%f""#,
-            src, build
-        )
+        let command = format!(
+            r#"javac -d {} (Get-ChildItem -Recurse -Filter *.java -Path {}).FullName"#,
+            build, src
+        );
+
+        return Command::new("powershell")
+            .arg("-Command")
+            .arg(command)
+            .output();
     } else {
-        format!(
+        let command = format!(
             r#"find {} -name "*.java" -exec javac -d {} {{}} +"#,
             src, build
-        )
+        );
+
+        return Command::new("sh").arg("-c").arg(command).output();
     }
 }
 
@@ -23,11 +30,7 @@ pub fn compile_java(src: &PathBuf, dest: &PathBuf) -> Result<ExitStatus, io::Err
 
     let command = compile_command(ab_src.to_str().unwrap(), ab_dest.to_str().unwrap());
 
-    let output = Command::new("sh")
-        .arg("-c")
-        .arg(command)
-        .output()
-        .expect("Compile Process Failed");
+    let output = command.expect("Compile Command Failed");
 
     return Ok(output.status);
 }
