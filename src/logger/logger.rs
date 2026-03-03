@@ -24,6 +24,11 @@ impl Logger {
         eprintln!("{}", msg);
     }
     pub fn verbose_elog(msg: &str) {
-        eprintln!("{}", msg);
+        unsafe {
+            if !LOG.opts.verbose {
+                return;
+            }
+            eprintln!("{}", msg);
+        }
     }
 }
