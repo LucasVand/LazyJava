@@ -6,7 +6,7 @@ use crate::{
 impl LazyJava {
     pub fn run(&self, args: &RunArgs) -> Result<(), LazyJavaError> {
         if !args.no_build {
-            self.build(&args.build_args)?;
+            self.build_java(&args.build_args)?;
         }
 
         let class = match &args.class {

@@ -4,11 +4,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{IMPORT_REGEX, PACKAGE_REGEX};
+use crate::{IMPORT_REGEX, PACKAGE_REGEX, dependancy_graph::graph_error::GraphError};
 
 #[derive(Debug, Clone)]
 pub struct DependancyGraph {
-    nodes: HashMap<String, DependancyNode>,
+    pub nodes: HashMap<String, DependancyNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -32,31 +32,41 @@ impl DependancyGraph {
         self.nodes.insert(node.id.to_string(), node);
     }
     pub fn dependancy_list(&self, id: &str) -> Vec<PathBuf> {
+        self.dependancy_list_internal(id, &mut Vec::new())
+    }
+    pub fn dependancy_list_from_path(&self, path: &Path) -> Result<Vec<PathBuf>, GraphError> {
+        let id = self.find_id(path)?;
+
+        return Ok(self.dependancy_list_internal(&id, &mut Vec::new()));
+    }
+
+    fn dependancy_list_internal(&self, id: &str, visited: &mut Vec<String>) -> Vec<PathBuf> {
         let mut list = Vec::new();
         let node = self.nodes.get(id).unwrap();
         for dependant in &node.dependants {
             let resolved_node = self.nodes.get(dependant).unwrap();
             list.push(resolved_node.path.clone());
 
-            list.append(&mut self.dependancy_list(&resolved_node.id));
+            if visited.contains(dependant) {
+                continue;
+            }
+
+            visited.push(id.to_string());
+            list.append(&mut self.dependancy_list_internal(&resolved_node.id, visited));
         }
         return list;
     }
+    fn find_id(&self, path: &Path) -> Result<String, GraphError> {
+        let con_path = fs::canonicalize(path)?;
+        for (key, node) in self.nodes.iter() {
+            let con_node = fs::canonicalize(&node.path)?;
 
-    pub fn calculate_dependants(&mut self) {
-        let mut edges: Vec<(String, String)> = Vec::new();
-        for (key, node) in &self.nodes {
-            for dependancy in &node.dependancies {
-                edges.push((dependancy.to_string(), key.to_string()));
+            if con_node == con_path {
+                return Ok(key.clone());
             }
         }
 
-        for edge in edges {
-            let node = self.nodes.get_mut(&edge.0);
-            if let Some(node) = node {
-                node.dependants.push(edge.1);
-            }
-        }
+        return Err(GraphError::NotFound(path.to_path_buf()));
     }
 }
 

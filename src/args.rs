@@ -25,7 +25,7 @@ pub enum LazyJavaCommand {
     /// Compile a java project
     Build {
         #[command(flatten)]
-        args: BuildArgs,
+        args: BuildCommand,
     },
     /// Clean the java build folder
     Clean {},
@@ -52,7 +52,31 @@ pub struct RunArgs {
 }
 
 #[derive(Debug, Parser, Clone)]
-pub struct BuildArgs {}
+pub struct BuildArgs {
+    /// Rebuild all files
+    #[arg(long = "build-all")]
+    pub build_all: bool,
+}
+
+#[derive(Parser, Debug, Clone)]
+pub struct BuildCommand {
+    #[command(subcommand)]
+    pub command: Option<BuildSubCommand>,
+
+    #[command(flatten)]
+    pub args: BuildArgs,
+}
+#[derive(Subcommand, Debug, Clone)]
+pub enum BuildSubCommand {
+    /// Shows files that have been modified since last build
+    Modified {},
+    /// Shows all files and their dependancies
+    Dependancies {},
+    /// Shows all files and their dependants
+    Dependants {},
+    /// Shows all stale files will be recompiled next build
+    Stale {},
+}
 #[derive(Debug, Parser, Clone)]
 pub struct FindArgs {}
 
@@ -66,7 +90,7 @@ pub struct LazyJavaGlobalArgs {
     pub source: String,
 
     /// Where to save the compiled java files
-    #[arg(long = "build", short = 'b', default_value_t = BUILD_FOLDER.to_string(), global = true)]
+    #[arg(long = "bin", short = 'b', default_value_t = BUILD_FOLDER.to_string(), global = true)]
     pub build: String,
 
     /// Where to look for extra packages

@@ -6,6 +6,9 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.102"
 clap = { version = "4.5.60", features = ["derive"] }
+colored = "3.1.1"
+filetime = "0.2.27"
 inquire = "0.9.3"
+pathdiff = "0.2.3"
 regex = "1.10"
 thiserror = "2.0.18"

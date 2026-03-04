@@ -1,6 +1,6 @@
 use std::{
     io,
-    path::{self, PathBuf},
+    path::{self, Path, PathBuf},
     process::{Command, ExitStatus, Output, Stdio},
 };
 fn compile_command(src: &str, build: &str) -> Result<Output, io::Error> {
@@ -20,6 +20,30 @@ fn compile_command(src: &str, build: &str) -> Result<Output, io::Error> {
         );
 
         return Command::new("sh").arg("-c").arg(command).output();
+    }
+}
+fn compile_files_command(build: &str, files: Vec<String>) -> Result<Output, io::Error> {
+    let files_str = files.join(" ");
+    if cfg!(target_os = "windows") {
+        let command = format!(
+            r#"&{{ javac -classpath "{}" -d "{}" {} }}"#,
+            build, build, files_str
+        );
+
+        let output = Command::new("powershell")
+            .args(["-Command", &command])
+            .output();
+
+        return output;
+    } else {
+        let command = format!(
+            r#"javac -classpath "{}" -d "{}" {} "#,
+            build, build, files_str
+        );
+
+        let output = Command::new("sh").args(["-c", &command]).output();
+
+        return output;
     }
 }
 fn run_command(build: &str, class: &str, args: &Vec<String>) -> Result<Output, io::Error> {
@@ -52,6 +76,21 @@ pub fn compile_java(src: &PathBuf, dest: &PathBuf) -> Result<ExitStatus, io::Err
 
     return Ok(output.status);
 }
+
+pub fn compile_java_files(build: &Path, files: Vec<PathBuf>) -> Result<ExitStatus, io::Error> {
+    let ab_build = path::absolute(build)?;
+
+    let file_str = files
+        .into_iter()
+        .map(|f| {
+            return format!(r#"{}"#, f.to_string_lossy());
+        })
+        .collect();
+
+    let output = compile_files_command(ab_build.to_str().unwrap(), file_str)?;
+
+    return Ok(output.status);
+}
 pub fn execute_java(
     classname: &str,
     classpath: &PathBuf,
@@ -59,8 +98,8 @@ pub fn execute_java(
 ) -> Result<ExitStatus, io::Error> {
     let ab_classpath = path::absolute(classpath)?;
 
-    let output = run_command(ab_classpath.to_str().unwrap(), classname, args)
-        .expect("Run Command Failed");
+    let output =
+        run_command(ab_classpath.to_str().unwrap(), classname, args).expect("Run Command Failed");
 
     return Ok(output.status);
 }
@@ -77,7 +116,6 @@ mod tests {
         current.push("test_filesystem");
         current.push("find_main_classes_test");
 
-        let src = current.clone();
         current.push("build");
         let build = current.clone();
 

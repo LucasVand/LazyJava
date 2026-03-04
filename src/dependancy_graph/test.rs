@@ -1,16 +1,18 @@
 #[cfg(test)]
 mod tests {
-    use std::{env, io};
+    use std::env;
 
-    use crate::dependancy_graph::create_graph::create_dependancy_graph;
+    use anyhow::Result;
+
+    use crate::dependancy_graph::graph::DependancyGraph;
 
     #[test]
-    fn dependancy_list_test() -> Result<(), io::Error> {
+    fn dependancy_list_test_1() -> Result<()> {
         let mut current = env::current_dir()?;
         current.push("test_filesystem");
         current.push("dep_graph_test");
 
-        let graph = create_dependancy_graph(&current)?;
+        let graph = DependancyGraph::create(&current)?;
         dbg!(&graph);
 
         let mut dep_list = graph.dependancy_list("dir1.Dep1");
@@ -35,13 +37,12 @@ mod tests {
         return Ok(());
     }
     #[test]
-    fn dependancy_list_test_2() -> Result<(), io::Error> {
+    fn dependancy_list_test_2() -> Result<()> {
         let mut current = env::current_dir()?;
         current.push("test_filesystem");
         current.push("dep_graph_test");
 
-        let graph = create_dependancy_graph(&current)?;
-        dbg!(&graph);
+        let graph = DependancyGraph::create(&current)?;
 
         let mut dep_list = graph.dependancy_list("dir2.Dep2");
         dep_list.sort();
