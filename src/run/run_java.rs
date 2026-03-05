@@ -17,7 +17,7 @@ impl LazyJava {
         };
         Logger::verbose_elog(&format!("Found a Class to Run {}", class));
 
-        execute_java(class, &self.build, &args.args)
+        execute_java(class, &self.build, &self.lib, &args.args)
             .map_err(|_e| return LazyJavaError::InvalidMainClass(class.to_string()))?;
 
         Logger::verbose_elog("Successfully Ran Java");

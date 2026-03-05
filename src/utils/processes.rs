@@ -78,16 +78,28 @@ fn compile_files_command(
         return output;
     }
 }
-fn run_command(build: &str, class: &str, args: &Vec<String>) -> Result<Output, io::Error> {
+fn run_command(
+    build: &str,
+    lib: &str,
+    class: &str,
+    args: &Vec<String>,
+) -> Result<Output, io::Error> {
     let args_str = args.join(" ");
-    let command = format!(r#"java -classpath {} {} {}"#, build, class, args_str);
     if cfg!(target_os = "windows") {
+        let command = format!(
+            r#"java -classpath "{};{}" {} {}"#,
+            lib, build, class, args_str
+        );
         return Command::new("powershell")
             .args(["-Command", &command])
             .stdout(Stdio::inherit()) // Inherit the parent's stdout
             .stderr(Stdio::inherit()) // Inherit the parent's stderr
             .output();
     } else {
+        let command = format!(
+            r#"java -classpath "{}:{}" {} {}"#,
+            lib, build, class, args_str
+        );
         return Command::new("sh")
             .arg("-c")
             .arg(command)
@@ -148,12 +160,19 @@ pub fn compile_java_files(
 pub fn execute_java(
     classname: &str,
     classpath: &PathBuf,
+    lib: &Path,
     args: &Vec<String>,
 ) -> Result<ExitStatus, io::Error> {
     let ab_classpath = path::absolute(classpath)?;
+    let ab_lib = path::absolute(lib)?;
 
-    let output =
-        run_command(ab_classpath.to_str().unwrap(), classname, args).expect("Run Command Failed");
+    let output = run_command(
+        ab_classpath.to_str().unwrap(),
+        ab_lib.to_str().unwrap(),
+        classname,
+        args,
+    )
+    .expect("Run Command Failed");
 
     return Ok(output.status);
 }
@@ -172,8 +191,11 @@ mod tests {
 
         current.push("build");
         let build = current.clone();
+        let mut lib = current.clone();
+        lib.pop();
+        lib.push("lib");
 
-        let run = execute_java("Test2", &build, &Vec::new());
+        let run = execute_java("Test2", &build, &lib, &Vec::new());
 
         assert!(run.is_ok(), "Run Command was an error");
 
