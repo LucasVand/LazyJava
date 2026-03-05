@@ -27,7 +27,7 @@ impl LazyJava {
             self.incrimental_build(args)
         }
     }
-    fn incrimental_build(&self, _args: &BuildArgs) -> Result<(), LazyJavaError> {
+    fn incrimental_build(&self, args: &BuildArgs) -> Result<(), LazyJavaError> {
         let graph = DependancyGraph::create(&self.src)?;
 
         let stale_files = find_modified_files(&self.build, &self.src)
@@ -35,11 +35,7 @@ impl LazyJava {
 
         let recompile = files_to_recompile(graph, stale_files)?;
 
-        if recompile.is_empty() {
-            return Ok(());
-        }
-
-        let status = compile_java_files(&self.build, recompile)
+        let status = compile_java_files(&self.build, &args.javac_args, recompile)
             .map_err(|e| return LazyJavaError::UnableToCompile(e))?;
 
         Logger::verbose_elog("Compiled Java");
@@ -57,8 +53,8 @@ impl LazyJava {
         }
     }
 
-    fn rebuild(&self, _args: &BuildArgs) -> Result<(), LazyJavaError> {
-        let status = compile_java(&self.src, &self.build)
+    fn rebuild(&self, args: &BuildArgs) -> Result<(), LazyJavaError> {
+        let status = compile_java(&self.src, &self.build, &args.javac_args)
             .map_err(|e| return LazyJavaError::UnableToCompile(e))?;
         Logger::verbose_elog("Compiled Java");
 

@@ -3,45 +3,65 @@ use std::{
     path::{self, Path, PathBuf},
     process::{Command, ExitStatus, Output, Stdio},
 };
-fn compile_command(src: &str, build: &str) -> Result<Output, io::Error> {
+fn compile_command(src: &str, build: &str, javac_args: &Vec<String>) -> Result<Output, io::Error> {
+    let args = javac_args.join(" ");
     if cfg!(target_os = "windows") {
         let command = format!(
-            r#"& {{javac -d "{}" (Get-ChildItem -Recurse -Filter *.java -Path "{}").FullName}}"#,
-            build, src
+            r#"& {{javac -d "{}" {} (Get-ChildItem -Recurse -Filter *.java -Path "{}").FullName}}"#,
+            build, args, src
         );
 
         return Command::new("powershell")
             .args(["-Command", &command])
+            .stdout(Stdio::inherit()) // Inherit the parent's stdout
+            .stderr(Stdio::inherit()) // Inherit the parent's stderr
             .output();
     } else {
         let command = format!(
-            r#"find {} -name "*.java" -exec javac -d {} {{}} +"#,
-            src, build
+            r#"find {} -name "*.java" -exec javac -d "{}" {} {{}} +"#,
+            src, build, args
         );
 
-        return Command::new("sh").arg("-c").arg(command).output();
+        return Command::new("sh")
+            .arg("-c")
+            .arg(command)
+            .stdout(Stdio::inherit()) // Inherit the parent's stdout
+            .stderr(Stdio::inherit()) // Inherit the parent's stderr
+            .output();
     }
 }
-fn compile_files_command(build: &str, files: Vec<String>) -> Result<Output, io::Error> {
+fn compile_files_command(
+    build: &str,
+    files: Vec<String>,
+    javac_args: &Vec<String>,
+) -> Result<Output, io::Error> {
     let files_str = files.join(" ");
+    let args = javac_args.join(" ");
     if cfg!(target_os = "windows") {
         let command = format!(
-            r#"&{{ javac -classpath "{}" -d "{}" {} }}"#,
-            build, build, files_str
+            r#"&{{ javac -classpath "{}" -d "{}" {} {} }}"#,
+            build, build, args, files_str
         );
 
         let output = Command::new("powershell")
             .args(["-Command", &command])
+            .stdout(Stdio::inherit()) // Inherit the parent's stdout
+            .stderr(Stdio::inherit()) // Inherit the parent's stderr
             .output();
 
         return output;
     } else {
         let command = format!(
-            r#"javac -classpath "{}" -d "{}" {} "#,
-            build, build, files_str
+            r#"javac -classpath "{}" -d "{}" {} {} "#,
+            build, build, args, files_str
         );
 
-        let output = Command::new("sh").args(["-c", &command]).output();
+        println!("{}", command);
+        let output = Command::new("sh")
+            .args(["-c", &command])
+            .stdout(Stdio::inherit()) // Inherit the parent's stdout
+            .stderr(Stdio::inherit()) // Inherit the parent's stderr
+            .output();
 
         return output;
     }
@@ -66,18 +86,30 @@ fn run_command(build: &str, class: &str, args: &Vec<String>) -> Result<Output, i
     }
 }
 
-pub fn compile_java(src: &PathBuf, dest: &PathBuf) -> Result<ExitStatus, io::Error> {
+pub fn compile_java(
+    src: &PathBuf,
+    dest: &PathBuf,
+    javac_args: &Vec<String>,
+) -> Result<ExitStatus, io::Error> {
     let ab_src = path::absolute(src)?;
     let ab_dest = path::absolute(dest)?;
 
-    let command = compile_command(ab_src.to_str().unwrap(), ab_dest.to_str().unwrap());
+    let command = compile_command(
+        ab_src.to_str().unwrap(),
+        ab_dest.to_str().unwrap(),
+        javac_args,
+    );
 
     let output = command.expect("Compile Command Failed");
 
     return Ok(output.status);
 }
 
-pub fn compile_java_files(build: &Path, files: Vec<PathBuf>) -> Result<ExitStatus, io::Error> {
+pub fn compile_java_files(
+    build: &Path,
+    javac_args: &Vec<String>,
+    files: Vec<PathBuf>,
+) -> Result<ExitStatus, io::Error> {
     let ab_build = path::absolute(build)?;
 
     let file_str = files
@@ -87,7 +119,7 @@ pub fn compile_java_files(build: &Path, files: Vec<PathBuf>) -> Result<ExitStatu
         })
         .collect();
 
-    let output = compile_files_command(ab_build.to_str().unwrap(), file_str)?;
+    let output = compile_files_command(ab_build.to_str().unwrap(), file_str, javac_args)?;
 
     return Ok(output.status);
 }
@@ -141,7 +173,7 @@ mod tests {
         current.push("build");
         let build = current.clone();
 
-        let comp = compile_java(&src, &build);
+        let comp = compile_java(&src, &build, &Vec::new());
 
         assert!(comp.is_ok(), "Compile Command was an error");
 

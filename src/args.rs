@@ -44,7 +44,7 @@ pub struct RunArgs {
     #[arg(long = "no-build", short = 'n')]
     pub no_build: bool,
 
-    #[arg(long = "args", short = 'a', num_args = 1..)]
+    #[arg(long = "args", short = 'a', num_args = 1.., allow_hyphen_values = true)]
     pub args: Vec<String>,
 
     #[command(flatten)]
@@ -56,6 +56,9 @@ pub struct BuildArgs {
     /// Rebuild all files
     #[arg(long = "build-all")]
     pub build_all: bool,
+
+    #[arg(long = "javac-args", num_args = 1.., allow_hyphen_values = true)]
+    pub javac_args: Vec<String>,
 }
 
 #[derive(Parser, Debug, Clone)]

@@ -19,9 +19,8 @@ pub struct LazyJava {
 }
 
 impl LazyJava {
-    pub fn new() -> Result<LazyJava, LazyJavaError> {
+    pub fn new(args: LazyJavaArgs) -> Result<LazyJava, LazyJavaError> {
         let current = env::current_dir().map_err(|e| return LazyJavaError::NoCurrentDir(e))?;
-        let args = LazyJavaArgs::parse();
         let root = find_root(&current).map_err(|_e| return LazyJavaError::NoRoot)?;
 
         let src = find_file_in_dir(&root, &args.global_args.source)
