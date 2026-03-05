@@ -30,10 +30,14 @@ impl LazyJava {
     fn incrimental_build(&self, args: &BuildArgs) -> Result<(), LazyJavaError> {
         let graph = DependancyGraph::create(&self.src)?;
 
-        let stale_files = find_modified_files(&self.build, &self.src)
+        let modified_files = find_modified_files(&self.build, &self.src)
             .map_err(|e| return LazyJavaError::NoStaleFilesError(e))?;
 
-        let recompile = files_to_recompile(graph, stale_files)?;
+        if modified_files.is_empty() {
+            return Ok(());
+        }
+
+        let recompile = files_to_recompile(graph, modified_files)?;
 
         let status = compile_java_files(&self.build, &args.javac_args, recompile)
             .map_err(|e| return LazyJavaError::UnableToCompile(e))?;

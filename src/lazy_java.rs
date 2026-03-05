@@ -1,7 +1,5 @@
 use std::{env, path::PathBuf};
 
-use clap::Parser;
-
 use crate::{
     args::{LazyJavaArgs, LazyJavaCommand},
     lazy_java_error::LazyJavaError,

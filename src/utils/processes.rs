@@ -56,7 +56,6 @@ fn compile_files_command(
             build, build, args, files_str
         );
 
-        println!("{}", command);
         let output = Command::new("sh")
             .args(["-c", &command])
             .stdout(Stdio::inherit()) // Inherit the parent's stdout
@@ -67,11 +66,11 @@ fn compile_files_command(
     }
 }
 fn run_command(build: &str, class: &str, args: &Vec<String>) -> Result<Output, io::Error> {
-    let command = format!(r#"java -classpath {} {}"#, build, class);
+    let args_str = args.join(" ");
+    let command = format!(r#"java -classpath {} {} {}"#, build, class, args_str);
     if cfg!(target_os = "windows") {
         return Command::new("powershell")
             .args(["-Command", &command])
-            .args(args)
             .stdout(Stdio::inherit()) // Inherit the parent's stdout
             .stderr(Stdio::inherit()) // Inherit the parent's stderr
             .output();
@@ -79,7 +78,6 @@ fn run_command(build: &str, class: &str, args: &Vec<String>) -> Result<Output, i
         return Command::new("sh")
             .arg("-c")
             .arg(command)
-            .args(args)
             .stdout(Stdio::inherit()) // Inherit the parent's stdout
             .stderr(Stdio::inherit()) // Inherit the parent's stderr
             .output();
