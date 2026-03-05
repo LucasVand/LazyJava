@@ -5,6 +5,8 @@ use crate::{
 
 impl LazyJava {
     pub fn find(&self, _args: &FindArgs) -> Result<(), LazyJavaError> {
+        self.assert_build_lib_src()?;
+
         let mains =
             find_main_classes(&self.src).map_err(|e| return LazyJavaError::CouldntFindMains(e))?;
         Logger::verbose_elog("Found Main Classes");

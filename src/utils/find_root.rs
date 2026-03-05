@@ -14,7 +14,7 @@ const ROOT_MARKERS: [&'static str; 5] = [
     "build.gradle.kts",
 ];
 
-pub fn find_root(start: &Path) -> Result<PathBuf, io::Error> {
+pub fn find_root(start: &Path) -> Result<Option<PathBuf>, io::Error> {
     Logger::verbose_elog(&format!("Looking for root in {}", start.to_string_lossy()));
     let dirs = list_dir(start)?;
 
@@ -23,7 +23,7 @@ pub fn find_root(start: &Path) -> Result<PathBuf, io::Error> {
         if let Some(name) = dir.file_name().to_str() {
             if ROOT_MARKERS.contains(&name) {
                 Logger::verbose_elog(&format!("Found root marker, {}", name));
-                return Ok(start.to_path_buf());
+                return Ok(Some(start.to_path_buf()));
             }
         }
     }
@@ -38,7 +38,7 @@ pub fn find_root(start: &Path) -> Result<PathBuf, io::Error> {
         }
         None => {
             Logger::verbose_elog(&format!("No Parent of {}", start.to_string_lossy()));
-            Err(io::Error::new(ErrorKind::NotFound, "No root marker found"))
+            Ok(None)
         }
     };
 }

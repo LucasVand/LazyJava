@@ -5,6 +5,8 @@ use crate::{
 
 impl LazyJava {
     pub fn run(&self, args: &RunArgs) -> Result<(), LazyJavaError> {
+        self.assert_build_lib_src()?;
+
         if !args.no_build {
             self.build_java(&args.build_args)?;
         }
