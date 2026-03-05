@@ -34,6 +34,10 @@ pub enum LazyJavaCommand {
         #[command(flatten)]
         args: FindArgs,
     },
+    Create {
+        #[command(flatten)]
+        args: CreateArgs,
+    },
 }
 #[derive(Debug, Parser, Clone)]
 pub struct RunArgs {
@@ -82,6 +86,21 @@ pub enum BuildSubCommand {
 }
 #[derive(Debug, Parser, Clone)]
 pub struct FindArgs {}
+
+#[derive(Debug, Parser, Clone)]
+pub struct CreateArgs {
+    /// The name of the project being created
+    #[arg(long, short)]
+    pub name: Option<String>,
+
+    /// Whether to initalize a git repository
+    #[arg(long = "git", short = 'g')]
+    pub init_git: Option<bool>,
+
+    /// Dont initalize with example files
+    #[arg(long = "bare", short = 'b')]
+    pub bare: bool,
+}
 
 #[derive(Debug, Parser, Clone)]
 pub struct LazyJavaGlobalArgs {

@@ -9,6 +9,8 @@ use crate::utils::processes::{compile_java, compile_java_files};
 
 impl LazyJava {
     pub fn build(&self, args: &BuildCommand) -> Result<(), LazyJavaError> {
+        self.assert_build_lib_src()?;
+
         if let Some(build_command) = &args.command {
             match build_command {
                 BuildSubCommand::Modified {} => self.show_modified_files(),

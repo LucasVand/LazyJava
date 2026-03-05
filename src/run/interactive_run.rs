@@ -11,6 +11,14 @@ impl LazyJava {
             find_main_classes(&self.root).map_err(|e| return LazyJavaError::CouldntFindMains(e))?;
         Logger::verbose_elog("Found Main Classes");
 
+        if options.is_empty() {
+            return Err(LazyJavaError::NoMainClasses);
+        }
+
+        if options.len() == 1 {
+            return Ok(options[0].full_package_name.clone());
+        }
+
         let configured_options: Vec<String> = options
             .into_iter()
             .map(|op| {
