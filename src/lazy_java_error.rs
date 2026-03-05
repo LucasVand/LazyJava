@@ -2,6 +2,8 @@ use std::io;
 
 use thiserror::Error;
 
+use crate::dependancy_graph::graph_error::GraphError;
+
 #[derive(Error, Debug)]
 pub enum LazyJavaError {
     #[error(r#"Could not find build directory {0}, try changing the build location, or add the directory"#)]
@@ -43,4 +45,13 @@ pub enum LazyJavaError {
 
     #[error("Unable to prompt user to select main class")]
     PromptError,
+
+    #[error("Unable to find stale files")]
+    NoStaleFilesError(io::Error),
+
+    #[error("Unable to set file modification time for build directory")]
+    NoBuildModificationTime(io::Error),
+
+    #[error("Graph error occured, {0}")]
+    GraphError(#[from] GraphError),
 }
