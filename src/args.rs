@@ -44,13 +44,15 @@ pub struct RunArgs {
     /// The main class to run
     pub class: Option<String>,
 
+    /// the args to pass to the program
+    pub args: Vec<String>,
+
     /// Skip the compile step and run from build folder
     #[arg(long = "no-build", short = 'n')]
     pub no_build: bool,
 
-    #[arg(long = "args", short = 'a', num_args = 1.., allow_hyphen_values = true)]
-    pub args: Vec<String>,
-
+    // #[arg(long = "args", short = 'a', num_args = 1.., allow_hyphen_values = true)]
+    // pub args: Vec<String>,
     #[command(flatten)]
     pub build_args: BuildArgs,
 }
