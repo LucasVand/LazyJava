@@ -1,4 +1,7 @@
-use std::{env, path::PathBuf};
+use std::{
+    env,
+    path::{self, PathBuf},
+};
 
 use crate::{
     args::{LazyJavaArgs, LazyJavaCommand},
@@ -58,16 +61,17 @@ impl LazyJava {
 
     pub fn assert_build_lib_src(&self) -> Result<(), LazyJavaError> {
         if !self.src.exists() {
-            return Err(LazyJavaError::NoSource(
-                self.args.global_args.source.clone(),
-            ));
+            let path = path::absolute(self.src.clone()).unwrap();
+            return Err(LazyJavaError::NoSource(path.to_string_lossy().into()));
         }
 
         if !self.build.exists() {
-            return Err(LazyJavaError::NoBuild(self.args.global_args.build.clone()));
+            let path = path::absolute(self.build.clone()).unwrap();
+            return Err(LazyJavaError::NoBuild(path.to_string_lossy().into()));
         }
         if !self.lib.exists() {
-            return Err(LazyJavaError::NoLib(self.args.global_args.lib.clone()));
+            let path = path::absolute(self.lib.clone()).unwrap();
+            return Err(LazyJavaError::NoLib(path.to_string_lossy().into()));
         }
         return Ok(());
     }

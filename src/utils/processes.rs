@@ -49,7 +49,7 @@ fn compile_files_command(
     let args = javac_args.join(" ");
     if cfg!(target_os = "windows") {
         let command = format!(
-            r#"&{{ javac -classpath "{};{}" -d "{}" {} {} }}"#,
+            r#"&{{ javac -classpath "{};{}/*" -d "{}" {} {} }}"#,
             build, lib, build, args, files_str
         );
 
@@ -64,9 +64,10 @@ fn compile_files_command(
         return output;
     } else {
         let command = format!(
-            r#"javac -classpath "{}:{}" -d "{}" {} {} "#,
+            r#"javac -classpath "{}:{}/*" -d "{}" {} {} "#,
             build, lib, build, args, files_str
         );
+
         Logger::verbose_elog(&format!("javac command: {}", command));
 
         let output = Command::new("sh")
@@ -87,7 +88,7 @@ fn run_command(
     let args_str = args.join(" ");
     if cfg!(target_os = "windows") {
         let command = format!(
-            r#"java -classpath "{};{}" {} {}"#,
+            r#"java -classpath "{}/*;{}" {} {}"#,
             lib, build, class, args_str
         );
         return Command::new("powershell")
@@ -97,7 +98,7 @@ fn run_command(
             .output();
     } else {
         let command = format!(
-            r#"java -classpath "{}:{}" {} {}"#,
+            r#"java -classpath "{}/*:{}" {} {}"#,
             lib, build, class, args_str
         );
         return Command::new("sh")
