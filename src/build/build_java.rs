@@ -41,7 +41,7 @@ impl LazyJava {
 
         let recompile = files_to_recompile(graph, modified_files)?;
 
-        let status = compile_java_files(&self.build, &args.javac_args, recompile)
+        let status = compile_java_files(&self.build, &self.lib, &args.javac_args, recompile)
             .map_err(|e| return LazyJavaError::UnableToCompile(e))?;
 
         Logger::verbose_elog("Compiled Java");
@@ -60,7 +60,7 @@ impl LazyJava {
     }
 
     fn rebuild(&self, args: &BuildArgs) -> Result<(), LazyJavaError> {
-        let status = compile_java(&self.src, &self.build, &args.javac_args)
+        let status = compile_java(&self.src, &self.build, &self.lib, &args.javac_args)
             .map_err(|e| return LazyJavaError::UnableToCompile(e))?;
         Logger::verbose_elog("Compiled Java");
 
