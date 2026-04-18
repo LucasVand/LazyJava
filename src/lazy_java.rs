@@ -5,8 +5,10 @@ use std::{
 
 use crate::{
     args::{LazyJavaArgs, LazyJavaCommand},
+    lazy_java,
     lazy_java_error::LazyJavaError,
     logger::logger::Logger,
+    lsp::classpath,
     utils::find_root::find_root,
 };
 
@@ -44,6 +46,8 @@ impl LazyJava {
             root: root,
             args: args,
         };
+
+        println!("{:?}", classpath::Classpath::generate(&lazy_java));
 
         return Ok(lazy_java);
     }
