@@ -5,6 +5,7 @@ use crate::lazy_java::LazyJava;
 
 use crate::lazy_java_error::LazyJavaError;
 use crate::logger::logger::Logger;
+use crate::lsp::classpath::Classpath;
 use crate::utils::processes::{compile_java, compile_java_files};
 
 impl LazyJava {
@@ -60,6 +61,8 @@ impl LazyJava {
     }
 
     fn rebuild(&self, args: &BuildArgs) -> Result<(), LazyJavaError> {
+        Classpath::write_classpath(self)?;
+
         let status = compile_java(&self.src, &self.build, &self.lib, &args.javac_args)
             .map_err(|e| return LazyJavaError::UnableToCompile(e))?;
         Logger::verbose_elog("Compiled Java");

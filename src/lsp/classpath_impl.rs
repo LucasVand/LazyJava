@@ -7,7 +7,10 @@ use std::{
 
 use crate::{
     lazy_java::LazyJava,
-    lsp::{classpath::Classpath, classpath_error::ClasspathError},
+    lsp::{
+        classpath::{Classpath, ClasspathEntry},
+        classpath_error::ClasspathError,
+    },
 };
 
 impl Classpath {
@@ -21,8 +24,27 @@ impl Classpath {
 
         Ok(classpath)
     }
+    pub fn write_classpath(lj: &LazyJava) -> Result<(), ClasspathError> {
+        let classpath = Self::generate(lj)?;
 
-    pub fn generate(lj: &LazyJava) -> Result<String, ClasspathError> {
+        let prefix = r#"<?xml version="1.0" encoding="UTF-8"?>"#;
+        let mut serialized = quick_xml::se::to_string(&classpath)?;
+        serialized.insert_str(0, prefix);
+
+        let mut path = lj.root.clone();
+        path.push(".classpath");
+
+        fs::write(&path, serialized).map_err(|e| {
+            ClasspathError::ClasspathWrite(
+                path::absolute(path).unwrap().to_string_lossy().into(),
+                e,
+            )
+        })?;
+
+        Ok(())
+    }
+
+    pub fn generate(lj: &LazyJava) -> Result<Classpath, ClasspathError> {
         let src = &lj.args.global_args.source;
         let build = &lj.args.global_args.build;
 
@@ -30,37 +52,53 @@ impl Classpath {
             ClasspathError::OSErrorLib(path::absolute(&lj.lib).unwrap().to_string_lossy().into(), e)
         })?;
 
-        let entries: Vec<String> = dir
+        let mut entries: Vec<ClasspathEntry> = dir
             .into_iter()
-            .map(|entry| {
-                let abs = path::absolute(entry).unwrap();
-                let abs_str = abs.to_string_lossy();
-                format!(
-                    r#" 
-            <classpathentry kind="lib" path="{abs_str}">"#
-                )
+            .map(|entry| ClasspathEntry {
+                kind: "lib".into(),
+                path: entry.to_string_lossy().into(),
+                including: None,
+                output: None,
+                attributes: None,
             })
             .collect();
 
-        let entries_str = entries.join("\n");
-        let classpath = format!(
-            r#"
-    <?xml version="1.0" encoding="UTF-8">
-    <classpath>
-        <!-- Source code -->
-        <classpathentry including="**/*.java" kind="src" output="{build}" path="{src}">
-         <!-- Libraries -->
-         {entries_str}
+        entries.push(ClasspathEntry {
+            kind: "src".into(),
+            path: src.into(),
+            including: None,
+            output: Some(build.into()),
+            attributes: None,
+        });
 
-        <!-- Output directory -->
-        <classpathentry kind="output" path="{build}"/>
-    </classpath>
-    "#
-        );
+        let classpath = Classpath { entries };
+
+        //             .map(|entry| {
+        //                 let abs = path::absolute(entry).unwrap();
+        //                 let abs_str = abs.to_string_lossy();
+        //                 format!(r#"<classpathentry kind="lib" path="{abs_str}"/>"#)
+        //             })
+        //             .collect();
+        //
+        //         let entries_str = entries.join("\n");
+        //         let classpath = format!(
+        //             r#"
+        // <?xml version="1.0" encoding="UTF-8"?>
+        // <classpath>
+        //   <!-- Source code -->
+        //   <classpathentry including="**/*.java" kind="src" output="{build}" path="{src}"/>
+        //   <!-- Libraries -->
+        //   {entries_str}
+        //
+        //   <!-- Output directory -->
+        //   <classpathentry kind="output" path="{build}"/>
+        // </classpath>
+        //     "#
+        //         );
 
         Ok(classpath)
     }
-    pub fn lib_files(root: &Path) -> Result<Vec<PathBuf>, io::Error> {
+    fn lib_files(root: &Path) -> Result<Vec<PathBuf>, io::Error> {
         let mut java_files: Vec<PathBuf> = Vec::new();
 
         for file in fs::read_dir(root)? {

@@ -1,13 +1,14 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename = "classpath")]
 pub struct Classpath {
     // Treat repeated <classpathentry> tags as a Vector
     #[serde(rename = "classpathentry", default)]
     pub entries: Vec<ClasspathEntry>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ClasspathEntry {
     // Use #[serde(rename = "@...")] to map to XML attributes
     #[serde(rename = "@kind")]
@@ -23,14 +24,14 @@ pub struct ClasspathEntry {
     pub attributes: Option<Attributes>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Attributes {
     // Nested list of <attribute> tags
     #[serde(rename = "attribute", default)]
     pub list: Vec<Attribute>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Attribute {
     #[serde(rename = "@name")]
     pub name: String,

@@ -1,6 +1,6 @@
 use std::io;
 
-use quick_xml::DeError;
+use quick_xml::{DeError, SeError};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -16,4 +16,10 @@ pub enum ClasspathError {
 
     #[error("Could not read lib folder at {0}, OS Error: {1}")]
     OSErrorLib(String, io::Error),
+
+    #[error("Could not write classpath file, attemping to write it at {0}, OS Error: {1}")]
+    ClasspathWrite(String, io::Error),
+
+    #[error("Could not serialize classpath, Error: {0}")]
+    SerializeError(#[from] SeError),
 }
