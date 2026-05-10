@@ -12,6 +12,7 @@ pub mod interactive;
 pub mod lazy_java;
 pub mod lazy_java_error;
 pub mod logger;
+pub mod lsp;
 pub mod run;
 pub mod utils;
 

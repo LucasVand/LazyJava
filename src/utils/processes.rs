@@ -14,7 +14,7 @@ fn compile_command(
     let args = javac_args.join(" ");
     if cfg!(target_os = "windows") {
         let command = format!(
-            r#"& {{javac -classpath "{}" -d "{}" {} (Get-ChildItem -Recurse -Filter *.java -Path "{}").FullName}}"#,
+            r#"& {{javac -classpath "{}/*" -d "{}" {} (Get-ChildItem -Recurse -Filter *.java -Path "{}").FullName}}"#,
             lib, build, args, src
         );
         Logger::verbose_elog(&format!("javac command: {}", command));
@@ -26,7 +26,7 @@ fn compile_command(
             .output();
     } else {
         let command = format!(
-            r#"find {} -name "*.java" -exec javac -classpath "{}" -d "{}" {} {{}} +"#,
+            r#"find {} -name "*.java" -exec javac -classpath "{}/*" -d "{}" {} {{}} +"#,
             src, lib, build, args
         );
         Logger::verbose_elog(&format!("javac command: {}", command));
@@ -88,8 +88,8 @@ fn run_command(
     let args_str = args.join(" ");
     if cfg!(target_os = "windows") {
         let command = format!(
-            r#"java -classpath "{}/*;{}" {} {}"#,
-            lib, build, class, args_str
+            r#"java -classpath "{};{}/*" {} {}"#,
+            build, lib, class, args_str
         );
         return Command::new("powershell")
             .args(["-Command", &command])
@@ -98,8 +98,8 @@ fn run_command(
             .output();
     } else {
         let command = format!(
-            r#"java -classpath "{}/*:{}" {} {}"#,
-            lib, build, class, args_str
+            r#"java -classpath "{}:{}/*" {} {}"#,
+            build, lib, class, args_str
         );
         return Command::new("sh")
             .arg("-c")
