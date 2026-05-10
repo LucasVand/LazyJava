@@ -6,7 +6,6 @@ use std::{
 use crate::{
     args::{LazyJavaArgs, LazyJavaCommand},
     lazy_java_error::LazyJavaError,
-    logger::logger::Logger,
     utils::find_root::find_root,
 };
 
@@ -22,11 +21,14 @@ pub struct LazyJava {
 impl LazyJava {
     pub fn new(args: LazyJavaArgs) -> Result<LazyJava, LazyJavaError> {
         let current = env::current_dir().map_err(|e| return LazyJavaError::NoCurrentDir(e))?;
+        log::debug!("Current directory: {:?}", current);
+        
         let root = find_root(&current).map_err(|_e| {
-            Logger::verbose_elog("Could not locate root");
+            log::error!("Could not locate project root");
             return LazyJavaError::NoRoot;
         })?;
         let root = root.unwrap_or(env::current_dir().map_err(|_e| return LazyJavaError::NoRoot)?);
+        log::info!("Project root: {:?}", root);
 
         let mut lib = root.clone();
         lib.push(args.global_args.lib.clone());
@@ -35,7 +37,9 @@ impl LazyJava {
         let mut build = root.clone();
         build.push(args.global_args.build.clone());
 
-        Logger::verbose(args.global_args.verbose);
+        log::debug!("Source directory: {:?}", src);
+        log::debug!("Build directory: {:?}", build);
+        log::debug!("Library directory: {:?}", lib);
 
         let lazy_java = LazyJava {
             src: src,

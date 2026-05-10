@@ -9,8 +9,10 @@ clap = { version = "4.5.60", features = ["derive"] }
 colored = "3.1.1"
 filetime = "0.2.27"
 inquire = "0.9.3"
+log = "0.4"
 pathdiff = "0.2.3"
 quick-xml = { version = "0.39.2", features = ["serialize"] }
 regex = "1.10"
 serde = { version = "1.0.228", features = ["derive"] }
+simple_logger = "4.3"
 thiserror = "2.0.18"

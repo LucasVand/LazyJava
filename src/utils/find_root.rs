@@ -4,8 +4,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::logger::logger::Logger;
-
 const ROOT_MARKERS: [&'static str; 5] = [
     ".git",
     "pom.xml",
@@ -15,51 +13,54 @@ const ROOT_MARKERS: [&'static str; 5] = [
 ];
 
 pub fn find_root(start: &Path) -> Result<Option<PathBuf>, io::Error> {
-    Logger::verbose_elog(&format!("Looking for root in {}", start.to_string_lossy()));
+    log::debug!("Looking for root in {}", start.to_string_lossy());
     let dirs = list_dir(start)?;
 
-    Logger::verbose_elog(&format!("Files in dir {:?}", dirs));
+    log::debug!("Found {} entries in directory", dirs.len());
     for dir in dirs {
         if let Some(name) = dir.file_name().to_str() {
             if ROOT_MARKERS.contains(&name) {
-                Logger::verbose_elog(&format!("Found root marker, {}", name));
+                log::debug!("Found root marker: {}", name);
                 return Ok(Some(start.to_path_buf()));
             }
         }
     }
     return match start.parent() {
         Some(parent) => {
-            Logger::verbose_elog(&format!(
-                "Found Parent of {} which is {}",
+            log::debug!(
+                "No root marker found in {}, searching parent: {}",
                 start.to_string_lossy(),
                 parent.to_string_lossy()
-            ));
+            );
             Ok(find_root(parent)?)
         }
         None => {
-            Logger::verbose_elog(&format!("No Parent of {}", start.to_string_lossy()));
+            log::debug!("Reached filesystem root: {}", start.to_string_lossy());
             Ok(None)
         }
     };
 }
 pub fn find_file_in_dir(dir: &Path, search_name: &str) -> Result<DirEntry, io::Error> {
+    log::debug!("Searching for file '{}' in {:?}", search_name, dir);
     for file in list_dir(dir)? {
         if let Some(name) = file.file_name().to_str() {
             if name == search_name {
+                log::debug!("Found file: {}", search_name);
                 return Ok(file);
             }
         }
     }
 
+    log::warn!("File not found: {} in {:?}", search_name, dir);
     return Err(io::Error::new(ErrorKind::NotFound, "Couldnt find file"));
 }
 
 pub fn list_dir(path: &Path) -> Result<Vec<DirEntry>, io::Error> {
+    log::debug!("Opening directory: {:?}", path);
     let dir = fs::read_dir(path).map_err(|e| {
-        Logger::verbose_elog(&format!("Error opening {:?}", path));
+        log::error!("Error opening directory {:?}: {}", path, e);
         return e;
     })?;
-    Logger::verbose_elog(&format!("Opened {:?}", path));
     return dir.collect();
 }
 
@@ -67,10 +68,7 @@ pub fn list_dir(path: &Path) -> Result<Vec<DirEntry>, io::Error> {
 mod tests {
     use std::{env, io};
 
-    use crate::{
-        logger::logger::Logger,
-        utils::find_root::{find_file_in_dir, find_root},
-    };
+    use crate::utils::find_root::{find_file_in_dir, find_root};
 
     #[test]
     fn find_file_test() -> Result<(), io::Error> {
@@ -93,7 +91,6 @@ mod tests {
 
     #[test]
     fn find_root_test() -> Result<(), io::Error> {
-        Logger::verbose(true);
         let mut current = env::current_dir()?;
         current.push("test_filesystem");
         current.push("find_root_test");

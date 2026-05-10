@@ -107,8 +107,8 @@ pub struct CreateArgs {
 
 #[derive(Debug, Parser, Clone)]
 pub struct LazyJavaGlobalArgs {
-    #[arg(short, long, global = true)]
-    pub verbose: bool,
+    #[arg(short, long, global = true, action = clap::ArgAction::Count)]
+    pub verbose: u8,
 
     /// Where to find the java files to compile
     #[arg(long = "source", short = 's', default_value_t = SRC_FOLDER.to_string(), global = true)]

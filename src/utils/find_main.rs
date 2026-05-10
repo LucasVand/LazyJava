@@ -15,9 +15,12 @@ pub struct MainClass {
     pub full_package_name: String,
 }
 
-pub fn find_main_classes(root: &PathBuf) -> Result<Vec<MainClass>, io::Error> {
+pub fn find_main_classes(src: &PathBuf) -> Result<Vec<MainClass>, io::Error> {
+    log::debug!("Scanning for main classes in {:?}", src);
     let mut main_classes: Vec<MainClass> = Vec::new();
-    let java_files = find_java_files(root)?;
+    let java_files = find_java_files(src)?;
+    log::debug!("Found {} Java files to scan", java_files.len());
+
     for file in java_files {
         let content = fs::read_to_string(&file)?;
         let class = CLASS_REGEX.captures(&content);
@@ -34,9 +37,13 @@ pub fn find_main_classes(root: &PathBuf) -> Result<Vec<MainClass>, io::Error> {
         if let Some(class) = class {
             let mut found_classes = find_main_class(class, package, &file)?;
 
+            if !found_classes.is_empty() {
+                log::debug!("Found {} main class(es) in {:?}", found_classes.len(), file);
+            }
             main_classes.append(&mut found_classes);
         }
     }
+    log::debug!("Total main classes found: {}", main_classes.len());
     return Ok(main_classes);
 }
 fn find_main_class(
@@ -80,6 +87,7 @@ fn find_main_class(
 }
 
 pub fn find_java_files(root: &Path) -> Result<Vec<PathBuf>, io::Error> {
+    log::debug!("Recursively searching for Java files in {:?}", root);
     let mut java_files: Vec<PathBuf> = Vec::new();
 
     for file in fs::read_dir(root)? {
@@ -92,6 +100,7 @@ pub fn find_java_files(root: &Path) -> Result<Vec<PathBuf>, io::Error> {
 
         if f.extension() == Some(OsStr::new("java")) {
             if f.is_file() {
+                log::debug!("Found Java file: {:?}", f);
                 java_files.push(f);
             }
         }

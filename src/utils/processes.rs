@@ -4,7 +4,6 @@ use std::{
     process::{Command, ExitStatus, Output, Stdio},
 };
 
-use crate::logger::logger::Logger;
 fn compile_command(
     src: &str,
     build: &str,
@@ -17,7 +16,7 @@ fn compile_command(
             r#"& {{javac -classpath "{}/*" -d "{}" {} (Get-ChildItem -Recurse -Filter *.java -Path "{}").FullName}}"#,
             lib, build, args, src
         );
-        Logger::verbose_elog(&format!("javac command: {}", command));
+        log::debug!("Windows javac command: {}", command);
 
         return Command::new("powershell")
             .args(["-Command", &command])
@@ -29,7 +28,7 @@ fn compile_command(
             r#"find {} -name "*.java" -exec javac -classpath "{}/*" -d "{}" {} {{}} +"#,
             src, lib, build, args
         );
-        Logger::verbose_elog(&format!("javac command: {}", command));
+        log::debug!("Unix javac command: {}", command);
 
         return Command::new("sh")
             .arg("-c")
@@ -53,7 +52,7 @@ fn compile_files_command(
             build, lib, build, args, files_str
         );
 
-        Logger::verbose_elog(&format!("javac command: {}", command));
+        log::debug!("Windows javac compile files command: {}", command);
 
         let output = Command::new("powershell")
             .args(["-Command", &command])
@@ -68,7 +67,7 @@ fn compile_files_command(
             build, lib, build, args, files_str
         );
 
-        Logger::verbose_elog(&format!("javac command: {}", command));
+        log::debug!("Unix javac compile files command: {}", command);
 
         let output = Command::new("sh")
             .args(["-c", &command])
@@ -91,21 +90,23 @@ fn run_command(
             r#"java -classpath "{};{}/*" {} {}"#,
             build, lib, class, args_str
         );
+        log::debug!("Windows java run command: {}", command);
         return Command::new("powershell")
             .args(["-Command", &command])
-            .stdout(Stdio::inherit()) // Inherit the parent's stdout
-            .stderr(Stdio::inherit()) // Inherit the parent's stderr
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
             .output();
     } else {
         let command = format!(
             r#"java -classpath "{}:{}/*" {} {}"#,
             build, lib, class, args_str
         );
+        log::debug!("Unix java run command: {}", command);
         return Command::new("sh")
             .arg("-c")
             .arg(command)
-            .stdout(Stdio::inherit()) // Inherit the parent's stdout
-            .stderr(Stdio::inherit()) // Inherit the parent's stderr
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
             .output();
     }
 }
@@ -116,6 +117,10 @@ pub fn compile_java(
     lib: &Path,
     javac_args: &Vec<String>,
 ) -> Result<ExitStatus, io::Error> {
+    log::info!("Compiling Java from {:?} to {:?}", src, dest);
+    log::debug!("Using library path: {:?}", lib);
+    log::debug!("Javac arguments: {:?}", javac_args);
+    
     let ab_src = path::absolute(src)?;
     let ab_dest = path::absolute(dest)?;
     let ab_lib = path::absolute(lib)?;
@@ -128,6 +133,12 @@ pub fn compile_java(
     );
 
     let output = command.expect("Compile Command Failed");
+    
+    if output.status.success() {
+        log::info!("Compilation completed successfully");
+    } else {
+        log::warn!("Compilation failed with exit code: {:?}", output.status.code());
+    }
 
     return Ok(output.status);
 }
@@ -138,8 +149,12 @@ pub fn compile_java_files(
     javac_args: &Vec<String>,
     files: Vec<PathBuf>,
 ) -> Result<ExitStatus, io::Error> {
+    log::info!("Compiling {} Java file(s) to {:?}", files.len(), build);
+    log::debug!("Using library path: {:?}", lib);
+    log::debug!("Files to compile: {:?}", files);
+    log::debug!("Javac arguments: {:?}", javac_args);
+    
     let ab_build = path::absolute(build)?;
-
     let ab_lib = path::absolute(lib)?;
 
     let file_str: Vec<String> = files
@@ -156,6 +171,12 @@ pub fn compile_java_files(
         javac_args,
     )?;
 
+    if output.status.success() {
+        log::info!("File compilation completed successfully");
+    } else {
+        log::warn!("File compilation failed with exit code: {:?}", output.status.code());
+    }
+
     return Ok(output.status);
 }
 pub fn execute_java(
@@ -164,6 +185,13 @@ pub fn execute_java(
     lib: &Path,
     args: &Vec<String>,
 ) -> Result<ExitStatus, io::Error> {
+    log::info!("Executing Java class: {}", classname);
+    log::debug!("Using classpath: {:?}", classpath);
+    log::debug!("Using library path: {:?}", lib);
+    if !args.is_empty() {
+        log::debug!("Program arguments: {:?}", args);
+    }
+    
     let ab_classpath = path::absolute(classpath)?;
     let ab_lib = path::absolute(lib)?;
 
@@ -174,6 +202,12 @@ pub fn execute_java(
         args,
     )
     .expect("Run Command Failed");
+
+    if output.status.success() {
+        log::info!("Java execution completed successfully");
+    } else {
+        log::warn!("Java execution failed with exit code: {:?}", output.status.code());
+    }
 
     return Ok(output.status);
 }
