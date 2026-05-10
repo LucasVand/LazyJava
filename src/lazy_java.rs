@@ -20,7 +20,7 @@ pub struct LazyJava {
 
 impl LazyJava {
     pub fn new(args: LazyJavaArgs) -> Result<LazyJava, LazyJavaError> {
-        let current = env::current_dir().map_err(|e| return LazyJavaError::NoCurrentDir(e))?;
+        let current = env::current_dir().map_err(|e| LazyJavaError::NoCurrentDir(e))?;
         log::debug!("Current directory: {:?}", current);
 
         let root = find_root(&current).map_err(|_e| {
@@ -71,12 +71,12 @@ impl LazyJava {
 
         if !self.build.exists() {
             fs::create_dir_all(&self.build)
-                .map_err(|e| return LazyJavaError::NoCreateBuildDirectory(e))?;
+                .map_err(|e| LazyJavaError::NoCreateBuildDirectory(e))?;
         }
         if !self.lib.exists() {
             fs::create_dir_all(&self.lib)
-                .map_err(|e| return LazyJavaError::NoCreateLibDirectory(e))?;
+                .map_err(|e| LazyJavaError::NoCreateLibDirectory(e))?;
         }
-        return Ok(());
+        Ok(())
     }
 }
