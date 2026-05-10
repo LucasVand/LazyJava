@@ -69,12 +69,14 @@ impl LazyJava {
             return Err(LazyJavaError::NoSource(path.to_string_lossy().into()));
         }
 
+        log::info!("Build directory: {:?}", self.build);
         if !self.build.exists() {
             log::info!("Build directory not found, creating: {:?}", self.build);
             fs::create_dir_all(&self.build)
                 .map_err(|e| LazyJavaError::NoCreateBuildDirectory(e))?;
             log::info!("Created build directory: {:?}", self.build);
         }
+        log::info!("Lib directory: {:?}", self.lib);
         if !self.lib.exists() {
             log::info!("Lib directory not found, creating: {:?}", self.lib);
             fs::create_dir_all(&self.lib)
