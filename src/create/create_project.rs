@@ -47,14 +47,10 @@ impl LazyJava {
         fs::create_dir(&lib).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
 
         if !args.bare {
-            let mut uppercase_name = name.clone();
-            let ch = uppercase_name.remove(0);
-            uppercase_name.insert(0, ch.to_ascii_uppercase());
-
             let mut example = project_dir.clone();
-            example.push(format!("src/{}.java", uppercase_name));
+            example.push(format!("src/{}.java", "Main"));
 
-            fs::write(&example, example_class(uppercase_name))
+            fs::write(&example, example_class("Main"))
                 .map_err(|e| CreateProjectError::CreateFileError(e))?;
 
             filetime::set_file_mtime(
@@ -103,17 +99,17 @@ pub enum CreateProjectError {
     NoInit(io::Error),
 }
 
-fn example_class(name: String) -> String {
+fn example_class(name: &str) -> String {
     return format!(
         r#"
-    /* Created with LazyJava */ 
-    public class {} {{
+/* Created with LazyJava */ 
+public class {} {{
         
-        public static void main(String[] args) {{
-            System.out.println("Hello world!");
-            System.out.println("Welcome to your LazyJava project");
-        }}
+    public static void main(String[] args) {{
+        System.out.println("Hello world!");
+        System.out.println("Welcome to your LazyJava project");
     }}
+}}
 "#,
         name
     );

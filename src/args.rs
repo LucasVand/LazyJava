@@ -34,6 +34,7 @@ pub enum LazyJavaCommand {
         #[command(flatten)]
         args: FindArgs,
     },
+    /// Creates a new java project
     Create {
         #[command(flatten)]
         args: CreateArgs,

@@ -6,6 +6,10 @@ impl LazyJava {
     pub fn clean(&self) -> Result<(), LazyJavaError> {
         self.assert_build_lib_src()?;
 
+        let classpath = &self.root.join(".classpath");
+
+        let _ = fs::remove_file(classpath);
+
         fs::remove_dir_all(&self.build).map_err(|e| return LazyJavaError::NoRemoveBuild(e))?;
         Logger::verbose_elog("Removed Build Directory");
 
