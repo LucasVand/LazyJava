@@ -31,6 +31,8 @@ impl LazyJava {
         }
     }
     fn incrimental_build(&self, args: &BuildArgs) -> Result<(), LazyJavaError> {
+        Classpath::generate_if_stale(self)?;
+
         let graph = DependancyGraph::create(&self.src)?;
 
         let modified_files = find_modified_files(&self.build, &self.src)
@@ -61,7 +63,7 @@ impl LazyJava {
     }
 
     fn rebuild(&self, args: &BuildArgs) -> Result<(), LazyJavaError> {
-        Classpath::write_classpath(self)?;
+        Classpath::generate(self)?;
 
         let status = compile_java(&self.src, &self.build, &self.lib, &args.javac_args)
             .map_err(|e| return LazyJavaError::UnableToCompile(e))?;

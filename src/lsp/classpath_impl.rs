@@ -24,8 +24,8 @@ impl Classpath {
 
         Ok(classpath)
     }
-    pub fn write_classpath(lj: &LazyJava) -> Result<(), ClasspathError> {
-        let classpath = Self::generate(lj)?;
+    pub fn generate(lj: &LazyJava) -> Result<(), ClasspathError> {
+        let classpath = Self::create(lj)?;
 
         let prefix = r#"<?xml version="1.0" encoding="UTF-8"?>"#;
         let mut serialized = quick_xml::se::to_string(&classpath)?;
@@ -44,13 +44,11 @@ impl Classpath {
         Ok(())
     }
 
-    pub fn generate(lj: &LazyJava) -> Result<Classpath, ClasspathError> {
+    pub fn create(lj: &LazyJava) -> Result<Classpath, ClasspathError> {
         let src = &lj.args.global_args.source;
         let build = &lj.args.global_args.build;
 
-        let dir = Self::lib_files(&lj.lib).map_err(|e| {
-            ClasspathError::OSErrorLib(path::absolute(&lj.lib).unwrap().to_string_lossy().into(), e)
-        })?;
+        let dir = Self::lib_files(&lj.lib)?;
 
         let mut entries: Vec<ClasspathEntry> = dir
             .into_iter()
@@ -73,36 +71,24 @@ impl Classpath {
 
         let classpath = Classpath { entries };
 
-        //             .map(|entry| {
-        //                 let abs = path::absolute(entry).unwrap();
-        //                 let abs_str = abs.to_string_lossy();
-        //                 format!(r#"<classpathentry kind="lib" path="{abs_str}"/>"#)
-        //             })
-        //             .collect();
-        //
-        //         let entries_str = entries.join("\n");
-        //         let classpath = format!(
-        //             r#"
-        // <?xml version="1.0" encoding="UTF-8"?>
-        // <classpath>
-        //   <!-- Source code -->
-        //   <classpathentry including="**/*.java" kind="src" output="{build}" path="{src}"/>
-        //   <!-- Libraries -->
-        //   {entries_str}
-        //
-        //   <!-- Output directory -->
-        //   <classpathentry kind="output" path="{build}"/>
-        // </classpath>
-        //     "#
-        //         );
-
         Ok(classpath)
     }
-    fn lib_files(root: &Path) -> Result<Vec<PathBuf>, io::Error> {
+    fn lib_files(root: &Path) -> Result<Vec<PathBuf>, ClasspathError> {
         let mut java_files: Vec<PathBuf> = Vec::new();
 
-        for file in fs::read_dir(root)? {
-            let f = file?.path();
+        let files = fs::read_dir(root).map_err(|e| {
+            ClasspathError::OSErrorLib(path::absolute(root).unwrap().to_string_lossy().into(), e)
+        })?;
+
+        for file in files {
+            let f = file
+                .map_err(|e| {
+                    ClasspathError::OSErrorLib(
+                        path::absolute(root).unwrap().to_string_lossy().into(),
+                        e,
+                    )
+                })?
+                .path();
 
             if f.is_dir() {
                 let mut res = Self::lib_files(&f)?;
@@ -116,5 +102,43 @@ impl Classpath {
             }
         }
         return Ok(java_files);
+    }
+    pub fn validate(lj: &LazyJava) -> Result<bool, ClasspathError> {
+        let root = &lj.root;
+
+        let classpath = Self::parse(&root.join(".classpath"))?;
+
+        let classpath_libs: Vec<String> = classpath
+            .entries
+            .iter()
+            .filter(|entry| &entry.kind == "lib")
+            .map(|entry| entry.path.clone())
+            .collect();
+
+        let classpath_src = classpath.entries.iter().find(|entry| entry.kind == "src");
+        if let Some(classpath_src) = classpath_src {
+            if !(classpath_src.path == lj.src.to_string_lossy())
+                || (classpath_src.output == lj.build.to_str().map(|b| b.to_string()))
+            {
+                return Ok(false);
+            }
+        } else {
+            return Ok(false);
+        }
+
+        let libs: Vec<String> = Self::lib_files(root)?
+            .iter()
+            .map(|path| path.to_string_lossy().to_string())
+            .collect();
+
+        let equal = libs == classpath_libs;
+
+        return Ok(equal);
+    }
+    pub fn generate_if_stale(lj: &LazyJava) -> Result<(), ClasspathError> {
+        if !(Self::validate(lj)?) {
+            Self::generate(lj)?
+        }
+        return Ok(());
     }
 }
