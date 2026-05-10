@@ -46,6 +46,12 @@ pub enum LazyJavaError {
     #[error("Unable to create new build directory when cleaning, {0}")]
     NoCreateBuild(io::Error),
 
+    #[error("Unable to create build directory, {0}")]
+    NoCreateBuildDirectory(io::Error),
+
+    #[error("Unable to create lib directory, {0}")]
+    NoCreateLibDirectory(io::Error),
+
     #[error("Errors while compiling java files")]
     CompilationErrors,
 

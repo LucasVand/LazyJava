@@ -1,5 +1,5 @@
 use std::{
-    env,
+    env, fs,
     path::{self, PathBuf},
 };
 
@@ -22,7 +22,7 @@ impl LazyJava {
     pub fn new(args: LazyJavaArgs) -> Result<LazyJava, LazyJavaError> {
         let current = env::current_dir().map_err(|e| return LazyJavaError::NoCurrentDir(e))?;
         log::debug!("Current directory: {:?}", current);
-        
+
         let root = find_root(&current).map_err(|_e| {
             log::error!("Could not locate project root");
             return LazyJavaError::NoRoot;
@@ -70,12 +70,12 @@ impl LazyJava {
         }
 
         if !self.build.exists() {
-            let path = path::absolute(self.build.clone()).unwrap();
-            return Err(LazyJavaError::NoBuild(path.to_string_lossy().into()));
+            fs::create_dir_all(&self.build)
+                .map_err(|e| return LazyJavaError::NoCreateBuildDirectory(e))?;
         }
         if !self.lib.exists() {
-            let path = path::absolute(self.lib.clone()).unwrap();
-            return Err(LazyJavaError::NoLib(path.to_string_lossy().into()));
+            fs::create_dir_all(&self.lib)
+                .map_err(|e| return LazyJavaError::NoCreateLibDirectory(e))?;
         }
         return Ok(());
     }
