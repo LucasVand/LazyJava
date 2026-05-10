@@ -70,12 +70,16 @@ impl LazyJava {
         }
 
         if !self.build.exists() {
+            log::info!("Build directory not found, creating: {:?}", self.build);
             fs::create_dir_all(&self.build)
                 .map_err(|e| LazyJavaError::NoCreateBuildDirectory(e))?;
+            log::info!("Created build directory: {:?}", self.build);
         }
         if !self.lib.exists() {
+            log::info!("Lib directory not found, creating: {:?}", self.lib);
             fs::create_dir_all(&self.lib)
                 .map_err(|e| LazyJavaError::NoCreateLibDirectory(e))?;
+            log::info!("Created lib directory: {:?}", self.lib);
         }
         Ok(())
     }
