@@ -4,7 +4,6 @@ use crate::dependancy_graph::graph::DependancyGraph;
 use crate::lazy_java::LazyJava;
 
 use crate::lazy_java_error::LazyJavaError;
-use crate::logger::logger::Logger;
 use crate::lsp::classpath::Classpath;
 use crate::utils::processes::{compile_java, compile_java_files};
 
@@ -31,25 +30,30 @@ impl LazyJava {
         }
     }
     fn incrimental_build(&self, args: &BuildArgs) -> Result<(), LazyJavaError> {
+        log::info!("Starting incremental build");
         Classpath::generate_if_stale(self)?;
 
         let graph = DependancyGraph::create(&self.src)?;
+        log::debug!("Created dependency graph");
 
         let modified_files = find_modified_files(&self.build, &self.src)
             .map_err(|e| return LazyJavaError::NoStaleFilesError(e))?;
 
         if modified_files.is_empty() {
+            log::info!("No modified files, skipping compilation");
             return Ok(());
         }
 
+        log::debug!("Found {} modified files", modified_files.len());
         let recompile = files_to_recompile(graph, modified_files)?;
+        log::debug!("Need to recompile {} files", recompile.len());
 
         let status = compile_java_files(&self.build, &self.lib, &args.javac_args, recompile)
             .map_err(|e| return LazyJavaError::UnableToCompile(e))?;
 
-        Logger::verbose_elog("Compiled Java");
+        log::debug!("Java compilation completed");
         if status.success() {
-            Logger::verbose_elog("Compilation Exit Code Successful");
+            log::info!("Compilation successful");
 
             let file_time = filetime::FileTime::now();
             filetime::set_file_mtime(&self.build, file_time)
@@ -57,20 +61,21 @@ impl LazyJava {
 
             return Ok(());
         } else {
-            Logger::verbose_elog("Compilation Exit Code Not Successful");
+            log::error!("Compilation failed with non-zero exit code");
             return Err(LazyJavaError::CompilationErrors);
         }
     }
 
     fn rebuild(&self, args: &BuildArgs) -> Result<(), LazyJavaError> {
+        log::info!("Starting full rebuild");
         Classpath::generate(self)?;
 
         let status = compile_java(&self.src, &self.build, &self.lib, &args.javac_args)
             .map_err(|e| return LazyJavaError::UnableToCompile(e))?;
-        Logger::verbose_elog("Compiled Java");
+        log::debug!("Java compilation completed");
 
         if status.success() {
-            Logger::verbose_elog("Compilation Exit Code Successful");
+            log::info!("Build successful");
 
             let file_time = filetime::FileTime::now();
             filetime::set_file_mtime(&self.build, file_time)
@@ -78,11 +83,12 @@ impl LazyJava {
 
             return Ok(());
         } else {
-            Logger::verbose_elog("Compilation Exit Code Not Successful");
+            log::error!("Build failed with non-zero exit code");
             return Err(LazyJavaError::CompilationErrors);
         }
     }
     fn show_dependancy_graph(&self) -> Result<(), LazyJavaError> {
+        log::info!("Displaying dependency graph");
         let graph = DependancyGraph::create(&self.src)?;
 
         for (_key, entry) in graph.nodes.iter() {
@@ -95,6 +101,7 @@ impl LazyJava {
         return Ok(());
     }
     fn show_modified_files(&self) -> Result<(), LazyJavaError> {
+        log::info!("Displaying modified files");
         let stale_files = find_modified_files(&self.build, &self.src)
             .map_err(|e| return LazyJavaError::NoStaleFilesError(e))?;
 
@@ -105,6 +112,7 @@ impl LazyJava {
         return Ok(());
     }
     fn show_rebuild_files(&self) -> Result<(), LazyJavaError> {
+        log::info!("Displaying files to rebuild");
         let graph = DependancyGraph::create(&self.src)?;
 
         let stale_files = find_modified_files(&self.build, &self.src)
@@ -119,6 +127,7 @@ impl LazyJava {
         return Ok(());
     }
     fn show_depentants_graph(&self) -> Result<(), LazyJavaError> {
+        log::info!("Displaying dependants graph");
         let graph = DependancyGraph::create(&self.src)?;
         for (_key, entry) in graph.nodes.iter() {
             println!(" {}", entry.file_name,);

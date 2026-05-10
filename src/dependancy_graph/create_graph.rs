@@ -13,7 +13,9 @@ use crate::{
 
 impl DependancyGraph {
     pub fn create(src: &Path) -> Result<DependancyGraph, GraphError> {
+        log::debug!("Creating dependency graph from source: {:?}", src);
         let java_files = find_java_files(src).map_err(|e| return GraphError::CreationError(e))?;
+        log::debug!("Found {} Java files for graph", java_files.len());
 
         let mut graph = DependancyGraph::new();
 
@@ -23,12 +25,16 @@ impl DependancyGraph {
 
             graph.add_node(node);
         }
+        log::debug!("Processing package dependencies");
         graph.calculate_package_dependancies();
+        log::debug!("Processing dependants");
         graph.calculate_dependants();
-
+        
+        log::debug!("Dependency graph created with {} nodes", graph.nodes.len());
         return Ok(graph);
     }
     fn calculate_dependants(&mut self) {
+        log::debug!("Calculating dependants for all nodes");
         let mut edges: Vec<(String, String)> = Vec::new();
         for (key, node) in &self.nodes {
             for dependancy in &node.dependancies {
@@ -36,6 +42,7 @@ impl DependancyGraph {
             }
         }
 
+        log::debug!("Processing {} edges for dependants", edges.len());
         for edge in edges {
             let node = self.nodes.get_mut(&edge.0);
             if let Some(node) = node {
@@ -44,6 +51,7 @@ impl DependancyGraph {
         }
     }
     fn calculate_package_dependancies(&mut self) {
+        log::debug!("Calculating package dependencies");
         let mut map: HashMap<String, Vec<String>> = HashMap::new();
 
         for (_key, node) in &self.nodes {
@@ -52,6 +60,7 @@ impl DependancyGraph {
                 .push(node.id.clone());
         }
 
+        log::debug!("Processing {} package groups", map.len());
         self.nodes = std::mem::take(&mut self.nodes)
             .into_iter()
             .map(|(key, mut node)| {

@@ -35,19 +35,26 @@ impl DependancyGraph {
         self.dependancy_list_internal(id, &mut Vec::new())
     }
     pub fn dependancy_list_from_path(&self, path: &Path) -> Result<Vec<PathBuf>, GraphError> {
+        log::debug!("Finding dependants for path: {:?}", path);
         let id = self.find_id(path)?;
+        log::debug!("Resolved path to node ID: {}", id);
 
-        return Ok(self.dependancy_list_internal(&id, &mut Vec::new()));
+        let deps = self.dependancy_list_internal(&id, &mut Vec::new());
+        log::debug!("Found {} dependant files", deps.len());
+        return Ok(deps);
     }
 
     fn dependancy_list_internal(&self, id: &str, visited: &mut Vec<String>) -> Vec<PathBuf> {
         let mut list = Vec::new();
         let node = self.nodes.get(id).unwrap();
+        log::debug!("Processing node {} with {} dependants", id, node.dependants.len());
+        
         for dependant in &node.dependants {
             let resolved_node = self.nodes.get(dependant).unwrap();
             list.push(resolved_node.path.clone());
 
             if visited.contains(dependant) {
+                log::debug!("Already visited {}, skipping", dependant);
                 continue;
             }
 
@@ -57,21 +64,25 @@ impl DependancyGraph {
         return list;
     }
     fn find_id(&self, path: &Path) -> Result<String, GraphError> {
+        log::debug!("Looking up node ID for path: {:?}", path);
         let con_path = fs::canonicalize(path)?;
         for (key, node) in self.nodes.iter() {
             let con_node = fs::canonicalize(&node.path)?;
 
             if con_node == con_path {
+                log::debug!("Found matching node: {}", key);
                 return Ok(key.clone());
             }
         }
 
+        log::warn!("Node not found for path: {:?}", path);
         return Err(GraphError::NotFound(path.to_path_buf()));
     }
 }
 
 impl DependancyNode {
     pub fn from_file(path: &Path) -> Result<DependancyNode, io::Error> {
+        log::debug!("Parsing Java file: {:?}", path);
         let contents = fs::read_to_string(path)?;
 
         let matches = IMPORT_REGEX.captures_iter(&contents);
@@ -79,8 +90,11 @@ impl DependancyNode {
         let package_match = PACKAGE_REGEX.captures(&contents);
 
         let package = if let Some(package) = package_match {
-            package.name("package").unwrap().as_str().to_string()
+            let pkg = package.name("package").unwrap().as_str().to_string();
+            log::debug!("Found package: {}", pkg);
+            pkg
         } else {
+            log::debug!("No package declaration found");
             "".to_string()
         };
 
@@ -88,6 +102,8 @@ impl DependancyNode {
             let import = item.name("import").unwrap();
             dependancies.push(import.as_str().to_string());
         }
+        log::debug!("Found {} imports", dependancies.len());
+        
         let file_name = path.file_name().unwrap().to_string_lossy().to_string();
 
         let id = if package == "" {
@@ -95,6 +111,8 @@ impl DependancyNode {
         } else {
             format!("{}.{}", package, file_name.strip_suffix(".java").unwrap())
         };
+
+        log::debug!("Node ID: {}, Dependencies: {:?}", id, dependancies);
 
         let node = DependancyNode {
             path: path.to_path_buf(),

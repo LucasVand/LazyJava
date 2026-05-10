@@ -1,21 +1,26 @@
 use inquire::Select;
 
 use crate::{
-    lazy_java::LazyJava, lazy_java_error::LazyJavaError, logger::logger::Logger,
-    utils::find_main::find_main_classes,
+    lazy_java::LazyJava, lazy_java_error::LazyJavaError, utils::find_main::find_main_classes,
 };
 
 impl LazyJava {
     pub fn interactive_find_main(&self) -> Result<String, LazyJavaError> {
+        log::debug!("Finding main classes interactively");
         let options =
-            find_main_classes(&self.root).map_err(|e| return LazyJavaError::CouldntFindMains(e))?;
-        Logger::verbose_elog("Found Main Classes");
+            find_main_classes(&self.src).map_err(|e| return LazyJavaError::CouldntFindMains(e))?;
+        log::debug!("Found {} main classes", options.len());
 
         if options.is_empty() {
+            log::error!("No main classes found");
             return Err(LazyJavaError::NoMainClasses);
         }
 
         if options.len() == 1 {
+            log::debug!(
+                "Only one main class found: {}",
+                options[0].full_package_name
+            );
             return Ok(options[0].full_package_name.clone());
         }
 
@@ -31,7 +36,7 @@ impl LazyJava {
             .without_filtering()
             .prompt()
             .map_err(|_e| LazyJavaError::PromptError)?;
-        Logger::verbose_elog("Prompt Successful");
+        log::debug!("User selected main class: {}", res);
 
         return Ok(res);
     }

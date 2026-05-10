@@ -14,16 +14,17 @@ use crate::{
     },
     lazy_java::LazyJava,
     lazy_java_error::LazyJavaError,
-    logger::logger::Logger,
 };
 
 impl LazyJava {
     pub fn create(&self, args: &CreateArgs) -> Result<(), LazyJavaError> {
+        log::info!("Starting create operation");
         let name = match &args.name {
             Some(name) => name.clone(),
             None => interactive_project_name()?,
         };
 
+        log::debug!("Creating project: {}", name);
         let git: bool = match args.init_git {
             Some(value) => value,
             None => interactive_git_init_name()?,
@@ -32,6 +33,7 @@ impl LazyJava {
             env::current_dir().map_err(|e| CreateProjectError::CurrrentDirectoryError(e))?;
         project_dir.push(&name);
 
+        log::debug!("Project directory: {:?}", project_dir);
         fs::create_dir(&project_dir).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
 
         let mut build = project_dir.clone();
@@ -42,11 +44,13 @@ impl LazyJava {
         let mut src = project_dir.clone();
         src.push("src");
 
+        log::debug!("Creating subdirectories: bin, lib, src");
         fs::create_dir(&build).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
         fs::create_dir(&src).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
         fs::create_dir(&lib).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
 
         if !args.bare {
+            log::debug!("Creating example Main class");
             let mut example = project_dir.clone();
             example.push(format!("src/{}.java", "Main"));
 
@@ -61,20 +65,24 @@ impl LazyJava {
         }
 
         if git {
+            log::debug!("Initializing git repository");
             let status = git_init(&project_dir).map_err(|e| CreateProjectError::NoInit(e))?;
 
             if !status.success() {
+                log::error!("Git initialization failed");
                 return Err(CreateProjectError::NoGit)?;
             }
+            log::debug!("Git repository initialized");
         }
 
-        Logger::log("");
-        Logger::log("  now run");
-        Logger::log("");
-        Logger::log(&format!("   cd {}", name));
-        Logger::log("   LazyJava run");
-        Logger::log("");
+        println!("");
+        println!("  now run");
+        println!("");
+        println!("   cd {}", name);
+        println!("   LazyJava run");
+        println!("");
 
+        log::info!("Project created successfully: {}", name);
         return Ok(());
     }
 }

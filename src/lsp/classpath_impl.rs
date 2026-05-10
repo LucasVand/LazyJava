@@ -15,16 +15,28 @@ use crate::{
 
 impl Classpath {
     pub fn parse(path: &Path) -> Result<Self, ClasspathError> {
+        log::debug!("Parsing classpath file: {:?}", path);
         let file = fs::read_to_string(path).map_err(|e| match e.kind() {
-            io::ErrorKind::NotFound => ClasspathError::NoClasspathFile,
-            _ => ClasspathError::OSErrorClasspath(e),
+            io::ErrorKind::NotFound => {
+                log::error!("Classpath file not found: {:?}", path);
+                ClasspathError::NoClasspathFile
+            }
+            _ => {
+                log::error!("Error reading classpath file {:?}: {}", path, e);
+                ClasspathError::OSErrorClasspath(e)
+            }
         })?;
 
         let classpath: Classpath = quick_xml::de::from_str(&file)?;
+        log::debug!(
+            "Successfully parsed classpath with {} entries",
+            classpath.entries.len()
+        );
 
         Ok(classpath)
     }
     pub fn generate(lj: &LazyJava) -> Result<(), ClasspathError> {
+        log::info!("Generating classpath file");
         let classpath = Self::create(lj)?;
 
         let prefix = r#"<?xml version="1.0" encoding="UTF-8"?>"#;
@@ -34,21 +46,26 @@ impl Classpath {
         let mut path = lj.root.clone();
         path.push(".classpath");
 
+        log::debug!("Writing classpath to {:?}", path);
         fs::write(&path, serialized).map_err(|e| {
+            log::error!("Failed to write classpath file: {}", e);
             ClasspathError::ClasspathWrite(
                 path::absolute(path).unwrap().to_string_lossy().into(),
                 e,
             )
         })?;
 
+        log::info!("Classpath file generated successfully");
         Ok(())
     }
 
     pub fn create(lj: &LazyJava) -> Result<Classpath, ClasspathError> {
+        log::debug!("Creating classpath from project structure");
         let src = &lj.args.global_args.source;
         let build = &lj.args.global_args.build;
 
         let dir = Self::lib_files(&lj.lib)?;
+        log::debug!("Found {} library files", dir.len());
 
         let mut entries: Vec<ClasspathEntry> = dir
             .into_iter()
@@ -69,22 +86,26 @@ impl Classpath {
             attributes: None,
         });
 
+        log::debug!("Created classpath with {} total entries", entries.len());
         let classpath = Classpath { entries };
 
         Ok(classpath)
     }
-    fn lib_files(root: &Path) -> Result<Vec<PathBuf>, ClasspathError> {
+    fn lib_files(lib: &Path) -> Result<Vec<PathBuf>, ClasspathError> {
+        log::debug!("Scanning library directory: {:?}", lib);
         let mut java_files: Vec<PathBuf> = Vec::new();
 
-        let files = fs::read_dir(root).map_err(|e| {
-            ClasspathError::OSErrorLib(path::absolute(root).unwrap().to_string_lossy().into(), e)
+        let files = fs::read_dir(lib).map_err(|e| {
+            log::error!("Failed to read library directory {:?}: {}", lib, e);
+            ClasspathError::OSErrorLib(path::absolute(lib).unwrap().to_string_lossy().into(), e)
         })?;
 
         for file in files {
             let f = file
                 .map_err(|e| {
+                    log::error!("Error reading file in library directory: {}", e);
                     ClasspathError::OSErrorLib(
-                        path::absolute(root).unwrap().to_string_lossy().into(),
+                        path::absolute(lib).unwrap().to_string_lossy().into(),
                         e,
                     )
                 })?
@@ -97,16 +118,26 @@ impl Classpath {
 
             if f.extension() == Some(OsStr::new("jar")) {
                 if f.is_file() {
+                    log::debug!("Found JAR file: {:?}", f);
                     java_files.push(f);
                 }
             }
         }
+        log::debug!("Found {} JAR files in library directory", java_files.len());
         return Ok(java_files);
     }
     pub fn validate(lj: &LazyJava) -> Result<bool, ClasspathError> {
+        log::debug!("Validating classpath file");
         let root = &lj.root;
 
-        let classpath = Self::parse(&root.join(".classpath"))?;
+        let classpath = match Self::parse(&root.join(".classpath")) {
+            Ok(cp) => cp,
+            Err(ClasspathError::NoClasspathFile) => {
+                log::debug!("Classpath file does not exist, needs generation");
+                return Ok(false);
+            }
+            Err(e) => return Err(e),
+        };
 
         let classpath_libs: Vec<String> = classpath
             .entries
@@ -117,27 +148,55 @@ impl Classpath {
 
         let classpath_src = classpath.entries.iter().find(|entry| entry.kind == "src");
         if let Some(classpath_src) = classpath_src {
-            if !(classpath_src.path == lj.src.to_string_lossy())
-                || (classpath_src.output == lj.build.to_str().map(|b| b.to_string()))
-            {
+            let c_src = path::absolute(Path::new(&classpath_src.path))
+                .map_err(|_| ClasspathError::PathError(classpath_src.path.to_string()))?;
+            let src = path::absolute(&lj.src)
+                .map_err(|_| ClasspathError::PathError(lj.src.to_string_lossy().to_string()))?;
+
+            let c_output =
+                path::absolute(Path::new(&classpath_src.output.clone().unwrap_or_default()))
+                    .map_err(|_| {
+                        ClasspathError::PathError(classpath_src.output.clone().unwrap_or_default())
+                    })?;
+            let build = path::absolute(Path::new(&lj.build))
+                .map_err(|_| ClasspathError::PathError(lj.build.to_string_lossy().to_string()))?;
+
+            if !(c_src == src) || !(c_output == build) {
+                log::debug!("Classpath source entry is out of date");
+                log::debug!(
+                    "Source equality: {}, Output eqaulity: {}",
+                    c_src == src,
+                    c_output == build
+                );
                 return Ok(false);
             }
         } else {
+            log::debug!("No source entry found in classpath");
             return Ok(false);
         }
 
-        let libs: Vec<String> = Self::lib_files(root)?
+        let libs: Vec<String> = Self::lib_files(&lj.lib)?
             .iter()
             .map(|path| path.to_string_lossy().to_string())
             .collect();
 
         let equal = libs == classpath_libs;
 
+        if !equal {
+            log::warn!("Classpath library entries do not match filesystem");
+        } else {
+            log::debug!("Classpath is valid");
+        }
+
         return Ok(equal);
     }
     pub fn generate_if_stale(lj: &LazyJava) -> Result<(), ClasspathError> {
+        log::debug!("Checking if classpath needs regeneration");
         if !(Self::validate(lj)?) {
+            log::info!("Classpath is stale, regenerating");
             Self::generate(lj)?
+        } else {
+            log::debug!("Classpath is up to date");
         }
         return Ok(());
     }

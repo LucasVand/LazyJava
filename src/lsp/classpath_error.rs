@@ -22,4 +22,7 @@ pub enum ClasspathError {
 
     #[error("Could not serialize classpath, Error: {0}")]
     SerializeError(#[from] SeError),
+
+    #[error("Could not resolve a given path, {0}")]
+    PathError(String),
 }
