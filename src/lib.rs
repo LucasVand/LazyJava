@@ -11,12 +11,19 @@ pub mod find;
 pub mod lazy_java;
 pub mod lazy_java_error;
 pub mod lsp;
+pub mod maven_central;
 pub mod run;
 pub mod utils;
 
 pub const BUILD_FOLDER: &'static str = "bin";
 pub const SRC_FOLDER: &'static str = "src";
 pub const LIB_FOLDER: &'static str = "lib";
+
+pub const MAVEN_URL: &'static str = "https://repo1.maven.org/maven2/";
+
+pub fn create_maven_url(group: &str, artifact: &str) -> String {
+    format!("{}{}/{}/", MAVEN_URL, group.replace(".", "/"), artifact)
+}
 
 pub static IMPORT_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     return Regex::new(r"\s*import\s*(?<import>.*);").unwrap();
