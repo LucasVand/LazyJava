@@ -4,7 +4,7 @@ use thiserror::Error;
 
 use crate::{
     create::create_project::CreateProjectError, dependancy_graph::graph_error::GraphError,
-    lsp::classpath_error::ClasspathError,
+    lsp::classpath_error::ClasspathError, maven_central::MavenError,
 };
 
 #[derive(Error, Debug)]
@@ -66,4 +66,7 @@ pub enum LazyJavaError {
 
     #[error("Classpath error occured, {0}")]
     ClasspathError(#[from] ClasspathError),
+
+    #[error("Maven error occured, {0}")]
+    MavenError(#[from] MavenError),
 }

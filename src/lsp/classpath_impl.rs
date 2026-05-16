@@ -1,9 +1,15 @@
 use std::{
     ffi::OsStr,
     fs::{self},
-    io::{self},
+    io::{self, Write},
     path::{self, Path, PathBuf},
 };
+
+use quick_xml::events::{BytesDecl, Event};
+use quick_xml::se::to_writer;
+use quick_xml::{SeError, Writer};
+use serde::Serialize;
+use std::io::Cursor;
 
 use crate::{
     lazy_java::LazyJava,
@@ -39,9 +45,7 @@ impl Classpath {
         log::info!("Generating classpath file");
         let classpath = Self::create(lj)?;
 
-        let prefix = r#"<?xml version="1.0" encoding="UTF-8"?>"#;
-        let mut serialized = quick_xml::se::to_string(&classpath)?;
-        serialized.insert_str(0, prefix);
+        let serialized = Self::to_pretty_xml(&classpath)?;
 
         let mut path = lj.root.clone();
         path.push(".classpath");
@@ -199,5 +203,24 @@ impl Classpath {
             log::debug!("Classpath is up to date");
         }
         return Ok(());
+    }
+    fn to_pretty_xml<T: Serialize>(value: &T) -> Result<String, SeError> {
+        let mut buffer = Cursor::new(Vec::new());
+
+        // 4-space indentation
+        let mut writer = Writer::new_with_indent(&mut buffer, b' ', 4);
+
+        // Optional XML declaration
+        writer
+            .write_event(Event::Decl(BytesDecl::new("1.0", Some("UTF-8"), None)))
+            .unwrap();
+
+        // newline after declaration
+        writer.get_mut().write_all(b"\n").unwrap();
+
+        // serialize the actual XML
+        writer.write_serializable("classpath", value)?;
+
+        Ok(String::from_utf8(buffer.into_inner()).unwrap())
     }
 }

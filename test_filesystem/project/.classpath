@@ -1,1 +1,157 @@
-<?xml version="1.0" encoding="UTF-8"?><classpath><classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/json-20251224.jar" including="" output=""><attributes/></classpathentry><classpathentry kind="src" path="src" including="" output="bin"><attributes/></classpathentry></classpath>
+<?xml version="1.0" encoding="UTF-8"?>
+
+<classpath>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/microsoft-kiota-http-okHttp-1.9.2.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/opentelemetry-common-1.54.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/gson-2.13.1.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/jwks-rsa-0.23.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/microsoft-kiota-authentication-azure-1.9.2.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/opentelemetry-api-1.60.1.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/microsoft-kiota-serialization-form-1.8.10.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/gson-2.13.2.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/okio-3.6.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/microsoft-kiota-http-okHttp-1.8.10.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/stax-api-1.0-2.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/microsoft-graph-core-3.6.5.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/microsoft-kiota-serialization-multipart-1.8.10.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/opentelemetry-context-1.60.1.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/okhttp-4.12.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/microsoft-kiota-serialization-json-1.8.10.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/microsoft-kiota-abstractions-1.9.2.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/microsoft-kiota-serialization-text-1.8.10.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/microsoft-graph-6.64.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/microsoft-kiota-serialization-multipart-1.9.2.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/annotations-13.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/jjwt-api-0.13.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/opentelemetry-api-1.54.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/azure-core-1.56.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/kotlin-stdlib-jdk8-1.8.21.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/guava-32.1.2-jre.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/azure-core-1.56.1.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/jackson-databind-2.15.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/microsoft-kiota-authentication-azure-1.8.10.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/kotlin-stdlib-1.8.21.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/opentelemetry-common-1.60.1.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/opentelemetry-context-1.54.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/std-uritemplate-2.0.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/azure-identity-1.19.0-beta.2.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/jjwt-jackson-0.13.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/json-20251224.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/kotlin-stdlib-jdk7-1.9.10.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/kotlin-stdlib-common-1.8.21.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/okio-jvm-3.6.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/jakarta.annotation-api-2.1.1.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/kotlin-stdlib-jdk7-1.8.21.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/kotlin-stdlib-common-1.9.10.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/azure-core-1.57.1.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/microsoft-kiota-serialization-text-1.9.2.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/kotlin-stdlib-jdk8-1.9.10.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/microsoft-kiota-serialization-json-1.9.2.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/microsoft-kiota-serialization-form-1.9.2.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/jjwt-impl-0.13.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/kotlin-stdlib-1.9.10.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/microsoft-kiota-abstractions-1.8.10.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="src" path="src" including="" output="bin">
+        <attributes/>
+    </classpathentry>
+</classpath>

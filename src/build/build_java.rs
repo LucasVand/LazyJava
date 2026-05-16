@@ -17,6 +17,7 @@ impl LazyJava {
                 BuildSubCommand::Dependancies {} => self.show_dependancy_graph(),
                 BuildSubCommand::Dependants {} => self.show_depentants_graph(),
                 BuildSubCommand::Stale {} => self.show_rebuild_files(),
+                BuildSubCommand::Classpath {} => self.rebuild_classpath(),
             }
         } else {
             return self.build_java(&args.args);
@@ -138,5 +139,8 @@ impl LazyJava {
         }
 
         return Ok(());
+    }
+    fn rebuild_classpath(&self) -> Result<(), LazyJavaError> {
+        Ok(Classpath::generate(self)?)
     }
 }

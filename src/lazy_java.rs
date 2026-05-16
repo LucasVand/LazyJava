@@ -22,7 +22,7 @@ impl LazyJava {
     pub fn new(args: LazyJavaArgs) -> Result<LazyJava, LazyJavaError> {
         let current = env::current_dir().map_err(|e| return LazyJavaError::NoCurrentDir(e))?;
         log::debug!("Current directory: {:?}", current);
-        
+
         let root = find_root(&current).map_err(|_e| {
             log::error!("Could not locate project root");
             return LazyJavaError::NoRoot;
@@ -59,6 +59,7 @@ impl LazyJava {
             LazyJavaCommand::Clean {} => self.clean()?,
             LazyJavaCommand::Find { args } => self.find(args)?,
             LazyJavaCommand::Create { args } => self.create(args)?,
+            LazyJavaCommand::Add { args } => self.add(args)?,
         };
         return Ok(());
     }

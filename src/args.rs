@@ -39,6 +39,11 @@ pub enum LazyJavaCommand {
         #[command(flatten)]
         args: CreateArgs,
     },
+    // Adds a new dependancy
+    Add {
+        #[command(flatten)]
+        args: AddArgs,
+    },
 }
 #[derive(Debug, Parser, Clone)]
 pub struct RunArgs {
@@ -86,6 +91,8 @@ pub enum BuildSubCommand {
     Dependants {},
     /// Shows all stale files will be recompiled next build
     Stale {},
+    /// Rebuilds the .classfile which is used for jdtls
+    Classpath {},
 }
 #[derive(Debug, Parser, Clone)]
 pub struct FindArgs {}
@@ -103,6 +110,16 @@ pub struct CreateArgs {
     /// Dont initalize with example files
     #[arg(long = "bare", short = 'b')]
     pub bare: bool,
+}
+
+#[derive(Debug, Parser, Clone)]
+pub struct AddArgs {
+    /// the name of the group which the artifact belongs to
+    pub group: String,
+    /// the name of the artifact
+    pub artifact: String,
+    // the specific version to add
+    pub artifact_version: Option<String>,
 }
 
 #[derive(Debug, Parser, Clone)]

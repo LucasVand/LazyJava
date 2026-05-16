@@ -2,6 +2,7 @@ use std::sync::LazyLock;
 
 use regex::{Regex, RegexBuilder};
 
+pub mod add;
 pub mod args;
 pub mod build;
 pub mod clean;

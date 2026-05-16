@@ -1,5 +1,6 @@
+use std::io;
+
 use quick_xml::DeError;
-use reqwest::StatusCode;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -10,6 +11,9 @@ pub enum MavenError {
     #[error("Unable to deserialze metadata error: {0}")]
     UnableToDeserialize(#[from] DeError),
 
-    #[error("Server responded with error code: {0}")]
-    ErrorResponse(StatusCode),
+    #[error("Server responded with error: {0}")]
+    ErrorResponse(reqwest::Error),
+
+    #[error("Unable to write .jar to lib folder, error: {0}")]
+    UnableToWrite(io::Error),
 }
