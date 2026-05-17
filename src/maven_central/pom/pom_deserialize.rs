@@ -63,10 +63,6 @@ fn default_properties_map(pom: &MavenPom) -> HashMap<String, String> {
     map.insert("pom.version".to_string(), pom.version.clone());
     map.insert("version".to_string(), pom.version.clone());
 
-    if let Some(packaging) = &pom.packaging {
-        map.insert("project.packaging".to_string(), packaging.clone());
-    }
-
     // parent properties
     if let Some(parent) = &pom.parent {
         map.insert(

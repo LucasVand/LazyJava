@@ -17,7 +17,8 @@ pub struct MavenPom {
     #[serde(rename = "version", default)]
     pub version: String,
 
-    pub packaging: Option<String>,
+    #[serde(default)]
+    pub packaging: DependancyType,
 
     pub dependencies: Option<Dependencies>,
 

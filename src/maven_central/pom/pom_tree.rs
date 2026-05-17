@@ -8,12 +8,11 @@ use log::{debug, warn};
 use regex::{Regex, RegexBuilder};
 
 use crate::maven_central::{
-    MavenError, get_pom,
-    pom::pom::{MavenPom, Scope},
+    MavenDependancy, MavenError, get_pom, pom::pom::{DependancyType, MavenPom, Scope}
 };
 
 pub struct MavenDependancyList {
-    pub poms: HashMap<u64, MavenPom>,
+    pub dependencies: Vec<MavenDependancy>
 }
 
 enum PomState {
@@ -28,20 +27,12 @@ impl MavenDependancyList {
         log::info!("Creating POM tree for {}:{}:{}", group, artifact, version);
 
         let mut cache = HashMap::new();
-        Self::resolve_related_poms(group, artifact, version, &mut cache)?;
+        let mut dep_list = Vec::new();
+        Self::resolve_related_poms(group, artifact, version, &mut cache, &mut dep_list)?;
 
         log::info!("POM list created with {} total POMs", cache.len());
         Ok(MavenDependancyList {
-            poms: cache
-                .into_iter()
-                .map(|(k, v)| match v {
-                    PomState::Resolved(pom) => (
-                        k,
-                        Arc::into_inner(pom).expect("all references should be gone"),
-                    ),
-                    PomState::Resolving => panic!("Should have resolved all"),
-                })
-                .collect(),
+            dependencies: dep_list,
         })
     }
     fn resolve_related_poms<'a>(
@@ -49,6 +40,7 @@ impl MavenDependancyList {
         artifact: &str,
         version: &str,
         cache: &'a mut Cache,
+        list: &mut Vec<MavenDependancy>
     ) -> Result<Option<Arc<MavenPom>>, MavenError> {
         log::debug!("Resolving POM for {}:{}:{}", group, artifact, version);
         let hash = Self::hash_maven_id(group, artifact, version);
@@ -92,6 +84,7 @@ impl MavenDependancyList {
                 &parent.artifact_id,
                 &parent.version,
                 cache,
+                list,
             )? {
                 let mut parent_props = parent_pom.properties.map.clone();
                 parent_props.extend(pom.properties.map);
@@ -109,7 +102,7 @@ impl MavenDependancyList {
         if let Some(dep_management) = &pom.dependency_management {
             for dep in &dep_management.dependencies.dependency {
                 let scope = &dep.scope;
-                if *scope != Scope::Import {
+                if *scope != Scope::Import || dep.optional {
                     continue;
                 }
                 let version = dep.version.as_ref().expect("Bom is missing version");
@@ -121,7 +114,7 @@ impl MavenDependancyList {
                     version
                 );
                 if let Some(bom_pom) =
-                    Self::resolve_related_poms(&dep.group_id, &dep.artifact_id, version, cache)?
+                    Self::resolve_related_poms(&dep.group_id, &dep.artifact_id, version, cache, list)?
                 {
                     // extend properties
                     let mut bom_props = bom_pom.properties.map.clone();
@@ -144,7 +137,7 @@ impl MavenDependancyList {
         if let Some(deps) = &pom.dependencies {
             for dep in &deps.dependency {
                 let scope = &dep.scope;
-                if ![Scope::Compile, Scope::Runtime].contains(&scope) {
+                if ![Scope::Compile, Scope::Runtime].contains(&scope) || dep.optional {
                     continue;
                 }
 
@@ -172,7 +165,7 @@ impl MavenDependancyList {
                     version
                 );
                 if let Some(dep_pom) =
-                    Self::resolve_related_poms(&dep.group_id, &dep.artifact_id, &version, cache)?
+                    Self::resolve_related_poms(&dep.group_id, &dep.artifact_id, &version, cache, list)?
                 {
                     let mut dep_props = dep_pom.properties.map.clone();
                     dep_props.extend(pom.properties.map);
@@ -182,9 +175,14 @@ impl MavenDependancyList {
         }
         Self::resolve_properties_final(&mut pom);
 
+        if pom.packaging != DependancyType::Pom && pom.packaging != DependancyType::Other {
+        list.push(MavenDependancy { group: group.to_string(), artifact: artifact.to_string(), version: version.to_string(),  dependancy_type: pom.packaging });
+        }
+
         let arc_pom = Arc::new(pom);
         let arc_pom_clone = arc_pom.clone();
         cache.insert(hash, PomState::Resolved(arc_pom));
+
 
         Ok(Some(arc_pom_clone))
     }
@@ -224,9 +222,7 @@ impl MavenDependancyList {
         resolver(&mut pom.version, &props.map);
         resolver(&mut pom.group_id, &props.map);
 
-        if let Some(ref mut packaging) = pom.packaging {
-            resolver(packaging, &props.map);
-        }
+
 
         // Resolve properties in dependency management
         if let Some(ref mut dep_mgmt) = pom.dependency_management {
