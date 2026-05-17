@@ -1,6 +1,6 @@
-use LazyJava::args::LazyJavaArgs;
 use anyhow::Result;
 use clap::Parser;
+use lazy_java::args::LazyJavaArgs;
 use log::LevelFilter;
 
 fn main() -> Result<()> {
@@ -18,7 +18,7 @@ fn main() -> Result<()> {
         .init()
         .unwrap_or_default();
 
-    let lazy = LazyJava::lazy_java::LazyJava::new(args)?;
+    let lazy = lazy_java::lazy_java::LazyJava::new(args)?;
     lazy.execute()?;
 
     return Ok(());

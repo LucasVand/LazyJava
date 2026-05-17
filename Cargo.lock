@@ -3,26 +3,6 @@
 version = 4
 
 [[package]]
-name = "LazyJava"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "colored 3.1.1",
- "filetime",
- "inquire",
- "log",
- "pathdiff",
- "quick-xml",
- "regex",
- "reqwest",
- "serde",
- "simple_logger",
- "thiserror",
- "tokio",
-]
-
-[[package]]
 name = "aho-corasick"
 version = "1.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -865,6 +845,26 @@ dependencies = [
  "futures-util",
  "once_cell",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "lazy-java"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "colored 3.1.1",
+ "filetime",
+ "inquire",
+ "log",
+ "pathdiff",
+ "quick-xml",
+ "regex",
+ "reqwest",
+ "serde",
+ "simple_logger",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]

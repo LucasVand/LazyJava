@@ -19,7 +19,7 @@ use crate::{
 };
 
 impl Classpath {
-    pub fn parse(path: &Path) -> Result<Self, ClasspathError> {
+    fn parse(path: &Path) -> Result<Self, ClasspathError> {
         log::debug!("Parsing classpath file: {:?}", path);
         let file = fs::read_to_string(path).map_err(|e| match e.kind() {
             io::ErrorKind::NotFound => {
@@ -62,7 +62,7 @@ impl Classpath {
         Ok(())
     }
 
-    pub fn create(lj: &LazyJava) -> Result<Classpath, ClasspathError> {
+    fn create(lj: &LazyJava) -> Result<Classpath, ClasspathError> {
         log::debug!("Creating classpath from project structure");
         let src = &lj.args.global_args.source;
         let build = &lj.args.global_args.build;
@@ -129,7 +129,7 @@ impl Classpath {
         log::debug!("Found {} JAR files in library directory", java_files.len());
         return Ok(java_files);
     }
-    pub fn validate(lj: &LazyJava) -> Result<bool, ClasspathError> {
+    fn validate(lj: &LazyJava) -> Result<bool, ClasspathError> {
         log::debug!("Validating classpath file");
         let root = &lj.root;
 
