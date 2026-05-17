@@ -6,7 +6,6 @@ use std::{
 };
 
 use quick_xml::events::{BytesDecl, Event};
-use quick_xml::se::to_writer;
 use quick_xml::{SeError, Writer};
 use serde::Serialize;
 use std::io::Cursor;

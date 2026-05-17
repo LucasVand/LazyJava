@@ -8,7 +8,7 @@ use log::{debug, warn};
 use regex::{Regex, RegexBuilder};
 
 use crate::maven_central::{
-    MavenDependancy, MavenError, get_pom, pom::pom::{DependancyType, MavenPom, Scope}
+    MavenError, get_pom, pom::pom::{DependancyType, MavenPom, Scope}
 };
 
 pub struct MavenDependancyList {
@@ -285,4 +285,12 @@ fn resolve_string_final(label: &mut String, map: &HashMap<String, String>) {
     }
 
     *label = replaced;
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub struct MavenDependancy {
+    pub group: String,
+    pub artifact: String,
+    pub version: String,
+    pub dependancy_type: DependancyType,
 }

@@ -6,8 +6,8 @@ use crate::{
     lazy_java_error::LazyJavaError,
     lsp::classpath::Classpath,
     maven_central::{
-        MavenError, get_artifact_metadata, get_jar, get_maven_dependancies,
-        pom::pom::DependancyType,
+        MavenError, get_artifact_metadata, get_jar,
+        pom::{DependancyType, MavenDependancyList},
     },
 };
 
@@ -25,10 +25,10 @@ impl LazyJava {
 
         let version = version?;
 
-        let deps = get_maven_dependancies(&add_args.group, &add_args.artifact, &version)?;
+        let deps = MavenDependancyList::new(&add_args.group, &add_args.artifact, &version)?;
 
         // writing dependancy dependancies
-        for dep in deps {
+        for dep in deps.dependencies {
             if dep.dependancy_type != DependancyType::Jar {
                 println!("Only jar dependancies are supported");
             }

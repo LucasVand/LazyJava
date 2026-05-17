@@ -1,4 +1,7 @@
-pub mod pom;
-pub mod pom_deserialize;
-pub mod pom_tree;
-pub mod properties;
+mod pom;
+mod pom_deserialize;
+mod pom_list;
+mod properties_deserializer;
+
+pub use pom::*;
+pub use pom_list::MavenDependancyList;

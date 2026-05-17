@@ -1,7 +1,7 @@
 use crate::{
     create_maven_url,
     maven_central::{
-        MavenError, get_maven::get_from_maven, metadata::MavenMetadata, pom::pom::MavenPom,
+        MavenError, get_maven::get_from_maven, metadata::MavenMetadata, pom::MavenPom,
     },
 };
 
