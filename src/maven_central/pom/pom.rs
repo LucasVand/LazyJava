@@ -8,14 +8,14 @@ pub struct MavenPom {
     #[serde(rename = "modelVersion")]
     pub model_version: Option<String>,
 
-    #[serde(rename = "groupId")]
-    pub group_id: Option<String>,
+    #[serde(rename = "groupId", default)]
+    pub group_id: String,
 
     #[serde(rename = "artifactId")]
     pub artifact_id: String,
 
-    #[serde(rename = "version")]
-    pub version: Option<String>,
+    #[serde(rename = "version", default)]
+    pub version: String,
 
     pub packaging: Option<String>,
 
@@ -57,7 +57,8 @@ pub struct Dependency {
     #[serde(default)]
     pub scope: Scope,
 
-    pub optional: Option<bool>,
+    #[serde(default)]
+    pub optional: bool,
 
     #[serde(rename = "type", default)]
     pub dependency_type: DependancyType,

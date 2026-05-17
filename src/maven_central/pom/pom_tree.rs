@@ -1,80 +1,82 @@
 use std::{
     collections::HashMap,
     hash::{DefaultHasher, Hash, Hasher},
-    sync::LazyLock,
+    sync::{Arc, LazyLock},
 };
 
 use log::{debug, warn};
-use regex::Regex;
+use regex::{Regex, RegexBuilder};
 
 use crate::maven_central::{
     MavenError, get_pom,
     pom::pom::{MavenPom, Scope},
 };
 
-pub struct MavenPomTree {
-    pub root: (String, String, String),
+pub struct MavenDependancyList {
     pub poms: HashMap<u64, MavenPom>,
 }
 
-impl MavenPomTree {
-    pub fn new(group: String, artifact: String, version: String) -> Result<Self, MavenError> {
+enum PomState {
+    Resolved(Arc<MavenPom>),
+    Resolving,
+}
+
+type Cache = HashMap<u64, PomState>;
+
+impl MavenDependancyList {
+    pub fn new(group: &str, artifact: &str, version: &str) -> Result<Self, MavenError> {
         log::info!("Creating POM tree for {}:{}:{}", group, artifact, version);
 
-        let mut hash_map = HashMap::new();
-        Self::resolve_related_poms(&group, &artifact, &version, &mut hash_map)?;
+        let mut cache = HashMap::new();
+        Self::resolve_related_poms(group, artifact, version, &mut cache)?;
 
-        log::info!("POM tree created with {} total POMs", hash_map.len());
-        Ok(MavenPomTree {
-            root: (group, artifact, version),
-            poms: hash_map,
+        log::info!("POM list created with {} total POMs", cache.len());
+        Ok(MavenDependancyList {
+            poms: cache
+                .into_iter()
+                .map(|(k, v)| match v {
+                    PomState::Resolved(pom) => (
+                        k,
+                        Arc::into_inner(pom).expect("all references should be gone"),
+                    ),
+                    PomState::Resolving => panic!("Should have resolved all"),
+                })
+                .collect(),
         })
     }
     fn resolve_related_poms<'a>(
         group: &str,
         artifact: &str,
         version: &str,
-        map: &'a mut HashMap<u64, MavenPom>,
-    ) -> Result<&'a MavenPom, MavenError> {
-        // TODO: every time i get a pom i need to use the current map to resolve the properties
-        // then i neeed to fetch the related poms and do another resolve
-        //
-        // ISSUE: sometimes the parent propeties are not being added to the childs this might be becuase
-        // it does not work for more then a single level idk??
+        cache: &'a mut Cache,
+    ) -> Result<Option<Arc<MavenPom>>, MavenError> {
+        log::debug!("Resolving POM for {}:{}:{}", group, artifact, version);
+        let hash = Self::hash_maven_id(group, artifact, version);
+
+        if let Some(pom) = cache.get(&hash) {
+            log::debug!(
+                "Cache hit POM with hash: {} -> {}:{}:{}",
+                hash,
+                group,
+                artifact,
+                version
+            );
+            return match pom {
+                PomState::Resolving => Ok(None),
+                PomState::Resolved(pom) => Ok(Some(Arc::clone(pom))),
+            };
+        }
+
+        let mut pom = get_pom(group, artifact, version)?;
+
         log::debug!(
-            "Resolving related POMs for {}:{}:{}",
+            "(Cache Miss) Fetched POM with hash: {} -> {}:{}:{}",
+            hash,
             group,
             artifact,
             version
         );
-        let hash = Self::hash_maven_id(group, artifact, version);
-
-        let pom: Result<MavenPom, MavenError> = match map.remove(&hash) {
-            Some(pom) => {
-                log::debug!(
-                    "Cache hit POM with hash: {} -> {}:{}:{}",
-                    hash,
-                    group,
-                    artifact,
-                    version
-                );
-                Ok(pom)
-            }
-            None => {
-                let pom = get_pom(group, artifact, version)?;
-                log::debug!(
-                    "Fetched POM with hash: {} -> {}:{}:{}",
-                    hash,
-                    group,
-                    artifact,
-                    version
-                );
-
-                Ok(pom)
-            }
-        };
-
-        let mut pom = pom?;
+        cache.insert(hash, PomState::Resolving);
 
         Self::resolve_properties_inital(&mut pom);
 
@@ -85,18 +87,23 @@ impl MavenPomTree {
                 parent.artifact_id,
                 parent.version
             );
-            let parent_pom = Self::resolve_related_poms(
+            if let Some(parent_pom) = Self::resolve_related_poms(
                 &parent.group_id,
                 &parent.artifact_id,
                 &parent.version,
-                map,
-            )?;
+                cache,
+            )? {
+                let mut parent_props = parent_pom.properties.map.clone();
+                parent_props.extend(pom.properties.map);
 
-            pom.properties.map.extend(parent_pom.properties.map.clone());
-            pom.dependency_management_map
-                .extend(parent_pom.dependency_management_map.clone());
+                pom.properties.map = parent_props;
 
-            Self::resolve_properties_inital(&mut pom);
+                // backwords for right now
+                pom.dependency_management_map
+                    .extend(parent_pom.dependency_management_map.clone());
+
+                Self::resolve_properties_inital(&mut pom);
+            }
         }
 
         if let Some(dep_management) = &pom.dependency_management {
@@ -113,14 +120,26 @@ impl MavenPomTree {
                     dep.artifact_id,
                     version
                 );
-                let bom_pom =
-                    Self::resolve_related_poms(&dep.group_id, &dep.artifact_id, version, map)?;
+                if let Some(bom_pom) =
+                    Self::resolve_related_poms(&dep.group_id, &dep.artifact_id, version, cache)?
+                {
+                    // extend properties
+                    let mut bom_props = bom_pom.properties.map.clone();
+                    bom_props.extend(pom.properties.map);
+                    pom.properties.map = bom_props;
+                    //
+                    // // extends boms map
+                    // let mut bom_boms = bom_pom.dependency_management_map.clone();
+                    // bom_boms.extend(pom.dependency_management_map);
+                    // pom.dependency_management_map = bom_boms;
 
-                pom.properties.map.extend(bom_pom.properties.map.clone());
-                pom.dependency_management_map
-                    .extend(bom_pom.dependency_management_map.clone());
+                    // backwords
+                    pom.dependency_management_map
+                        .extend(bom_pom.dependency_management_map.clone());
+                }
             }
         }
+        Self::resolve_properties_inital(&mut pom);
 
         if let Some(deps) = &pom.dependencies {
             for dep in &deps.dependency {
@@ -131,17 +150,18 @@ impl MavenPomTree {
 
                 let version = dep.version.as_ref().unwrap_or_else(|| {
                     let dep_bom_hash = Self::hash_maven_bom_id(&dep.group_id, &dep.artifact_id);
-                    let version = pom.dependency_management_map.get(&dep_bom_hash);
+                    let found_version = pom.dependency_management_map.get(&dep_bom_hash);
 
                     debug!(
                         "Found versioning in Bom for {}:{}, version: {}",
                         &dep.group_id,
                         &dep.artifact_id,
-                        version.unwrap_or(&"(Blank)".to_string())
+                        found_version.unwrap_or(&"(Blank)".to_string())
                     );
-                    version.expect(&format!(
-                        "Expected to find version in bom {:#?}",
-                        pom.dependency_management_map
+                    found_version.expect(&format!(
+                        "Expected to find version in bom list, pom: {}:{}:{}, hash: {}. bom list: {:#?}",
+                        group, artifact,version, 
+                        hash, pom.dependency_management_map
                     ))
                 });
 
@@ -151,17 +171,22 @@ impl MavenPomTree {
                     dep.artifact_id,
                     version
                 );
-                let dep_pom =
-                    Self::resolve_related_poms(&dep.group_id, &dep.artifact_id, &version, map)?;
-
-                pom.properties.map.extend(dep_pom.properties.map.clone());
+                if let Some(dep_pom) =
+                    Self::resolve_related_poms(&dep.group_id, &dep.artifact_id, &version, cache)?
+                {
+                    let mut dep_props = dep_pom.properties.map.clone();
+                    dep_props.extend(pom.properties.map);
+                    pom.properties.map = dep_props;
+                }
             }
         }
         Self::resolve_properties_final(&mut pom);
 
-        map.insert(hash, pom);
+        let arc_pom = Arc::new(pom);
+        let arc_pom_clone = arc_pom.clone();
+        cache.insert(hash, PomState::Resolved(arc_pom));
 
-        Ok(map.get(&hash).expect("Just added should exist"))
+        Ok(Some(arc_pom_clone))
     }
     pub fn hash_maven_id(group: &str, artifact: &str, version: &str) -> u64 {
         let mut hasher = DefaultHasher::new();
@@ -187,9 +212,7 @@ impl MavenPomTree {
     ) {
         debug!(
             "Resolving properties for {}:{}:{}",
-            pom.group_id.as_ref().unwrap_or(&"(Blank)".to_string()),
-            pom.artifact_id,
-            pom.version.as_ref().unwrap_or(&"(Blank)".to_string())
+            pom.group_id, pom.artifact_id, pom.version,
         );
         let props = &mut pom.properties;
         // resolve the properties of the properties
@@ -198,12 +221,9 @@ impl MavenPomTree {
             resolver(map_prop, &c);
         }
 
-        if let Some(ref mut version) = pom.version {
-            resolver(version, &props.map);
-        }
-        if let Some(ref mut group_id) = pom.group_id {
-            resolver(group_id, &props.map);
-        }
+        resolver(&mut pom.version, &props.map);
+        resolver(&mut pom.group_id, &props.map);
+
         if let Some(ref mut packaging) = pom.packaging {
             resolver(packaging, &props.map);
         }
@@ -223,6 +243,7 @@ impl MavenPomTree {
                 if let Some(ref mut version) = dep.version {
                     resolver(version, &props.map);
                 }
+                resolver(&mut dep.group_id, &props.map);
             }
         }
 
@@ -232,11 +253,13 @@ impl MavenPomTree {
         }
     }
 }
+static PROPERTY_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    RegexBuilder::new(r"\$\{(?<properties>\S+)\}")
+        .swap_greed(true)
+        .build()
+        .expect("Property Regex is not valid")
+});
 fn resolve_string(label: &mut String, map: &HashMap<String, String>) {
-    static PROPERTY_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-        regex::Regex::new(r"\$\{(?<properties>\S+)\}").expect("Property Regex is not valid")
-    });
-
     let mut replaced = label.to_string();
     for matches in PROPERTY_REGEX.captures_iter(&label) {
         let name = matches.name("properties");
@@ -250,10 +273,6 @@ fn resolve_string(label: &mut String, map: &HashMap<String, String>) {
     *label = replaced;
 }
 fn resolve_string_final(label: &mut String, map: &HashMap<String, String>) {
-    static PROPERTY_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-        regex::Regex::new(r"\$\{(?<properties>\S+)\}").expect("Property Regex is not valid")
-    });
-
     let mut replaced = label.to_string();
     for matches in PROPERTY_REGEX.captures_iter(&label) {
         let name = matches.name("properties");

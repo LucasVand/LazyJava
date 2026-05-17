@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::maven_central::{
     MavenError,
-    pom::{pom::MavenPom, pom_tree::MavenPomTree},
+    pom::{pom::MavenPom, pom_tree::MavenDependancyList},
 };
 
 impl MavenPom {
@@ -16,8 +16,8 @@ impl MavenPom {
         log::info!("Successfully parsed POM {}:{}:{}", group, artifact, version);
         // dbg!(&pom);
 
-        pom.group_id = Some(group.to_string());
-        pom.version = Some(version.to_string());
+        pom.group_id = group.to_string();
+        pom.version = version.to_string();
 
         // creates the dependency_management_map
         pom.dependency_management_map = match &pom.dependency_management {
@@ -26,7 +26,8 @@ impl MavenPom {
                 .dependency
                 .iter()
                 .map(|bom| {
-                    let hash = MavenPomTree::hash_maven_bom_id(&bom.group_id, &bom.artifact_id);
+                    let hash =
+                        MavenDependancyList::hash_maven_bom_id(&bom.group_id, &bom.artifact_id);
 
                     (
                         hash,
@@ -50,17 +51,17 @@ fn default_properties_map(pom: &MavenPom) -> HashMap<String, String> {
     let mut map: HashMap<String, String> = HashMap::new();
 
     // common built-in project properties
-    if let Some(group_id) = &pom.group_id {
-        map.insert("project.groupId".to_string(), group_id.clone());
-        map.insert("pom.groupId".to_string(), group_id.clone());
-    }
+    map.insert("project.groupId".to_string(), pom.group_id.clone());
+    map.insert("pom.groupId".to_string(), pom.group_id.clone());
+    map.insert("groupId".to_string(), pom.group_id.clone());
 
     map.insert("project.artifactId".to_string(), pom.artifact_id.clone());
+    map.insert("pom.artifactId".to_string(), pom.artifact_id.clone());
+    map.insert("artifactId".to_string(), pom.artifact_id.clone());
 
-    if let Some(version) = &pom.version {
-        map.insert("project.version".to_string(), version.clone());
-        map.insert("pom.version".to_string(), version.clone());
-    }
+    map.insert("project.version".to_string(), pom.version.clone());
+    map.insert("pom.version".to_string(), pom.version.clone());
+    map.insert("version".to_string(), pom.version.clone());
 
     if let Some(packaging) = &pom.packaging {
         map.insert("project.packaging".to_string(), packaging.clone());
@@ -80,16 +81,6 @@ fn default_properties_map(pom: &MavenPom) -> HashMap<String, String> {
         if let Some(rel) = &parent.relative_path {
             map.insert("project.parent.relativePath".to_string(), rel.clone());
         }
-    }
-
-    // additional handy aliases
-    if let Some(group_id) = &pom.group_id {
-        map.insert("project.groupId".to_string(), group_id.clone());
-        map.insert("groupId".to_string(), group_id.clone());
-    }
-    map.insert("artifactId".to_string(), pom.artifact_id.clone());
-    if let Some(version) = &pom.version {
-        map.insert("version".to_string(), version.clone());
     }
 
     map

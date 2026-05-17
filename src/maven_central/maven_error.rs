@@ -16,4 +16,7 @@ pub enum MavenError {
 
     #[error("Unable to write .jar to lib folder, error: {0}")]
     UnableToWrite(io::Error),
+
+    #[error("Circular dependancies found")]
+    CircularDependancy,
 }
