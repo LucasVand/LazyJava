@@ -20,7 +20,13 @@ pub fn get_from_maven(
     version: &str,
     ext: &str,
 ) -> Result<Response, MavenError> {
-    log::debug!("Fetching Maven artifact: {}:{}:{} ({})", group, artifact, version, ext);
+    log::debug!(
+        "Fetching Maven artifact: {}:{}:{} ({})",
+        group,
+        artifact,
+        version,
+        ext
+    );
     let url = full_url(group, artifact, version, ext);
 
     let res = reqwest::blocking::get(url)?;
@@ -29,10 +35,7 @@ pub fn get_from_maven(
         Err(err) => {
             log::warn!("Failed to fetch Maven artifact: {}", err);
             Err(MavenError::ErrorResponse(err))
-        },
-        Ok(res) => {
-            log::debug!("Successfully fetched Maven artifact");
-            Ok(res)
         }
+        Ok(res) => Ok(res),
     }
 }

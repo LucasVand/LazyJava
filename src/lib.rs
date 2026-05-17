@@ -9,12 +9,14 @@ pub mod clean;
 pub mod create;
 pub mod dependancy_graph;
 pub mod find;
-pub mod lazy_java;
+mod lazy_java;
 pub mod lazy_java_error;
 pub mod lsp;
 pub mod maven_central;
 pub mod run;
 pub mod utils;
+
+pub use lazy_java::LazyJava;
 
 pub const BUILD_FOLDER: &'static str = "bin";
 pub const SRC_FOLDER: &'static str = "src";

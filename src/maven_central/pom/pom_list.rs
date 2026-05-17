@@ -12,7 +12,6 @@ use crate::maven_central::{
 };
 
 pub struct MavenDependancyList {
-    pub dependencies: Vec<MavenDependancy>
 }
 
 enum PomState {
@@ -23,17 +22,15 @@ enum PomState {
 type Cache = HashMap<u64, PomState>;
 
 impl MavenDependancyList {
-    pub fn new(group: &str, artifact: &str, version: &str) -> Result<Self, MavenError> {
-        log::info!("Creating POM tree for {}:{}:{}", group, artifact, version);
+    pub fn new(group: &str, artifact: &str, version: &str) -> Result<Vec<MavenDependancy>, MavenError> {
+        log::info!("Creating POM list for {}:{}:{}", group, artifact, version);
 
         let mut cache = HashMap::new();
         let mut dep_list = Vec::new();
         Self::resolve_related_poms(group, artifact, version, &mut cache, &mut dep_list)?;
 
         log::info!("POM list created with {} total POMs", cache.len());
-        Ok(MavenDependancyList {
-            dependencies: dep_list,
-        })
+        Ok(dep_list)
     }
     fn resolve_related_poms<'a>(
         group: &str,
@@ -74,10 +71,11 @@ impl MavenDependancyList {
 
         if let Some(parent) = &pom.parent {
             log::debug!(
-                "Found parent POM: {}:{}:{}",
+                "Found parent POM: {}:{}:{} for {}:{}:{}",
                 parent.group_id,
                 parent.artifact_id,
-                parent.version
+                parent.version,
+                group, artifact, version
             );
             if let Some(parent_pom) = Self::resolve_related_poms(
                 &parent.group_id,
@@ -105,16 +103,18 @@ impl MavenDependancyList {
                 if *scope != Scope::Import || dep.optional {
                     continue;
                 }
-                let version = dep.version.as_ref().expect("Bom is missing version");
+                let bom_version = dep.version.as_ref().expect("Bom is missing version");
 
                 log::debug!(
-                    "Found BOM import: {}:{}:{}",
+                    "Found BOM import: {}:{}:{} for {}:{}:{}",
                     dep.group_id,
                     dep.artifact_id,
-                    version
+                    bom_version,
+                    group, artifact, version
+
                 );
                 if let Some(bom_pom) =
-                    Self::resolve_related_poms(&dep.group_id, &dep.artifact_id, version, cache, list)?
+                    Self::resolve_related_poms(&dep.group_id, &dep.artifact_id, bom_version, cache, list)?
                 {
                     // extend properties
                     let mut bom_props = bom_pom.properties.map.clone();
@@ -141,7 +141,7 @@ impl MavenDependancyList {
                     continue;
                 }
 
-                let version = dep.version.as_ref().unwrap_or_else(|| {
+                let dep_version = dep.version.as_ref().unwrap_or_else(|| {
                     let dep_bom_hash = Self::hash_maven_bom_id(&dep.group_id, &dep.artifact_id);
                     let found_version = pom.dependency_management_map.get(&dep_bom_hash);
 
@@ -159,13 +159,16 @@ impl MavenDependancyList {
                 });
 
                 log::debug!(
-                    "Resolving transitive dependency: {}:{}:{}",
+                    "Resolving transitive dependency: {}:{}:{} for {}:{}:{}",
                     dep.group_id,
                     dep.artifact_id,
-                    version
+                    dep_version,
+                    group,
+                    artifact, 
+                    version,
                 );
                 if let Some(dep_pom) =
-                    Self::resolve_related_poms(&dep.group_id, &dep.artifact_id, &version, cache, list)?
+                    Self::resolve_related_poms(&dep.group_id, &dep.artifact_id, &dep_version, cache, list)?
                 {
                     let mut dep_props = dep_pom.properties.map.clone();
                     dep_props.extend(pom.properties.map);
@@ -287,7 +290,7 @@ fn resolve_string_final(label: &mut String, map: &HashMap<String, String>) {
     *label = replaced;
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct MavenDependancy {
     pub group: String,
     pub artifact: String,

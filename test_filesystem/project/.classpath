@@ -1,11 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <classpath>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/javafx-base-27-ea+16.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/jackson-databind-2.21.3.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/javafx-graphics-27-ea+16.jar" including="" output="">
         <attributes/>
     </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/jackson-annotations-2.21.jar" including="" output="">
         <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/javafx-controls-27-ea+16.jar" including="" output="">
+        <attributes>  
+            <attribute name="module" value="true"/>
+        </attributes>
     </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/jackson-core-2.21.3.jar" including="" output="">
         <attributes/>

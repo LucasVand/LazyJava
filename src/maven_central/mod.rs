@@ -2,6 +2,8 @@ mod get;
 mod get_maven;
 mod maven_error;
 
+mod tests;
+
 pub mod metadata;
 pub mod pom;
 

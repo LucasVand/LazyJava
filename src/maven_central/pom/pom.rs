@@ -34,14 +34,15 @@ pub struct MavenPom {
     pub dependency_management_map: HashMap<u64, String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 pub struct Dependencies {
     #[serde(rename = "dependency", default)]
     pub dependency: Vec<Dependency>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 pub struct DependencyManagement {
+    #[serde(default)]
     pub dependencies: Dependencies,
 }
 
@@ -83,7 +84,7 @@ pub enum Scope {
     System,
     Import,
 }
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Hash, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Hash, Default, PartialOrd, Ord)]
 #[serde(rename_all = "lowercase")]
 pub enum DependancyType {
     #[default]

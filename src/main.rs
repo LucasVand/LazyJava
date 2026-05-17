@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use lazy_java::args::LazyJavaArgs;
+use lazy_java::{LazyJava, args::LazyJavaArgs};
 use log::LevelFilter;
 
 fn main() -> Result<()> {
@@ -12,13 +12,12 @@ fn main() -> Result<()> {
         _ => LevelFilter::Debug,
     };
 
-    simple_logger::SimpleLogger::new()
-        .with_level(log_level)
-        .env()
-        .init()
-        .unwrap_or_default();
+    env_logger::builder()
+        .filter_level(log_level)
+        .format_timestamp_millis()
+        .init();
 
-    let lazy = lazy_java::lazy_java::LazyJava::new(args)?;
+    let lazy = LazyJava::new(args)?;
     lazy.execute()?;
 
     return Ok(());
