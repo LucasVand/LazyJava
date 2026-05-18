@@ -29,7 +29,7 @@ impl DependancyGraph {
         graph.calculate_package_dependancies();
         log::debug!("Processing dependants");
         graph.calculate_dependants();
-        
+
         log::debug!("Dependency graph created with {} nodes", graph.nodes.len());
         return Ok(graph);
     }

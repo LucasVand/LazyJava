@@ -42,13 +42,22 @@ impl MavenMetadata {
             log::debug!("Latest version: {}", self.versioning.latest);
             Some(&self.versioning.latest)
         } else {
-            log::warn!("No release or latest version found for {}:{}", self.group_id, self.artifact_id);
+            log::warn!(
+                "No release or latest version found for {}:{}",
+                self.group_id,
+                self.artifact_id
+            );
             None
         }
     }
 
     pub fn get_all_versions(&self) -> &[String] {
-        log::debug!("Available versions for {}:{}: {}", self.group_id, self.artifact_id, self.versioning.versions.version.len());
+        log::debug!(
+            "Available versions for {}:{}: {}",
+            self.group_id,
+            self.artifact_id,
+            self.versioning.versions.version.len()
+        );
         &self.versioning.versions.version
     }
 }

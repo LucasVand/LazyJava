@@ -38,7 +38,10 @@ pub fn files_to_recompile(
     graph: DependancyGraph,
     stale_files: Vec<PathBuf>,
 ) -> Result<Vec<PathBuf>, LazyJavaError> {
-    log::debug!("Calculating files to recompile from {} stale files", stale_files.len());
+    log::debug!(
+        "Calculating files to recompile from {} stale files",
+        stale_files.len()
+    );
     let mut recompile_files: Vec<PathBuf> = Vec::new();
     for file in stale_files {
         let mut deps = graph.dependancy_list_from_path(&file)?;
@@ -51,6 +54,9 @@ pub fn files_to_recompile(
     let recompile_hash: HashSet<_> = recompile_files.into_iter().collect();
     let unique_recompile: Vec<PathBuf> = recompile_hash.into_iter().collect();
 
-    log::debug!("Total unique files to recompile: {}", unique_recompile.len());
+    log::debug!(
+        "Total unique files to recompile: {}",
+        unique_recompile.len()
+    );
     return Ok(unique_recompile);
 }

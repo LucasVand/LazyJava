@@ -4,6 +4,7 @@ use crate::{
     args::AddArgs,
     lazy_java::LazyJava,
     lazy_java_error::LazyJavaError,
+    lock_file::LockFile,
     lsp::classpath::Classpath,
     maven_central::{
         MavenError, get_artifact_metadata, get_jar,
@@ -14,6 +15,8 @@ use crate::{
 impl LazyJava {
     pub fn add(&self, add_args: &AddArgs) -> Result<(), LazyJavaError> {
         self.assert_build_lib_src()?;
+
+        let mut lockfile = LockFile::fetch(&self.root)?;
 
         let version: Result<String, MavenError> = match &add_args.artifact_version {
             Some(version) => Ok(version.to_string()),
@@ -27,28 +30,11 @@ impl LazyJava {
 
         let deps = MavenDependancyList::new(&add_args.group, &add_args.artifact, &version)?;
 
-        // writing dependancy dependancies
-        for dep in deps {
-            if dep.dependancy_type != DependancyType::Jar {
-                println!("Only jar dependancies are supported");
-            }
-            let jar = get_jar(&dep.group, &dep.artifact, &dep.version)?;
+        lockfile.add_packages(deps.clone().into_iter().map(|v| v.into()).collect());
 
-            let path = self
-                .lib
-                .join(format!("{}-{}.jar", &dep.artifact, &dep.version));
+        lockfile.write(&self.root)?;
 
-            fs::write(path, jar).map_err(|e| MavenError::UnableToWrite(e))?;
-        }
-
-        // writing the original dependancy
-        let jar = get_jar(&add_args.group, &add_args.artifact, &version)?;
-
-        let path = self
-            .lib
-            .join(format!("{}-{}.jar", &add_args.artifact, &version));
-
-        fs::write(path, jar).map_err(|e| MavenError::UnableToWrite(e))?;
+        lockfile.validate_current_packages(&self.lib)?;
 
         Classpath::generate(self)?;
 

@@ -120,7 +120,7 @@ pub fn compile_java(
     log::info!("Compiling Java from {:?} to {:?}", src, dest);
     log::debug!("Using library path: {:?}", lib);
     log::debug!("Javac arguments: {:?}", javac_args);
-    
+
     let ab_src = path::absolute(src)?;
     let ab_dest = path::absolute(dest)?;
     let ab_lib = path::absolute(lib)?;
@@ -133,11 +133,14 @@ pub fn compile_java(
     );
 
     let output = command.expect("Compile Command Failed");
-    
+
     if output.status.success() {
         log::info!("Compilation completed successfully");
     } else {
-        log::warn!("Compilation failed with exit code: {:?}", output.status.code());
+        log::warn!(
+            "Compilation failed with exit code: {:?}",
+            output.status.code()
+        );
     }
 
     return Ok(output.status);
@@ -153,7 +156,7 @@ pub fn compile_java_files(
     log::debug!("Using library path: {:?}", lib);
     log::debug!("Files to compile: {:?}", files);
     log::debug!("Javac arguments: {:?}", javac_args);
-    
+
     let ab_build = path::absolute(build)?;
     let ab_lib = path::absolute(lib)?;
 
@@ -174,7 +177,10 @@ pub fn compile_java_files(
     if output.status.success() {
         log::info!("File compilation completed successfully");
     } else {
-        log::warn!("File compilation failed with exit code: {:?}", output.status.code());
+        log::warn!(
+            "File compilation failed with exit code: {:?}",
+            output.status.code()
+        );
     }
 
     return Ok(output.status);
@@ -191,7 +197,7 @@ pub fn execute_java(
     if !args.is_empty() {
         log::debug!("Program arguments: {:?}", args);
     }
-    
+
     let ab_classpath = path::absolute(classpath)?;
     let ab_lib = path::absolute(lib)?;
 
@@ -206,7 +212,10 @@ pub fn execute_java(
     if output.status.success() {
         log::info!("Java execution completed successfully");
     } else {
-        log::warn!("Java execution failed with exit code: {:?}", output.status.code());
+        log::warn!(
+            "Java execution failed with exit code: {:?}",
+            output.status.code()
+        );
     }
 
     return Ok(output.status);

@@ -18,6 +18,8 @@ use crate::{
     },
 };
 
+const JAVA_CONTAINER: &'static str = "org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-25";
+
 impl Classpath {
     fn parse(path: &Path) -> Result<Self, ClasspathError> {
         log::debug!("Parsing classpath file: {:?}", path);
@@ -86,6 +88,14 @@ impl Classpath {
             path: src.into(),
             including: None,
             output: Some(build.into()),
+            attributes: None,
+        });
+
+        entries.push(ClasspathEntry {
+            kind: "con".into(),
+            path: JAVA_CONTAINER.into(),
+            including: None,
+            output: None,
             attributes: None,
         });
 
@@ -175,6 +185,11 @@ impl Classpath {
             }
         } else {
             log::debug!("No source entry found in classpath");
+            return Ok(false);
+        }
+
+        let classpath_container = classpath.entries.iter().find(|e| e.kind == "con");
+        if classpath_container.is_none() {
             return Ok(false);
         }
 

@@ -18,3 +18,5 @@ tokio = "1.50.0"
 serde = { version = "1.0.228", features = ["derive"] }
 thiserror = "2.0.18"
 env_logger = "0.11.10"
+maven-version-rs = "0.1.0"
+toml = "1.1.2"

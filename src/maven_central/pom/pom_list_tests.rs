@@ -122,7 +122,11 @@ mod tests {
     #[test]
     fn test_maven_dependancy_list_no_duplicates() {
         // Test that the list doesn't have duplicate entries
-        let result = MavenDependancyList::new("com.google.guava", "guava", "33.6.0-jre");
+        let result = MavenDependancyList::new(
+            "org.springframework.boot",
+            "spring-boot-starter-web",
+            "4.1.0-RC1",
+        );
         assert!(result.is_ok());
 
         let dep_list = result.unwrap();
@@ -133,12 +137,9 @@ mod tests {
         let mut has_duplicates = false;
 
         for dep in &dep_list {
-            if !unique_deps.insert((dep.group.clone(), dep.artifact.clone(), dep.version.clone())) {
+            if !unique_deps.insert((dep.group.clone(), dep.artifact.clone())) {
                 has_duplicates = true;
-                println!(
-                    "Found duplicate: {}:{}:{}",
-                    dep.group, dep.artifact, dep.version
-                );
+                println!("Found duplicate: {}:{}", dep.group, dep.artifact);
             }
         }
 

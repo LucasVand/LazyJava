@@ -11,6 +11,7 @@ pub mod dependancy_graph;
 pub mod find;
 mod lazy_java;
 pub mod lazy_java_error;
+pub mod lock_file;
 pub mod lsp;
 pub mod maven_central;
 pub mod run;
@@ -23,6 +24,8 @@ pub const SRC_FOLDER: &'static str = "src";
 pub const LIB_FOLDER: &'static str = "lib";
 
 pub const MAVEN_URL: &'static str = "https://repo1.maven.org/maven2/";
+
+pub const LOCK_FILE_NAME: &'static str = "lazy-java.lock";
 
 pub fn create_maven_url(group: &str, artifact: &str) -> String {
     format!("{}{}/{}/", MAVEN_URL, group.replace(".", "/"), artifact)

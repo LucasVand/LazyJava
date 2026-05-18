@@ -2,7 +2,7 @@ use reqwest::blocking::Response;
 
 use crate::{create_maven_url, maven_central::maven_error::MavenError};
 
-fn full_url(group: &str, artifact: &str, version: &str, ext: &str) -> String {
+pub fn full_maven_url(group: &str, artifact: &str, version: &str, ext: &str) -> String {
     let url = format!(
         "{}{}/{}-{}.{}",
         create_maven_url(group, artifact),
@@ -27,7 +27,7 @@ pub fn get_from_maven(
         version,
         ext
     );
-    let url = full_url(group, artifact, version, ext);
+    let url = full_maven_url(group, artifact, version, ext);
 
     let res = reqwest::blocking::get(url)?;
 

@@ -47,8 +47,12 @@ impl DependancyGraph {
     fn dependancy_list_internal(&self, id: &str, visited: &mut Vec<String>) -> Vec<PathBuf> {
         let mut list = Vec::new();
         let node = self.nodes.get(id).unwrap();
-        log::debug!("Processing node {} with {} dependants", id, node.dependants.len());
-        
+        log::debug!(
+            "Processing node {} with {} dependants",
+            id,
+            node.dependants.len()
+        );
+
         for dependant in &node.dependants {
             let resolved_node = self.nodes.get(dependant).unwrap();
             list.push(resolved_node.path.clone());
@@ -103,7 +107,7 @@ impl DependancyNode {
             dependancies.push(import.as_str().to_string());
         }
         log::debug!("Found {} imports", dependancies.len());
-        
+
         let file_name = path.file_name().unwrap().to_string_lossy().to_string();
 
         let id = if package == "" {
