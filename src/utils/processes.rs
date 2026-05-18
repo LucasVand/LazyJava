@@ -221,6 +221,31 @@ pub fn execute_java(
     return Ok(output.status);
 }
 
+pub fn java_version() -> Result<String, io::Error> {
+    let command = "java --version";
+    let output = if cfg!(target_os = "windows") {
+        Command::new("powershell")
+            .args(["-Command", &command])
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .output()
+    } else {
+        Command::new("sh")
+            .arg("-c")
+            .arg(command)
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .output()
+    }?;
+
+    let str = String::from_utf8_lossy(&output.stdout);
+    let mut split = str.split(" ");
+
+    let version = split.next().unwrap();
+
+    Ok(version.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use std::{env, io};

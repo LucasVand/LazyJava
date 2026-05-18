@@ -7,9 +7,6 @@
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/commons-logging-1.3.5.jar" including="" output="">
         <attributes/>
     </classpathentry>
-    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/jackson-databind-2.21.3.jar" including="" output="">
-        <attributes/>
-    </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/jul-to-slf4j-2.0.17.jar" including="" output="">
         <attributes/>
     </classpathentry>
@@ -97,9 +94,6 @@
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/spring-webmvc-7.0.7.jar" including="" output="">
         <attributes/>
     </classpathentry>
-    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/jackson-core-2.21.3.jar" including="" output="">
-        <attributes/>
-    </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/LazyJava/test_filesystem/project/lib/logback-classic-1.5.32.jar" including="" output="">
         <attributes/>
     </classpathentry>
@@ -127,7 +121,7 @@
     <classpathentry kind="src" path="src" including="" output="bin">
         <attributes/>
     </classpathentry>
-    <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-25" including="" output="">
+    <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER" including="" output="">
         <attributes/>
     </classpathentry>
 </classpath>

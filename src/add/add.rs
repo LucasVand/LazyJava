@@ -1,15 +1,10 @@
-use std::fs;
-
 use crate::{
     args::AddArgs,
     lazy_java::LazyJava,
     lazy_java_error::LazyJavaError,
     lock_file::LockFile,
     lsp::classpath::Classpath,
-    maven_central::{
-        MavenError, get_artifact_metadata, get_jar,
-        pom::{DependancyType, MavenDependancyList},
-    },
+    maven_central::{MavenError, get_artifact_metadata, pom::MavenDependancyList},
 };
 
 impl LazyJava {

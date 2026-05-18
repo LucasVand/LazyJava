@@ -18,7 +18,7 @@ use crate::{
     },
 };
 
-const JAVA_CONTAINER: &'static str = "org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-25";
+const JAVA_CONTAINER: &'static str = "org.eclipse.jdt.launching.JRE_CONTAINER";
 
 impl Classpath {
     fn parse(path: &Path) -> Result<Self, ClasspathError> {
