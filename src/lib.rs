@@ -2,7 +2,6 @@ use std::sync::LazyLock;
 
 use regex::{Regex, RegexBuilder};
 
-pub mod add;
 pub mod args;
 pub mod build;
 pub mod clean;
@@ -14,6 +13,7 @@ pub mod lazy_java_error;
 pub mod lock_file;
 pub mod lsp;
 pub mod maven_central;
+pub mod packages;
 pub mod run;
 pub mod utils;
 

@@ -22,4 +22,7 @@ pub enum LockFileError {
 
     #[error("Error fetching file from maven")]
     RequestError(#[from] reqwest::Error),
+
+    #[error("Unable to remove package because it is not included in this project")]
+    PackageNotFound,
 }

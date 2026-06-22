@@ -27,6 +27,22 @@ enum PomState {
 
 type Cache = HashMap<u64, PomState>;
 
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct MavenDependancy {
+    pub group: String,
+    pub artifact: String,
+    pub version: String,
+    pub dependancy_type: DependancyType,
+
+    pub dependancies: Vec<Dependancy>,
+}
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Dependancy {
+    pub group: String,
+    pub artifact: String,
+    pub version: String,
+}
+
 impl MavenDependancyList {
     pub fn new(
         group: &str,
@@ -154,11 +170,6 @@ impl MavenDependancyList {
                     let mut bom_props = bom_pom.properties.map.clone();
                     bom_props.extend(pom.properties.map);
                     pom.properties.map = bom_props;
-                    //
-                    // // extends boms map
-                    // let mut bom_boms = bom_pom.dependency_management_map.clone();
-                    // bom_boms.extend(pom.dependency_management_map);
-                    // pom.dependency_management_map = bom_boms;
 
                     // backwords
                     pom.dependency_management_map
@@ -168,6 +179,8 @@ impl MavenDependancyList {
         }
         Self::resolve_properties_inital(&mut pom);
 
+        // tracks the dep list for the dependancy list
+        let mut dependancy_list: Vec<Dependancy> = Vec::new();
         if let Some(deps) = &pom.dependencies {
             for dep in &deps.dependency {
                 let scope = &dep.scope;
@@ -209,6 +222,12 @@ impl MavenDependancyList {
                     let mut dep_props = dep_pom.properties.map.clone();
                     dep_props.extend(pom.properties.map);
                     pom.properties.map = dep_props;
+
+                    dependancy_list.push(Dependancy {
+                        group: dep.group_id.clone(),
+                        artifact: dep.artifact_id.clone(),
+                        version: dep_version.clone(),
+                    });
                 }
             }
         }
@@ -220,6 +239,7 @@ impl MavenDependancyList {
                 artifact: artifact.to_string(),
                 version: version.to_string(),
                 dependancy_type: pom.packaging,
+                dependancies: dependancy_list,
             });
         }
 
@@ -328,16 +348,11 @@ fn resolve_string_final(label: &mut String, map: &HashMap<String, String>) {
     *label = replaced;
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct MavenDependancy {
-    pub group: String,
-    pub artifact: String,
-    pub version: String,
-    pub dependancy_type: DependancyType,
-}
-
 impl From<MavenDependancy> for LockFilePackage {
     fn from(value: MavenDependancy) -> Self {
+        if value.dependancy_type != DependancyType::Jar {
+            panic!("Only jars are supported currently");
+        }
         let url = full_maven_url(&value.group, &value.artifact, &value.version, "jar");
         let file_name = format!("{}-{}.{}", &value.artifact, &value.version, "jar");
 
@@ -347,6 +362,11 @@ impl From<MavenDependancy> for LockFilePackage {
             version: value.version,
             url: url,
             file_name: file_name,
+            dependancies: value
+                .dependancies
+                .into_iter()
+                .map(|v| (v.group, v.artifact, v.version))
+                .collect(),
         }
     }
 }

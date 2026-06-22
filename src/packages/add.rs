@@ -25,7 +25,7 @@ impl LazyJava {
 
         let deps = MavenDependancyList::new(&add_args.group, &add_args.artifact, &version)?;
 
-        lockfile.add_packages(deps.clone().into_iter().map(|v| v.into()).collect());
+        lockfile.add_packages(deps.into_iter().map(|v| v.into()).collect());
 
         lockfile.write(&self.root)?;
 

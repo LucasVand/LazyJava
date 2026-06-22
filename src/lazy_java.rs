@@ -60,6 +60,7 @@ impl LazyJava {
             LazyJavaCommand::Find { args } => self.find(args)?,
             LazyJavaCommand::Create { args } => self.create(args)?,
             LazyJavaCommand::Add { args } => self.add(args)?,
+            LazyJavaCommand::Remove { args } => self.remove(args)?,
         };
         return Ok(());
     }

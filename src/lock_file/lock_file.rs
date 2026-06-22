@@ -20,6 +20,8 @@ pub struct LockFilePackage {
     pub file_name: String,
 
     pub url: String,
+
+    pub dependancies: Vec<(String, String, String)>,
 }
 
 impl LockFile {
