@@ -17,10 +17,10 @@ impl LockFile {
         artifact: &str,
         resolve_transitive: bool,
     ) -> Result<(), LockFileError> {
-        let pos = self
-            .packages
-            .iter()
-            .position(|v| v.id.group == group && v.id.artifact == artifact);
+        let pos = self.packages.iter().position(|v| {
+            log::debug!("Checking {} against {}:{}", v.id, group, artifact);
+            v.id.group == group && v.id.artifact == artifact
+        });
 
         if let Some(pos) = pos {
             let package = self.packages.remove(pos);

@@ -61,6 +61,9 @@ pub enum LazyJavaError {
     #[error("Unable to set file modification time for build directory")]
     NoBuildModificationTime(io::Error),
 
+    #[error("IO error: {0}")]
+    IoError(#[from] io::Error),
+
     #[error("Graph error occured")]
     GraphError(#[from] GraphError),
 

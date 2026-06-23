@@ -114,17 +114,20 @@ impl LockFile {
 
         for file in dir {
             if let Ok(file) = file
-                && let Some(name) = file.path().file_stem() {
-                    let name = name.to_string_lossy().to_string();
+                && let Some(name) = file.path().file_name()
+            {
+                let name = name.to_string_lossy().to_string();
 
-                    if map.remove(name.as_str()).is_none() {
-                        fs::remove_file(file.path())?;
-                    }
+                if map.remove(name.as_str()).is_none() {
+                    log::debug!("Validation removed {}", name);
+                    fs::remove_file(file.path())?;
                 }
+            }
         }
 
         // the packages that do not exist currently
         for (key, value) in map {
+            log::debug!("Validation added {}", value.id);
             let bin = fetch_bin(&value.url)?;
 
             fs::write(lib.join(key), bin)?;

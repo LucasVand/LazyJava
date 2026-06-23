@@ -25,6 +25,7 @@ impl LazyJava {
 
         let id = MavenId::new(&add_args.group, &add_args.artifact, &version);
         let deps = MavenDependancyList::new(&id)?;
+        let dep_count = deps.len();
 
         lockfile.add_packages(deps.into_iter().map(|v| v.into()).collect());
 
@@ -33,6 +34,20 @@ impl LazyJava {
         lockfile.validate_current_packages(&self.lib)?;
 
         Classpath::generate(self)?;
+
+        let transitive = dep_count - 1;
+        if transitive > 0 {
+            println!(
+                "Added {}:{}:{} (+ {} transitive {})",
+                add_args.group,
+                add_args.artifact,
+                version,
+                transitive,
+                if transitive == 1 { "dependency" } else { "dependencies" },
+            );
+        } else {
+            println!("Added {}:{}:{}", add_args.group, add_args.artifact, version);
+        }
 
         Ok(())
     }

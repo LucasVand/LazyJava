@@ -84,6 +84,16 @@ impl MavenDependancyList {
 
         let mut pom = get_pom(id)?;
 
+        if let DependancyType::Other(other_packaging) = &pom.packaging {
+            log::error!(
+                "Found unknown packaging type \"{}\" on {}:{}:{}",
+                other_packaging,
+                pom.group_id,
+                pom.artifact_id,
+                pom.version
+            );
+        }
+
         log::debug!("(Cache Miss) Fetched POM with hash: {} -> {}", hash, id);
         cache.insert(hash, PomState::Resolving);
 
@@ -199,10 +209,12 @@ impl MavenDependancyList {
         }
         Self::resolve_properties_final(&mut pom);
 
-        if pom.packaging != DependancyType::Pom && pom.packaging != DependancyType::Other {
+        if pom.packaging != DependancyType::Pom
+            && !matches!(pom.packaging, DependancyType::Other(_))
+        {
             list.push(MavenDependancy {
                 id: MavenIdBuf::new(id.group, id.artifact, id.version),
-                dependancy_type: pom.packaging,
+                dependancy_type: pom.packaging.clone(),
                 dependancies: dependancy_list,
             });
         }
@@ -216,13 +228,13 @@ impl MavenDependancyList {
     pub fn hash_maven_id(id: &MavenId) -> u64 {
         let mut hasher = DefaultHasher::new();
         id.hash(&mut hasher);
-        
+
         hasher.finish()
     }
     pub fn hash_maven_bom_id(group: &str, artifact: &str) -> u64 {
         let mut hasher = DefaultHasher::new();
         (group, artifact).hash(&mut hasher);
-        
+
         hasher.finish()
     }
     pub fn resolve_properties_inital(pom: &mut MavenPom) {
@@ -285,9 +297,10 @@ fn resolve_string(label: &mut String, map: &HashMap<String, String>) {
     for matches in PROPERTY_REGEX.captures_iter(label) {
         let name = matches.name("properties");
         if let Some(capture) = name
-            && let Some(property) = map.get(capture.as_str()) {
-                replaced = replaced.replace(&format!("${{{}}}", capture.as_str()), property);
-            }
+            && let Some(property) = map.get(capture.as_str())
+        {
+            replaced = replaced.replace(&format!("${{{}}}", capture.as_str()), property);
+        }
     }
 
     *label = replaced;
@@ -323,11 +336,7 @@ impl From<MavenDependancy> for LockFilePackage {
             id: value.id,
             url,
             file_name,
-            dependancies: value
-                .dependancies
-                .into_iter()
-                .map(|v| v.id)
-                .collect(),
+            dependancies: value.dependancies.into_iter().map(|v| v.id).collect(),
         }
     }
 }

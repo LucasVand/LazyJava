@@ -61,6 +61,7 @@ impl LazyJava {
             LazyJavaCommand::Create { args } => self.create(args)?,
             LazyJavaCommand::Add { args } => self.add(args)?,
             LazyJavaCommand::Remove { args } => self.remove(args)?,
+            LazyJavaCommand::Sync {} => self.sync()?,
         };
         Ok(())
     }

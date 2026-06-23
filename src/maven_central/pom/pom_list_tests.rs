@@ -27,9 +27,9 @@ mod tests {
         // JUnit itself should be in the list (as a non-POM artifact)
         assert!(!dep_list.is_empty(), "Dependency list should contain junit");
 
-        let junit_dep = dep_list
-            .iter()
-            .find(|d| d.id.group == "junit" && d.id.artifact == "junit" && d.id.version == "4.13.2");
+        let junit_dep = dep_list.iter().find(|d| {
+            d.id.group == "junit" && d.id.artifact == "junit" && d.id.version == "4.13.2"
+        });
         assert!(
             junit_dep.is_some(),
             "JUnit 4.13.2 should be in dependency list"
@@ -66,8 +66,11 @@ mod tests {
     #[test]
     fn test_maven_dependancy_list_invalid_artifact() {
         // Test that invalid artifacts produce errors
-        let result =
-            MavenDependancyList::new(&MavenId::new("invalid.id.group", "invalid.id.artifact", "1.0.0"));
+        let result = MavenDependancyList::new(&MavenId::new(
+            "invalid.id.group",
+            "invalid.id.artifact",
+            "1.0.0",
+        ));
         assert!(result.is_err(), "Should fail for non-existent artifact");
     }
 
@@ -92,7 +95,11 @@ mod tests {
                 dependancies: Vec::new(),
             },
             MavenDependancy {
-                id: MavenIdBuf::new("com.google.guava", "listenablefuture", "9999.0-empty-to-avoid-conflict-with-guava"),
+                id: MavenIdBuf::new(
+                    "com.google.guava",
+                    "listenablefuture",
+                    "9999.0-empty-to-avoid-conflict-with-guava",
+                ),
                 dependancy_type: DependancyType::Jar,
                 dependancies: Vec::new(),
             },
@@ -181,9 +188,9 @@ mod tests {
 
         let dep_list = result.unwrap();
 
-        let root = dep_list
-            .iter()
-            .find(|d| d.id.group == "junit" && d.id.artifact == "junit" && d.id.version == "4.13.2");
+        let root = dep_list.iter().find(|d| {
+            d.id.group == "junit" && d.id.artifact == "junit" && d.id.version == "4.13.2"
+        });
 
         assert!(
             root.is_some(),
@@ -203,7 +210,7 @@ mod tests {
         for dep in &dep_list {
             assert!(
                 dep.dependancy_type == DependancyType::Jar
-                    || dep.dependancy_type == DependancyType::Other,
+                    || matches!(dep.dependancy_type, DependancyType::Other(_)),
                 "Dependency {}:{} has invalid type: {:?}",
                 dep.id.group,
                 dep.id.artifact,

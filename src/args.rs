@@ -39,15 +39,18 @@ pub enum LazyJavaCommand {
         #[command(flatten)]
         args: CreateArgs,
     },
-    // Adds a new dependancy
+    /// Adds a new dependancy
     Add {
         #[command(flatten)]
         args: AddArgs,
     },
+    /// Removes a dependancy
     Remove {
         #[command(flatten)]
         args: RemoveArgs,
     },
+    /// Sync the lib folder with the lock file
+    Sync {},
 }
 #[derive(Debug, Parser, Clone)]
 pub struct RunArgs {
