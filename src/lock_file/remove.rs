@@ -1,17 +1,14 @@
-use std::{collections::HashMap, mem};
+use std::{
+    collections::{HashMap, HashSet, VecDeque},
+    mem,
+};
 
 use log::debug;
 
 use crate::{
-    lock_file::{LockFile, LockFileError, LockFilePackage},
-    maven_central::{MavenIdBuf, pom::MavenDependancyList},
+    lock_file::{LockFile, LockFileError},
+    maven_central::MavenIdBuf,
 };
-
-struct Node {
-    out_edges: Vec<u64>,
-
-    package: LockFilePackage,
-}
 
 impl LockFile {
     pub fn remove_package(
@@ -29,13 +26,8 @@ impl LockFile {
             let package = self.packages.remove(pos);
             debug!("Removed package {}", package.id);
 
-            //remove from all the dependancies here too this also sucks
             self.packages.iter_mut().for_each(|p| {
-                p.dependancies.retain(|dep| {
-                    dep.group != package.id.group
-                        && dep.artifact != package.id.artifact
-                        && dep.version != package.id.version
-                });
+                p.dependancies.retain(|dep| dep != &package.id);
             });
 
             if resolve_transitive {
@@ -47,89 +39,60 @@ impl LockFile {
             Err(LockFileError::PackageNotFound)
         }
     }
-    // this function is horrible
+
     fn remove_unneed_packages(&mut self) {
-        loop {
-            let mut map: HashMap<u64, Node> = mem::take(&mut self.packages)
-                .into_iter()
-                .map(|p| {
-                    (
-                        MavenDependancyList::hash_maven_id(&p.id.as_maven_id()),
-                        Node {
-                            out_edges: p
-                                .dependancies
-                                .iter()
-                                .map(|v| MavenDependancyList::hash_maven_id(&v.as_maven_id()))
-                                .collect(),
-                            package: p,
-                        },
-                    )
-                })
-                .collect();
+        let packages = mem::take(&mut self.packages);
+        let n = packages.len();
+        if n == 0 {
+            return;
+        }
 
-            // Count incoming edges for each package
-            let mut in_degree: HashMap<u64, u64> = map.keys().map(|k| (*k, 0_u64)).collect();
+        let id_to_idx: HashMap<&MavenIdBuf, usize> = packages
+            .iter()
+            .enumerate()
+            .map(|(i, p)| (&p.id, i))
+            .collect();
 
-            for v in map.values() {
-                for edge in v.out_edges.iter() {
-                    let count = in_degree.get_mut(edge).expect("Should exist");
-                    *count += 1;
-                }
-            }
+        let mut out_edges: Vec<Vec<usize>> = Vec::with_capacity(n);
+        let mut in_degree = vec![0usize; n];
 
-            let mut removed = false;
-
-            // Find and remove packages with no incoming edges (nothing depends on them)
-            let to_remove: Vec<u64> = in_degree
+        for p in &packages {
+            let edges: Vec<usize> = p
+                .dependancies
                 .iter()
-                .filter(|(_k, count)| **count == 0)
-                .map(|(k, _)| *k)
+                .filter_map(|dep| id_to_idx.get(dep).copied())
                 .collect();
+            for &j in &edges {
+                in_degree[j] += 1;
+            }
+            out_edges.push(edges);
+        }
 
-            log::debug!("Found {} packages with no dependents", to_remove.len());
+        let mut queue: VecDeque<usize> = (0..n).filter(|&i| in_degree[i] == 0).collect();
+        let mut removed = vec![false; n];
 
-            for k in to_remove {
-                if let Some(node) = map.remove(&k) {
-                    log::info!("Removing unused package: {}", node.package.id);
-                    removed = true;
-                    // Remove edges from other packages pointing to the removed package
-                    for v in map.values_mut() {
-                        v.out_edges.retain(|dep| *dep != k);
-                    }
+        while let Some(i) = queue.pop_front() {
+            log::info!("Removing unused package: {}", packages[i].id);
+            removed[i] = true;
+            for &j in &out_edges[i] {
+                in_degree[j] -= 1;
+                if in_degree[j] == 0 {
+                    queue.push_back(j);
                 }
             }
+        }
 
-            // this part could be better by making the node out edges more representative and then
-            // just transforming them back to the string string string
-            //
-            // Convert back to packages, syncing the modified out_edges back to dependancies
-            self.packages = map.into_values().map(|mut node| {
-                    // Rebuild dependancies from the updated out_edges
-                    let remaining_deps: Vec<MavenIdBuf> = node
-                        .out_edges
-                        .iter()
-                        .filter_map(|edge_hash| {
-                            // Find the package that matches this hash
-                            node.package
-                                .dependancies
-                                .iter()
-                                .find(|dep| {
-                                    MavenDependancyList::hash_maven_id(&dep.as_maven_id())
-                                        == *edge_hash
-                                })
-                                .cloned()
-                        })
-                        .collect();
+        self.packages = packages
+            .into_iter()
+            .enumerate()
+            .filter(|(i, _)| !removed[*i])
+            .map(|(_, p)| p)
+            .collect();
 
-                    node.package.dependancies = remaining_deps;
-                    node.package
-                })
-                .collect();
-
-            if !removed {
-                log::debug!("No more unused packages to remove");
-                return;
-            }
+        let remaining_ids: HashSet<MavenIdBuf> =
+            self.packages.iter().map(|p| p.id.clone()).collect();
+        for p in &mut self.packages {
+            p.dependancies.retain(|dep| remaining_ids.contains(dep));
         }
     }
 }
