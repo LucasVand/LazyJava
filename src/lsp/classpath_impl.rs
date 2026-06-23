@@ -18,7 +18,7 @@ use crate::{
     },
 };
 
-const JAVA_CONTAINER: &'static str = "org.eclipse.jdt.launching.JRE_CONTAINER";
+const JAVA_CONTAINER: &str = "org.eclipse.jdt.launching.JRE_CONTAINER";
 
 impl Classpath {
     fn parse(path: &Path) -> Result<Self, ClasspathError> {
@@ -129,15 +129,14 @@ impl Classpath {
                 java_files.append(&mut res);
             }
 
-            if f.extension() == Some(OsStr::new("jar")) {
-                if f.is_file() {
+            if f.extension() == Some(OsStr::new("jar"))
+                && f.is_file() {
                     log::debug!("Found JAR file: {:?}", f);
                     java_files.push(f);
                 }
-            }
         }
         log::debug!("Found {} JAR files in library directory", java_files.len());
-        return Ok(java_files);
+        Ok(java_files)
     }
     fn validate(lj: &LazyJava) -> Result<bool, ClasspathError> {
         log::debug!("Validating classpath file");
@@ -174,7 +173,7 @@ impl Classpath {
             let build = path::absolute(Path::new(&lj.build))
                 .map_err(|_| ClasspathError::PathError(lj.build.to_string_lossy().to_string()))?;
 
-            if !(c_src == src) || !(c_output == build) {
+            if (c_src != src) || (c_output != build) {
                 log::debug!("Classpath source entry is out of date");
                 log::debug!(
                     "Source equality: {}, Output eqaulity: {}",
@@ -206,7 +205,7 @@ impl Classpath {
             log::debug!("Classpath is valid");
         }
 
-        return Ok(equal);
+        Ok(equal)
     }
     pub fn generate_if_stale(lj: &LazyJava) -> Result<(), ClasspathError> {
         log::debug!("Checking if classpath needs regeneration");
@@ -216,7 +215,7 @@ impl Classpath {
         } else {
             log::debug!("Classpath is up to date");
         }
-        return Ok(());
+        Ok(())
     }
     fn to_pretty_xml<T: Serialize>(value: &T) -> Result<String, SeError> {
         let mut buffer = Cursor::new(Vec::new());

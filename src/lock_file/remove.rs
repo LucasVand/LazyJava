@@ -4,7 +4,7 @@ use log::debug;
 
 use crate::{
     lock_file::{LockFile, LockFileError, LockFilePackage},
-    maven_central::{MavenId, pom::MavenDependancyList},
+    maven_central::{MavenIdBuf, pom::MavenDependancyList},
 };
 
 struct Node {
@@ -23,19 +23,18 @@ impl LockFile {
         let pos = self
             .packages
             .iter()
-            .position(|v| &v.group == group && &v.artifact == artifact);
+            .position(|v| v.id.group == group && v.id.artifact == artifact);
 
         if let Some(pos) = pos {
             let package = self.packages.remove(pos);
-            debug!(
-                "Removed package {}:{}:{}",
-                package.group, package.artifact, package.version
-            );
+            debug!("Removed package {}", package.id);
 
             //remove from all the dependancies here too this also sucks
             self.packages.iter_mut().for_each(|p| {
                 p.dependancies.retain(|dep| {
-                    &dep.0 != &p.group && &dep.1 != &p.artifact && &dep.2 != &p.version
+                    dep.group != package.id.group
+                        && dep.artifact != package.id.artifact
+                        && dep.version != package.id.version
                 });
             });
 
@@ -55,12 +54,12 @@ impl LockFile {
                 .into_iter()
                 .map(|p| {
                     (
-                        MavenDependancyList::hash_maven_id(&MavenId::new(&p.group, &p.artifact, &p.version)),
+                        MavenDependancyList::hash_maven_id(&p.id.as_maven_id()),
                         Node {
                             out_edges: p
                                 .dependancies
                                 .iter()
-                                .map(|v| MavenDependancyList::hash_maven_id(&MavenId::new(&v.0, &v.1, &v.2)))
+                                .map(|v| MavenDependancyList::hash_maven_id(&v.as_maven_id()))
                                 .collect(),
                             package: p,
                         },
@@ -69,9 +68,9 @@ impl LockFile {
                 .collect();
 
             // Count incoming edges for each package
-            let mut in_degree: HashMap<u64, u64> = map.iter().map(|(k, _v)| (*k, 0_u64)).collect();
+            let mut in_degree: HashMap<u64, u64> = map.keys().map(|k| (*k, 0_u64)).collect();
 
-            for (_k, v) in &map {
+            for v in map.values() {
                 for edge in v.out_edges.iter() {
                     let count = in_degree.get_mut(edge).expect("Should exist");
                     *count += 1;
@@ -91,15 +90,10 @@ impl LockFile {
 
             for k in to_remove {
                 if let Some(node) = map.remove(&k) {
-                    log::info!(
-                        "Removing unused package: {}:{}:{}",
-                        node.package.group,
-                        node.package.artifact,
-                        node.package.version
-                    );
+                    log::info!("Removing unused package: {}", node.package.id);
                     removed = true;
                     // Remove edges from other packages pointing to the removed package
-                    for (_key, v) in map.iter_mut() {
+                    for v in map.values_mut() {
                         v.out_edges.retain(|dep| *dep != k);
                     }
                 }
@@ -109,11 +103,9 @@ impl LockFile {
             // just transforming them back to the string string string
             //
             // Convert back to packages, syncing the modified out_edges back to dependancies
-            self.packages = map
-                .into_iter()
-                .map(|(_k, mut node)| {
+            self.packages = map.into_values().map(|mut node| {
                     // Rebuild dependancies from the updated out_edges
-                    let remaining_deps: Vec<(String, String, String)> = node
+                    let remaining_deps: Vec<MavenIdBuf> = node
                         .out_edges
                         .iter()
                         .filter_map(|edge_hash| {
@@ -122,7 +114,7 @@ impl LockFile {
                                 .dependancies
                                 .iter()
                                 .find(|dep| {
-                                    MavenDependancyList::hash_maven_id(&MavenId::new(&dep.0, &dep.1, &dep.2))
+                                    MavenDependancyList::hash_maven_id(&dep.as_maven_id())
                                         == *edge_hash
                                 })
                                 .cloned()

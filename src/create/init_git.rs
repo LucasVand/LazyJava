@@ -7,11 +7,11 @@ use std::{
 fn git_command() -> Result<ExitStatus, io::Error> {
     log::debug!("Executing git init command");
     if cfg!(target_os = "windows") {
-        return Command::new("powershell")
+        Command::new("powershell")
             .args(["-Command", "git init"])
-            .status();
+            .status()
     } else {
-        return Command::new("sh").args(["-c", "git init"]).status();
+        Command::new("sh").args(["-c", "git init"]).status()
     }
 }
 
@@ -29,5 +29,5 @@ pub fn git_init(project_path: &Path) -> Result<ExitStatus, io::Error> {
         log::warn!("Git initialization failed with status: {:?}", output.code());
     }
 
-    return Ok(output);
+    Ok(output)
 }

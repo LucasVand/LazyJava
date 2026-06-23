@@ -12,13 +12,13 @@ impl LazyJava {
         let _ = fs::remove_file(classpath);
         log::debug!("Removed .classpath file");
 
-        fs::remove_dir_all(&self.build).map_err(|e| return LazyJavaError::NoRemoveBuild(e))?;
+        fs::remove_dir_all(&self.build).map_err(LazyJavaError::NoRemoveBuild)?;
         log::debug!("Removed build directory: {:?}", self.build);
 
-        fs::create_dir(&self.build).map_err(|e| return LazyJavaError::NoCreateBuild(e))?;
+        fs::create_dir(&self.build).map_err(LazyJavaError::NoCreateBuild)?;
         log::debug!("Created new build directory: {:?}", self.build);
 
         log::info!("Clean operation completed successfully");
-        return Ok(());
+        Ok(())
     }
 }

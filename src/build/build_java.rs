@@ -20,7 +20,7 @@ impl LazyJava {
                 BuildSubCommand::Classpath {} => self.rebuild_classpath(),
             }
         } else {
-            return self.build_java(&args.args);
+            self.build_java(&args.args)
         }
     }
     pub fn build_java(&self, args: &BuildArgs) -> Result<(), LazyJavaError> {
@@ -38,7 +38,7 @@ impl LazyJava {
         log::debug!("Created dependency graph");
 
         let modified_files = find_modified_files(&self.build, &self.src)
-            .map_err(|e| return LazyJavaError::NoStaleFilesError(e))?;
+            .map_err(LazyJavaError::NoStaleFilesError)?;
 
         if modified_files.is_empty() {
             log::info!("No modified files, skipping compilation");
@@ -50,7 +50,7 @@ impl LazyJava {
         log::debug!("Need to recompile {} files", recompile.len());
 
         let status = compile_java_files(&self.build, &self.lib, &args.javac_args, recompile)
-            .map_err(|e| return LazyJavaError::UnableToCompile(e))?;
+            .map_err(LazyJavaError::UnableToCompile)?;
 
         log::debug!("Java compilation completed");
         if status.success() {
@@ -58,12 +58,12 @@ impl LazyJava {
 
             let file_time = filetime::FileTime::now();
             filetime::set_file_mtime(&self.build, file_time)
-                .map_err(|e| return LazyJavaError::NoBuildModificationTime(e))?;
+                .map_err(LazyJavaError::NoBuildModificationTime)?;
 
-            return Ok(());
+            Ok(())
         } else {
             log::error!("Compilation failed with non-zero exit code");
-            return Err(LazyJavaError::CompilationErrors);
+            Err(LazyJavaError::CompilationErrors)
         }
     }
 
@@ -72,7 +72,7 @@ impl LazyJava {
         Classpath::generate(self)?;
 
         let status = compile_java(&self.src, &self.build, &self.lib, &args.javac_args)
-            .map_err(|e| return LazyJavaError::UnableToCompile(e))?;
+            .map_err(LazyJavaError::UnableToCompile)?;
         log::debug!("Java compilation completed");
 
         if status.success() {
@@ -80,12 +80,12 @@ impl LazyJava {
 
             let file_time = filetime::FileTime::now();
             filetime::set_file_mtime(&self.build, file_time)
-                .map_err(|e| return LazyJavaError::NoBuildModificationTime(e))?;
+                .map_err(LazyJavaError::NoBuildModificationTime)?;
 
-            return Ok(());
+            Ok(())
         } else {
             log::error!("Build failed with non-zero exit code");
-            return Err(LazyJavaError::CompilationErrors);
+            Err(LazyJavaError::CompilationErrors)
         }
     }
     fn show_dependancy_graph(&self) -> Result<(), LazyJavaError> {
@@ -97,27 +97,27 @@ impl LazyJava {
             for dep in &entry.dependancies {
                 println!("  - {}", dep);
             }
-            println!("");
+            println!();
         }
-        return Ok(());
+        Ok(())
     }
     fn show_modified_files(&self) -> Result<(), LazyJavaError> {
         log::info!("Displaying modified files");
         let stale_files = find_modified_files(&self.build, &self.src)
-            .map_err(|e| return LazyJavaError::NoStaleFilesError(e))?;
+            .map_err(LazyJavaError::NoStaleFilesError)?;
 
         for file in stale_files {
             println!("{}", file.to_string_lossy());
         }
 
-        return Ok(());
+        Ok(())
     }
     fn show_rebuild_files(&self) -> Result<(), LazyJavaError> {
         log::info!("Displaying files to rebuild");
         let graph = DependancyGraph::create(&self.src)?;
 
         let stale_files = find_modified_files(&self.build, &self.src)
-            .map_err(|e| return LazyJavaError::NoStaleFilesError(e))?;
+            .map_err(LazyJavaError::NoStaleFilesError)?;
 
         let recompile = files_to_recompile(graph, stale_files)?;
 
@@ -125,7 +125,7 @@ impl LazyJava {
             println!("{}", file.to_string_lossy());
         }
 
-        return Ok(());
+        Ok(())
     }
     fn show_depentants_graph(&self) -> Result<(), LazyJavaError> {
         log::info!("Displaying dependants graph");
@@ -135,10 +135,10 @@ impl LazyJava {
             for dep in &entry.dependants {
                 println!("  - {}", dep);
             }
-            println!("");
+            println!();
         }
 
-        return Ok(());
+        Ok(())
     }
     fn rebuild_classpath(&self) -> Result<(), LazyJavaError> {
         Ok(Classpath::generate(self)?)

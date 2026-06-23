@@ -20,14 +20,14 @@ pub struct LazyJava {
 
 impl LazyJava {
     pub fn new(args: LazyJavaArgs) -> Result<LazyJava, LazyJavaError> {
-        let current = env::current_dir().map_err(|e| return LazyJavaError::NoCurrentDir(e))?;
+        let current = env::current_dir().map_err(LazyJavaError::NoCurrentDir)?;
         log::debug!("Current directory: {:?}", current);
 
         let root = find_root(&current).map_err(|_e| {
             log::error!("Could not locate project root");
-            return LazyJavaError::NoRoot;
+            LazyJavaError::NoRoot
         })?;
-        let root = root.unwrap_or(env::current_dir().map_err(|_e| return LazyJavaError::NoRoot)?);
+        let root = root.unwrap_or(env::current_dir().map_err(|_e| LazyJavaError::NoRoot)?);
         log::info!("Project root: {:?}", root);
 
         let mut lib = root.clone();
@@ -42,14 +42,14 @@ impl LazyJava {
         log::debug!("Library directory: {:?}", lib);
 
         let lazy_java = LazyJava {
-            src: src,
-            build: build,
-            lib: lib,
-            root: root,
-            args: args,
+            src,
+            build,
+            lib,
+            root,
+            args,
         };
 
-        return Ok(lazy_java);
+        Ok(lazy_java)
     }
 
     pub fn execute(&self) -> Result<(), LazyJavaError> {
@@ -62,7 +62,7 @@ impl LazyJava {
             LazyJavaCommand::Add { args } => self.add(args)?,
             LazyJavaCommand::Remove { args } => self.remove(args)?,
         };
-        return Ok(());
+        Ok(())
     }
 
     pub fn assert_build_lib_src(&self) -> Result<(), LazyJavaError> {
@@ -79,6 +79,6 @@ impl LazyJava {
             let path = path::absolute(self.lib.clone()).unwrap();
             return Err(LazyJavaError::NoLib(path.to_string_lossy().into()));
         }
-        return Ok(());
+        Ok(())
     }
 }

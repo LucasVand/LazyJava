@@ -21,6 +21,12 @@ pub struct DependancyNode {
     pub dependants: Vec<String>,
 }
 
+impl Default for DependancyGraph {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DependancyGraph {
     pub fn new() -> DependancyGraph {
         DependancyGraph {
@@ -41,7 +47,7 @@ impl DependancyGraph {
 
         let deps = self.dependancy_list_internal(&id, &mut Vec::new());
         log::debug!("Found {} dependant files", deps.len());
-        return Ok(deps);
+        Ok(deps)
     }
 
     fn dependancy_list_internal(&self, id: &str, visited: &mut Vec<String>) -> Vec<PathBuf> {
@@ -65,7 +71,7 @@ impl DependancyGraph {
             visited.push(id.to_string());
             list.append(&mut self.dependancy_list_internal(&resolved_node.id, visited));
         }
-        return list;
+        list
     }
     fn find_id(&self, path: &Path) -> Result<String, GraphError> {
         log::debug!("Looking up node ID for path: {:?}", path);
@@ -80,7 +86,7 @@ impl DependancyGraph {
         }
 
         log::warn!("Node not found for path: {:?}", path);
-        return Err(GraphError::NotFound(path.to_path_buf()));
+        Err(GraphError::NotFound(path.to_path_buf()))
     }
 }
 
@@ -110,7 +116,7 @@ impl DependancyNode {
 
         let file_name = path.file_name().unwrap().to_string_lossy().to_string();
 
-        let id = if package == "" {
+        let id = if package.is_empty() {
             file_name.strip_suffix(".java").unwrap().to_string()
         } else {
             format!("{}.{}", package, file_name.strip_suffix(".java").unwrap())
@@ -120,13 +126,13 @@ impl DependancyNode {
 
         let node = DependancyNode {
             path: path.to_path_buf(),
-            file_name: file_name,
+            file_name,
             package_name: package,
-            dependancies: dependancies,
-            id: id,
+            dependancies,
+            id,
             dependants: Vec::new(),
         };
 
-        return Ok(node);
+        Ok(node)
     }
 }

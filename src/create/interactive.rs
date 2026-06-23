@@ -10,7 +10,7 @@ pub fn interactive_project_name() -> Result<String, LazyJavaError> {
     })?;
 
     log::debug!("User entered project name: {}", name);
-    return Ok(name);
+    Ok(name)
 }
 
 pub fn interactive_git_init_name() -> Result<bool, LazyJavaError> {
@@ -26,5 +26,5 @@ pub fn interactive_git_init_name() -> Result<bool, LazyJavaError> {
         "User chose to {} initialize git",
         if init { "" } else { "not " }
     );
-    return Ok(init);
+    Ok(init)
 }

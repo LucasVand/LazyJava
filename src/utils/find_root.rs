@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-const ROOT_MARKERS: [&'static str; 5] = [
+const ROOT_MARKERS: [&str; 5] = [
     ".git",
     "pom.xml",
     ".idea",
@@ -18,14 +18,13 @@ pub fn find_root(start: &Path) -> Result<Option<PathBuf>, io::Error> {
 
     log::debug!("Found {} entries in directory", dirs.len());
     for dir in dirs {
-        if let Some(name) = dir.file_name().to_str() {
-            if ROOT_MARKERS.contains(&name) {
+        if let Some(name) = dir.file_name().to_str()
+            && ROOT_MARKERS.contains(&name) {
                 log::debug!("Found root marker: {}", name);
                 return Ok(Some(start.to_path_buf()));
             }
-        }
     }
-    return match start.parent() {
+    match start.parent() {
         Some(parent) => {
             log::debug!(
                 "No root marker found in {}, searching parent: {}",
@@ -38,30 +37,29 @@ pub fn find_root(start: &Path) -> Result<Option<PathBuf>, io::Error> {
             log::debug!("Reached filesystem root: {}", start.to_string_lossy());
             Ok(None)
         }
-    };
+    }
 }
 pub fn find_file_in_dir(dir: &Path, search_name: &str) -> Result<DirEntry, io::Error> {
     log::debug!("Searching for file '{}' in {:?}", search_name, dir);
     for file in list_dir(dir)? {
-        if let Some(name) = file.file_name().to_str() {
-            if name == search_name {
+        if let Some(name) = file.file_name().to_str()
+            && name == search_name {
                 log::debug!("Found file: {}", search_name);
                 return Ok(file);
             }
-        }
     }
 
     log::warn!("File not found: {} in {:?}", search_name, dir);
-    return Err(io::Error::new(ErrorKind::NotFound, "Couldnt find file"));
+    Err(io::Error::new(ErrorKind::NotFound, "Couldnt find file"))
 }
 
 pub fn list_dir(path: &Path) -> Result<Vec<DirEntry>, io::Error> {
     log::debug!("Opening directory: {:?}", path);
     let dir = fs::read_dir(path).map_err(|e| {
         log::error!("Error opening directory {:?}: {}", path, e);
-        return e;
+        e
     })?;
-    return dir.collect();
+    dir.collect()
 }
 
 #[cfg(test)]

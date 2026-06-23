@@ -20,5 +20,5 @@ fn main() -> Result<()> {
     let lazy = LazyJava::new(args)?;
     lazy.execute()?;
 
-    return Ok(());
+    Ok(())
 }

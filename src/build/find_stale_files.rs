@@ -32,7 +32,7 @@ pub fn find_modified_files(build: &Path, src: &Path) -> Result<Vec<PathBuf>, io:
     }
 
     log::debug!("Found {} modified files", stale_files.len());
-    return Ok(stale_files);
+    Ok(stale_files)
 }
 pub fn files_to_recompile(
     graph: DependancyGraph,
@@ -58,5 +58,5 @@ pub fn files_to_recompile(
         "Total unique files to recompile: {}",
         unique_recompile.len()
     );
-    return Ok(unique_recompile);
+    Ok(unique_recompile)
 }

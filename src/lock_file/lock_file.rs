@@ -3,7 +3,11 @@ use std::{collections::HashMap, fs, io::ErrorKind, mem, path::Path};
 use maven_version::Maven3ArtifactVersion;
 use serde::{Deserialize, Serialize};
 
-use crate::{LOCK_FILE_NAME, lock_file::LockFileError, maven_central::pom::MavenDependancyList};
+use crate::{
+    LOCK_FILE_NAME,
+    lock_file::LockFileError,
+    maven_central::{MavenIdBuf, pom::MavenDependancyList},
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct LockFile {
@@ -13,15 +17,14 @@ pub struct LockFile {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LockFilePackage {
-    pub group: String,
-    pub artifact: String,
-    pub version: String,
+    #[serde(flatten)]
+    pub id: MavenIdBuf,
 
     pub file_name: String,
 
     pub url: String,
 
-    pub dependancies: Vec<(String, String, String)>,
+    pub dependancies: Vec<MavenIdBuf>,
 }
 
 impl LockFile {
@@ -75,17 +78,18 @@ impl LockFile {
             .into_iter()
             .map(|p| {
                 (
-                    MavenDependancyList::hash_maven_bom_id(&p.group, &p.artifact),
+                    MavenDependancyList::hash_maven_bom_id(&p.id.group, &p.id.artifact),
                     p,
                 )
             })
             .collect();
 
         for package in packages {
-            let hash = MavenDependancyList::hash_maven_bom_id(&package.group, &package.artifact);
+            let hash =
+                MavenDependancyList::hash_maven_bom_id(&package.id.group, &package.id.artifact);
             if let Some(old) = map.remove(&hash) {
-                let old_version = Maven3ArtifactVersion::new(&old.version);
-                let new_version = Maven3ArtifactVersion::new(&package.version);
+                let old_version = Maven3ArtifactVersion::new(&old.id.version);
+                let new_version = Maven3ArtifactVersion::new(&package.id.version);
 
                 if new_version > old_version {
                     map.insert(hash, package);
@@ -97,7 +101,7 @@ impl LockFile {
             }
         }
 
-        self.packages = map.into_iter().map(|(_k, v)| v).collect();
+        self.packages = map.into_values().collect();
     }
     pub fn validate_current_packages(&self, lib: &Path) -> Result<(), LockFileError> {
         let mut map: HashMap<&str, &LockFilePackage> = self
@@ -109,15 +113,14 @@ impl LockFile {
         let dir = fs::read_dir(lib)?;
 
         for file in dir {
-            if let Ok(file) = file {
-                if let Some(name) = file.path().file_stem() {
+            if let Ok(file) = file
+                && let Some(name) = file.path().file_stem() {
                     let name = name.to_string_lossy().to_string();
 
-                    if let None = map.remove(name.as_str()) {
-                        fs::remove_file(&file.path())?;
+                    if map.remove(name.as_str()).is_none() {
+                        fs::remove_file(file.path())?;
                     }
                 }
-            }
         }
 
         // the packages that do not exist currently

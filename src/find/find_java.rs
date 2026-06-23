@@ -9,7 +9,7 @@ impl LazyJava {
         log::info!("Starting find operation");
 
         let mains =
-            find_main_classes(&self.src).map_err(|e| return LazyJavaError::CouldntFindMains(e))?;
+            find_main_classes(&self.src).map_err(LazyJavaError::CouldntFindMains)?;
         log::debug!("Found {} main classes", mains.len());
 
         for main in mains {
@@ -22,6 +22,6 @@ impl LazyJava {
         }
         log::info!("Find operation completed successfully");
 
-        return Ok(());
+        Ok(())
     }
 }

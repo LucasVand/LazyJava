@@ -10,7 +10,7 @@ impl MavenPom {
         id: &MavenId,
         content: &str,
     ) -> Result<MavenPom, MavenError> {
-        let mut pom: MavenPom = quick_xml::de::from_str(&content)?;
+        let mut pom: MavenPom = quick_xml::de::from_str(content)?;
         log::info!("Successfully parsed POM {}", id);
 
         pom.group_id = id.group.to_string();

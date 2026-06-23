@@ -20,9 +20,9 @@ impl LazyJava {
         log::debug!("Running class: {}", class);
 
         execute_java(class, &self.build, &self.lib, &args.args)
-            .map_err(|_e| return LazyJavaError::InvalidMainClass(class.to_string()))?;
+            .map_err(|_e| LazyJavaError::InvalidMainClass(class.to_string()))?;
 
         log::info!("Java execution completed successfully");
-        return Ok(());
+        Ok(())
     }
 }

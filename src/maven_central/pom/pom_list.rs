@@ -64,11 +64,11 @@ impl MavenDependancyList {
         }
 
         log::info!("POM list created with {} total POMs", cache.len());
-        Ok(map.into_iter().map(|(_k, v)| v).collect())
+        Ok(map.into_values().collect())
     }
-    fn resolve_related_poms<'a>(
+    fn resolve_related_poms(
         id: &MavenId,
-        cache: &'a mut Cache,
+        cache: &mut Cache,
         list: &mut Vec<MavenDependancy>,
     ) -> Result<Option<Arc<MavenPom>>, MavenError> {
         log::debug!("Resolving POM for {}", id);
@@ -153,7 +153,7 @@ impl MavenDependancyList {
         if let Some(deps) = &pom.dependencies {
             for dep in &deps.dependency {
                 let scope = &dep.scope;
-                if ![Scope::Compile, Scope::Runtime].contains(&scope) || dep.optional {
+                if ![Scope::Compile, Scope::Runtime].contains(scope) || dep.optional {
                     continue;
                 }
 
@@ -167,10 +167,8 @@ impl MavenDependancyList {
                         &dep.artifact_id,
                         found_version.unwrap_or(&"(Blank)".to_string())
                     );
-                    found_version.expect(&format!(
-                        "Expected to find version in bom list, pom: {}, hash: {}. bom list: {:#?}",
-                        id, hash, pom.dependency_management_map
-                    ))
+                    found_version.unwrap_or_else(|| panic!("Expected to find version in bom list, pom: {}, hash: {}. bom list: {:#?}",
+                        id, hash, pom.dependency_management_map))
                 });
 
                 log::debug!(
@@ -181,7 +179,7 @@ impl MavenDependancyList {
                     id,
                 );
                 if let Some(dep_pom) = Self::resolve_related_poms(
-                    &MavenId::new(&dep.group_id, &dep.artifact_id, &dep_version),
+                    &MavenId::new(&dep.group_id, &dep.artifact_id, dep_version),
                     cache,
                     list,
                 )? {
@@ -218,14 +216,14 @@ impl MavenDependancyList {
     pub fn hash_maven_id(id: &MavenId) -> u64 {
         let mut hasher = DefaultHasher::new();
         id.hash(&mut hasher);
-        let hash = hasher.finish();
-        hash
+        
+        hasher.finish()
     }
     pub fn hash_maven_bom_id(group: &str, artifact: &str) -> u64 {
         let mut hasher = DefaultHasher::new();
         (group, artifact).hash(&mut hasher);
-        let hash = hasher.finish();
-        hash
+        
+        hasher.finish()
     }
     pub fn resolve_properties_inital(pom: &mut MavenPom) {
         Self::resolve_properties(pom, resolve_string);
@@ -284,20 +282,19 @@ static PROPERTY_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 fn resolve_string(label: &mut String, map: &HashMap<String, String>) {
     let mut replaced = label.to_string();
-    for matches in PROPERTY_REGEX.captures_iter(&label) {
+    for matches in PROPERTY_REGEX.captures_iter(label) {
         let name = matches.name("properties");
-        if let Some(capture) = name {
-            if let Some(property) = map.get(capture.as_str()) {
+        if let Some(capture) = name
+            && let Some(property) = map.get(capture.as_str()) {
                 replaced = replaced.replace(&format!("${{{}}}", capture.as_str()), property);
             }
-        }
     }
 
     *label = replaced;
 }
 fn resolve_string_final(label: &mut String, map: &HashMap<String, String>) {
     let mut replaced = label.to_string();
-    for matches in PROPERTY_REGEX.captures_iter(&label) {
+    for matches in PROPERTY_REGEX.captures_iter(label) {
         let name = matches.name("properties");
         if let Some(capture) = name {
             if let Some(property) = map.get(capture.as_str()) {
@@ -323,15 +320,13 @@ impl From<MavenDependancy> for LockFilePackage {
         let file_name = format!("{}-{}.{}", &value.id.artifact, &value.id.version, "jar");
 
         LockFilePackage {
-            group: value.id.group,
-            artifact: value.id.artifact,
-            version: value.id.version,
+            id: value.id,
             url,
             file_name,
             dependancies: value
                 .dependancies
                 .into_iter()
-                .map(|v| (v.id.group, v.id.artifact, v.id.version))
+                .map(|v| v.id)
                 .collect(),
         }
     }

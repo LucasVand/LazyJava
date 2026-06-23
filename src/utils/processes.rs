@@ -18,11 +18,11 @@ fn compile_command(
         );
         log::debug!("Windows javac command: {}", command);
 
-        return Command::new("powershell")
+        Command::new("powershell")
             .args(["-Command", &command])
             .stdout(Stdio::inherit()) // Inherit the parent's stdout
             .stderr(Stdio::inherit()) // Inherit the parent's stderr
-            .output();
+            .output()
     } else {
         let command = format!(
             r#"find {} -name "*.java" -exec javac -classpath "{}/*" -d "{}" {} {{}} +"#,
@@ -30,12 +30,12 @@ fn compile_command(
         );
         log::debug!("Unix javac command: {}", command);
 
-        return Command::new("sh")
+        Command::new("sh")
             .arg("-c")
             .arg(command)
             .stdout(Stdio::inherit()) // Inherit the parent's stdout
             .stderr(Stdio::inherit()) // Inherit the parent's stderr
-            .output();
+            .output()
     }
 }
 fn compile_files_command(
@@ -54,13 +54,13 @@ fn compile_files_command(
 
         log::debug!("Windows javac compile files command: {}", command);
 
-        let output = Command::new("powershell")
+        
+
+        Command::new("powershell")
             .args(["-Command", &command])
             .stdout(Stdio::inherit()) // Inherit the parent's stdout
             .stderr(Stdio::inherit()) // Inherit the parent's stderr
-            .output();
-
-        return output;
+            .output()
     } else {
         let command = format!(
             r#"javac -classpath "{}:{}/*" -d "{}" {} {} "#,
@@ -69,13 +69,13 @@ fn compile_files_command(
 
         log::debug!("Unix javac compile files command: {}", command);
 
-        let output = Command::new("sh")
+        
+
+        Command::new("sh")
             .args(["-c", &command])
             .stdout(Stdio::inherit()) // Inherit the parent's stdout
             .stderr(Stdio::inherit()) // Inherit the parent's stderr
-            .output();
-
-        return output;
+            .output()
     }
 }
 fn run_command(
@@ -91,23 +91,23 @@ fn run_command(
             build, lib, class, args_str
         );
         log::debug!("Windows java run command: {}", command);
-        return Command::new("powershell")
+        Command::new("powershell")
             .args(["-Command", &command])
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
-            .output();
+            .output()
     } else {
         let command = format!(
             r#"java -classpath "{}:{}/*" {} {}"#,
             build, lib, class, args_str
         );
         log::debug!("Unix java run command: {}", command);
-        return Command::new("sh")
+        Command::new("sh")
             .arg("-c")
             .arg(command)
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
-            .output();
+            .output()
     }
 }
 
@@ -143,7 +143,7 @@ pub fn compile_java(
         );
     }
 
-    return Ok(output.status);
+    Ok(output.status)
 }
 
 pub fn compile_java_files(
@@ -163,7 +163,7 @@ pub fn compile_java_files(
     let file_str: Vec<String> = files
         .into_iter()
         .map(|f| {
-            return format!(r#"{}"#, f.to_string_lossy());
+            format!(r#"{}"#, f.to_string_lossy())
         })
         .collect();
 
@@ -183,7 +183,7 @@ pub fn compile_java_files(
         );
     }
 
-    return Ok(output.status);
+    Ok(output.status)
 }
 pub fn execute_java(
     classname: &str,
@@ -218,14 +218,14 @@ pub fn execute_java(
         );
     }
 
-    return Ok(output.status);
+    Ok(output.status)
 }
 
 pub fn java_version() -> Result<String, io::Error> {
     let command = "java --version";
     let output = if cfg!(target_os = "windows") {
         Command::new("powershell")
-            .args(["-Command", &command])
+            .args(["-Command", command])
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
             .output()
