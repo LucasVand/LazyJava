@@ -1,23 +1,20 @@
 use std::collections::HashMap;
 
 use crate::maven_central::{
-    MavenError,
+    MavenError, MavenId,
     pom::{pom::MavenPom, pom_list::MavenDependancyList},
 };
 
 impl MavenPom {
     pub fn deserialize(
-        group: &str,
-        artifact: &str,
-        version: &str,
+        id: &MavenId,
         content: &str,
     ) -> Result<MavenPom, MavenError> {
         let mut pom: MavenPom = quick_xml::de::from_str(&content)?;
-        log::info!("Successfully parsed POM {}:{}:{}", group, artifact, version);
-        // dbg!(&pom);
+        log::info!("Successfully parsed POM {}", id);
 
-        pom.group_id = group.to_string();
-        pom.version = version.to_string();
+        pom.group_id = id.group.to_string();
+        pom.version = id.version.to_string();
 
         // creates the dependency_management_map
         pom.dependency_management_map = match &pom.dependency_management {

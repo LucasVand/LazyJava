@@ -1,33 +1,25 @@
 use reqwest::blocking::Response;
 
-use crate::{create_maven_url, maven_central::maven_error::MavenError};
+use crate::{
+    create_maven_url,
+    maven_central::{MavenId, maven_error::MavenError},
+};
 
-pub fn full_maven_url(group: &str, artifact: &str, version: &str, ext: &str) -> String {
+pub fn full_maven_url(id: &MavenId, ext: &str) -> String {
     let url = format!(
         "{}{}/{}-{}.{}",
-        create_maven_url(group, artifact),
-        version,
-        artifact,
-        version,
+        create_maven_url(id.group, id.artifact),
+        id.version,
+        id.artifact,
+        id.version,
         ext
     );
     log::debug!("Full Maven URL: {}", url);
     url
 }
-pub fn get_from_maven(
-    group: &str,
-    artifact: &str,
-    version: &str,
-    ext: &str,
-) -> Result<Response, MavenError> {
-    log::debug!(
-        "Fetching Maven artifact: {}:{}:{} ({})",
-        group,
-        artifact,
-        version,
-        ext
-    );
-    let url = full_maven_url(group, artifact, version, ext);
+pub fn get_from_maven(id: &MavenId, ext: &str) -> Result<Response, MavenError> {
+    log::debug!("Fetching Maven artifact: {} ({})", id, ext);
+    let url = full_maven_url(id, ext);
 
     let res = reqwest::blocking::get(url)?;
 

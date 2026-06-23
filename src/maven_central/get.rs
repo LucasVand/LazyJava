@@ -1,19 +1,19 @@
 use crate::{
     create_maven_url,
     maven_central::{
-        MavenError, get_maven::get_from_maven, metadata::MavenMetadata, pom::MavenPom,
+        MavenError, MavenId, get_maven::get_from_maven, metadata::MavenMetadata, pom::MavenPom,
     },
 };
 
-pub fn get_pom(group: &str, artifact: &str, version: &str) -> Result<MavenPom, MavenError> {
-    log::info!("Fetching POM for {}:{}:{}", group, artifact, version);
-    let str = get_from_maven(group, artifact, version, "pom")?.text()?;
+pub fn get_pom(id: &MavenId) -> Result<MavenPom, MavenError> {
+    log::info!("Fetching POM for {}", id);
+    let str = get_from_maven(id, "pom")?.text()?;
 
-    MavenPom::deserialize(group, artifact, version, &str)
+    MavenPom::deserialize(id, &str)
 }
-pub fn get_jar(group: &str, artifact: &str, version: &str) -> Result<Vec<u8>, MavenError> {
-    log::info!("Fetching JAR for {}:{}:{}", group, artifact, version);
-    let bin = get_from_maven(group, artifact, version, "jar")?;
+pub fn get_jar(id: &MavenId) -> Result<Vec<u8>, MavenError> {
+    log::info!("Fetching JAR for {}", id);
+    let bin = get_from_maven(id, "jar")?;
 
     let bytes = bin.bytes()?.to_vec();
     log::debug!("JAR downloaded: {} bytes", bytes.len());

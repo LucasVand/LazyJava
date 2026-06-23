@@ -12,4 +12,4 @@ pub use get::get_artifact_metadata;
 pub use get::get_jar;
 pub use get::get_pom;
 pub use maven_error::MavenError;
-pub use maven_id::MavenId;
+pub use maven_id::{MavenId, MavenIdBuf};

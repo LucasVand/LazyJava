@@ -4,8 +4,7 @@ use log::debug;
 
 use crate::{
     lock_file::{LockFile, LockFileError, LockFilePackage},
-    maven_central::pom::MavenDependancyList,
-    packages,
+    maven_central::{MavenId, pom::MavenDependancyList},
 };
 
 struct Node {
@@ -56,12 +55,12 @@ impl LockFile {
                 .into_iter()
                 .map(|p| {
                     (
-                        MavenDependancyList::hash_maven_id(&p.group, &p.artifact, &p.version),
+                        MavenDependancyList::hash_maven_id(&MavenId::new(&p.group, &p.artifact, &p.version)),
                         Node {
                             out_edges: p
                                 .dependancies
                                 .iter()
-                                .map(|v| MavenDependancyList::hash_maven_id(&v.0, &v.1, &v.2))
+                                .map(|v| MavenDependancyList::hash_maven_id(&MavenId::new(&v.0, &v.1, &v.2)))
                                 .collect(),
                             package: p,
                         },
@@ -123,7 +122,7 @@ impl LockFile {
                                 .dependancies
                                 .iter()
                                 .find(|dep| {
-                                    MavenDependancyList::hash_maven_id(&dep.0, &dep.1, &dep.2)
+                                    MavenDependancyList::hash_maven_id(&MavenId::new(&dep.0, &dep.1, &dep.2))
                                         == *edge_hash
                                 })
                                 .cloned()

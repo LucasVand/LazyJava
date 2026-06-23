@@ -11,7 +11,7 @@ use regex::{Regex, RegexBuilder};
 use crate::{
     lock_file::LockFilePackage,
     maven_central::{
-        MavenError,
+        MavenError, MavenId, MavenIdBuf,
         get_maven::full_maven_url,
         get_pom,
         pom::pom::{DependancyType, MavenPom, Scope},
@@ -29,40 +29,31 @@ type Cache = HashMap<u64, PomState>;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct MavenDependancy {
-    pub group: String,
-    pub artifact: String,
-    pub version: String,
+    pub id: MavenIdBuf,
     pub dependancy_type: DependancyType,
-
     pub dependancies: Vec<Dependancy>,
 }
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Dependancy {
-    pub group: String,
-    pub artifact: String,
-    pub version: String,
+    pub id: MavenIdBuf,
 }
 
 impl MavenDependancyList {
-    pub fn new(
-        group: &str,
-        artifact: &str,
-        version: &str,
-    ) -> Result<Vec<MavenDependancy>, MavenError> {
-        log::info!("Creating POM list for {}:{}:{}", group, artifact, version);
+    pub fn new(id: &MavenId) -> Result<Vec<MavenDependancy>, MavenError> {
+        log::info!("Creating POM list for {}", id);
 
         let mut cache = HashMap::new();
         let mut dep_list = Vec::new();
-        Self::resolve_related_poms(group, artifact, version, &mut cache, &mut dep_list)?;
+        Self::resolve_related_poms(id, &mut cache, &mut dep_list)?;
 
         let mut map: HashMap<u64, MavenDependancy> = HashMap::new();
 
         // takes the newest version
         for dep in dep_list.into_iter() {
-            let hash = Self::hash_maven_bom_id(&dep.group, &dep.artifact);
+            let hash = Self::hash_maven_bom_id(&dep.id.group, &dep.id.artifact);
             if let Some(lookup) = map.get(&hash) {
-                let lookup_version = Maven3ArtifactVersion::new(&lookup.version);
-                let new_version = Maven3ArtifactVersion::new(&dep.version);
+                let lookup_version = Maven3ArtifactVersion::new(&lookup.id.version);
+                let new_version = Maven3ArtifactVersion::new(&dep.id.version);
 
                 if new_version > lookup_version {
                     map.insert(hash, dep);
@@ -76,56 +67,38 @@ impl MavenDependancyList {
         Ok(map.into_iter().map(|(_k, v)| v).collect())
     }
     fn resolve_related_poms<'a>(
-        group: &str,
-        artifact: &str,
-        version: &str,
+        id: &MavenId,
         cache: &'a mut Cache,
         list: &mut Vec<MavenDependancy>,
     ) -> Result<Option<Arc<MavenPom>>, MavenError> {
-        log::debug!("Resolving POM for {}:{}:{}", group, artifact, version);
-        let hash = Self::hash_maven_id(group, artifact, version);
+        log::debug!("Resolving POM for {}", id);
+        let hash = Self::hash_maven_id(id);
 
         if let Some(pom) = cache.get(&hash) {
-            log::debug!(
-                "Cache hit POM with hash: {} -> {}:{}:{}",
-                hash,
-                group,
-                artifact,
-                version
-            );
+            log::debug!("Cache hit POM with hash: {} -> {}", hash, id);
             return match pom {
                 PomState::Resolving => Ok(None),
                 PomState::Resolved(pom) => Ok(Some(Arc::clone(pom))),
             };
         }
 
-        let mut pom = get_pom(group, artifact, version)?;
+        let mut pom = get_pom(id)?;
 
-        log::debug!(
-            "(Cache Miss) Fetched POM with hash: {} -> {}:{}:{}",
-            hash,
-            group,
-            artifact,
-            version
-        );
+        log::debug!("(Cache Miss) Fetched POM with hash: {} -> {}", hash, id);
         cache.insert(hash, PomState::Resolving);
 
         Self::resolve_properties_inital(&mut pom);
 
         if let Some(parent) = &pom.parent {
             log::debug!(
-                "Found parent POM: {}:{}:{} for {}:{}:{}",
+                "Found parent POM: {}:{}:{} for {}",
                 parent.group_id,
                 parent.artifact_id,
                 parent.version,
-                group,
-                artifact,
-                version
+                id
             );
             if let Some(parent_pom) = Self::resolve_related_poms(
-                &parent.group_id,
-                &parent.artifact_id,
-                &parent.version,
+                &MavenId::new(&parent.group_id, &parent.artifact_id, &parent.version),
                 cache,
                 list,
             )? {
@@ -151,18 +124,14 @@ impl MavenDependancyList {
                 let bom_version = dep.version.as_ref().expect("Bom is missing version");
 
                 log::debug!(
-                    "Found BOM import: {}:{}:{} for {}:{}:{}",
+                    "Found BOM import: {}:{}:{} for {}",
                     dep.group_id,
                     dep.artifact_id,
                     bom_version,
-                    group,
-                    artifact,
-                    version
+                    id
                 );
                 if let Some(bom_pom) = Self::resolve_related_poms(
-                    &dep.group_id,
-                    &dep.artifact_id,
-                    bom_version,
+                    &MavenId::new(&dep.group_id, &dep.artifact_id, bom_version),
                     cache,
                     list,
                 )? {
@@ -199,23 +168,20 @@ impl MavenDependancyList {
                         found_version.unwrap_or(&"(Blank)".to_string())
                     );
                     found_version.expect(&format!(
-                        "Expected to find version in bom list, pom: {}:{}:{}, hash: {}. bom list: {:#?}", group, artifact,version, hash, pom.dependency_management_map
+                        "Expected to find version in bom list, pom: {}, hash: {}. bom list: {:#?}",
+                        id, hash, pom.dependency_management_map
                     ))
                 });
 
                 log::debug!(
-                    "Resolving transitive dependency: {}:{}:{} for {}:{}:{}",
+                    "Resolving transitive dependency: {}:{}:{} for {}",
                     dep.group_id,
                     dep.artifact_id,
                     dep_version,
-                    group,
-                    artifact,
-                    version,
+                    id,
                 );
                 if let Some(dep_pom) = Self::resolve_related_poms(
-                    &dep.group_id,
-                    &dep.artifact_id,
-                    &dep_version,
+                    &MavenId::new(&dep.group_id, &dep.artifact_id, &dep_version),
                     cache,
                     list,
                 )? {
@@ -224,9 +190,11 @@ impl MavenDependancyList {
                     pom.properties.map = dep_props;
 
                     dependancy_list.push(Dependancy {
-                        group: dep.group_id.clone(),
-                        artifact: dep.artifact_id.clone(),
-                        version: dep_version.clone(),
+                        id: MavenIdBuf::new(
+                            dep.group_id.clone(),
+                            dep.artifact_id.clone(),
+                            dep_version.clone(),
+                        ),
                     });
                 }
             }
@@ -235,9 +203,7 @@ impl MavenDependancyList {
 
         if pom.packaging != DependancyType::Pom && pom.packaging != DependancyType::Other {
             list.push(MavenDependancy {
-                group: group.to_string(),
-                artifact: artifact.to_string(),
-                version: version.to_string(),
+                id: MavenIdBuf::new(id.group, id.artifact, id.version),
                 dependancy_type: pom.packaging,
                 dependancies: dependancy_list,
             });
@@ -249,9 +215,9 @@ impl MavenDependancyList {
 
         Ok(Some(arc_pom_clone))
     }
-    pub fn hash_maven_id(group: &str, artifact: &str, version: &str) -> u64 {
+    pub fn hash_maven_id(id: &MavenId) -> u64 {
         let mut hasher = DefaultHasher::new();
-        (group, artifact, version).hash(&mut hasher);
+        id.hash(&mut hasher);
         let hash = hasher.finish();
         hash
     }
@@ -353,19 +319,19 @@ impl From<MavenDependancy> for LockFilePackage {
         if value.dependancy_type != DependancyType::Jar {
             panic!("Only jars are supported currently");
         }
-        let url = full_maven_url(&value.group, &value.artifact, &value.version, "jar");
-        let file_name = format!("{}-{}.{}", &value.artifact, &value.version, "jar");
+        let url = full_maven_url(&value.id.as_maven_id(), "jar");
+        let file_name = format!("{}-{}.{}", &value.id.artifact, &value.id.version, "jar");
 
         LockFilePackage {
-            group: value.group,
-            artifact: value.artifact,
-            version: value.version,
-            url: url,
-            file_name: file_name,
+            group: value.id.group,
+            artifact: value.id.artifact,
+            version: value.id.version,
+            url,
+            file_name,
             dependancies: value
                 .dependancies
                 .into_iter()
-                .map(|v| (v.group, v.artifact, v.version))
+                .map(|v| (v.id.group, v.id.artifact, v.id.version))
                 .collect(),
         }
     }
