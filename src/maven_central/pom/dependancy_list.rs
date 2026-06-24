@@ -12,8 +12,8 @@ use crate::{
     lock_file::LockFilePackage,
     maven_central::{
         MavenError, MavenId, MavenIdBuf,
-        get_maven::full_maven_url,
-        get_pom,
+        fetch::full_maven_url,
+        fetch_pom,
         pom::pom::{DependancyType, MavenPom, Scope},
     },
 };
@@ -82,7 +82,7 @@ impl MavenDependancyList {
             };
         }
 
-        let mut pom = get_pom(id)?;
+        let mut pom = fetch_pom(id)?;
 
         if let DependancyType::Other(other_packaging) = &pom.packaging {
             log::error!(

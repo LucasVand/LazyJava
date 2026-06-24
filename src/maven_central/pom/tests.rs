@@ -3,7 +3,7 @@ mod tests {
 
     use crate::maven_central::{
         MavenId, MavenIdBuf,
-        pom::{MavenDependancyList, pom::DependancyType, pom_list::MavenDependancy},
+        pom::{MavenDependancyList, pom::DependancyType, dependancy_list::MavenDependancy},
     };
     #[test]
     fn init_logger() {

@@ -1,12 +1,12 @@
 #[cfg(test)]
 mod tests {
-    use crate::maven_central::{MavenId, get_artifact_metadata, get_jar, get_pom};
+    use crate::maven_central::{MavenId, fetch_artifact_metadata, fetch_jar, fetch_pom};
 
     // Tests for get_pom()
     #[test]
     fn test_get_pom_valid_artifact() {
         // Test fetching a real POM from Maven Central
-        let result = get_pom(&MavenId::new("junit", "junit", "4.13.2"));
+        let result = fetch_pom(&MavenId::new("junit", "junit", "4.13.2"));
         assert!(
             result.is_ok(),
             "Failed to fetch valid POM: {:?}",
@@ -22,21 +22,21 @@ mod tests {
     #[test]
     fn test_get_pom_invalid_version() {
         // Test fetching a POM with invalid version
-        let result = get_pom(&MavenId::new("junit", "junit", "999.999.999"));
+        let result = fetch_pom(&MavenId::new("junit", "junit", "999.999.999"));
         assert!(result.is_err(), "Should fail for non-existent version");
     }
 
     #[test]
     fn test_get_pom_invalid_artifact() {
         // Test fetching a POM with invalid artifact
-        let result = get_pom(&MavenId::new("junit", "nonexistent-artifact-xyz", "1.0.0"));
+        let result = fetch_pom(&MavenId::new("junit", "nonexistent-artifact-xyz", "1.0.0"));
         assert!(result.is_err(), "Should fail for non-existent artifact");
     }
 
     #[test]
     fn test_get_pom_with_dependencies() {
         // Test fetching a POM that has dependencies
-        let result = get_pom(&MavenId::new("com.google.guava", "guava", "31.1-jre"));
+        let result = fetch_pom(&MavenId::new("com.google.guava", "guava", "31.1-jre"));
         assert!(
             result.is_ok(),
             "Failed to fetch POM with dependencies: {:?}",
@@ -54,7 +54,7 @@ mod tests {
     #[test]
     fn test_get_jar_valid_artifact() {
         // Test fetching a real JAR from Maven Central
-        let result = get_jar(&MavenId::new("junit", "junit", "4.13.2"));
+        let result = fetch_jar(&MavenId::new("junit", "junit", "4.13.2"));
         assert!(
             result.is_ok(),
             "Failed to fetch valid JAR: {:?}",
@@ -77,25 +77,25 @@ mod tests {
     #[test]
     fn test_get_jar_invalid_version() {
         // Test fetching a JAR with invalid version
-        let result = get_jar(&MavenId::new("junit", "junit", "999.999.999"));
+        let result = fetch_jar(&MavenId::new("junit", "junit", "999.999.999"));
         assert!(result.is_err(), "Should fail for non-existent JAR version");
     }
 
     #[test]
     fn test_get_jar_invalid_artifact() {
         // Test fetching a JAR with invalid artifact
-        let result = get_jar(&MavenId::new("junit", "nonexistent-artifact-xyz", "1.0.0"));
+        let result = fetch_jar(&MavenId::new("junit", "nonexistent-artifact-xyz", "1.0.0"));
         assert!(result.is_err(), "Should fail for non-existent JAR artifact");
     }
 
     #[test]
     fn test_get_jar_small_vs_large() {
         // Compare small and large JARs to verify size differences
-        let junit_result = get_jar(&MavenId::new("junit", "junit", "4.13.2"));
+        let junit_result = fetch_jar(&MavenId::new("junit", "junit", "4.13.2"));
         assert!(junit_result.is_ok());
         let junit_size = junit_result.unwrap().len();
 
-        let guava_result = get_jar(&MavenId::new("com.google.guava", "guava", "31.1-jre"));
+        let guava_result = fetch_jar(&MavenId::new("com.google.guava", "guava", "31.1-jre"));
         assert!(guava_result.is_ok());
         let guava_size = guava_result.unwrap().len();
 
@@ -112,7 +112,7 @@ mod tests {
     #[test]
     fn test_get_artifact_metadata_valid() {
         // Test fetching metadata for a real artifact
-        let result = get_artifact_metadata("junit", "junit");
+        let result = fetch_artifact_metadata("junit", "junit");
         assert!(
             result.is_ok(),
             "Failed to fetch valid metadata: {:?}",
@@ -131,7 +131,7 @@ mod tests {
     #[test]
     fn test_get_artifact_metadata_latest_version() {
         // Test that metadata contains latest version info
-        let result = get_artifact_metadata("junit", "junit");
+        let result = fetch_artifact_metadata("junit", "junit");
         assert!(result.is_ok());
 
         let metadata = result.unwrap();
@@ -148,7 +148,7 @@ mod tests {
     #[test]
     fn test_get_artifact_metadata_has_versions() {
         // Test that metadata contains specific versions
-        let result = get_artifact_metadata("junit", "junit");
+        let result = fetch_artifact_metadata("junit", "junit");
         assert!(result.is_ok());
 
         let metadata = result.unwrap();
@@ -164,7 +164,7 @@ mod tests {
     #[test]
     fn test_get_artifact_metadata_invalid_artifact() {
         // Test metadata fetch for non-existent artifact
-        let result = get_artifact_metadata("junit", "nonexistent-artifact-xyz");
+        let result = fetch_artifact_metadata("junit", "nonexistent-artifact-xyz");
         assert!(
             result.is_err(),
             "Should fail for non-existent artifact metadata"
@@ -174,7 +174,7 @@ mod tests {
     #[test]
     fn test_get_artifact_metadata_invalid_group() {
         // Test metadata fetch for non-existent group
-        let result = get_artifact_metadata("nonexistent.group.xyz", "artifact");
+        let result = fetch_artifact_metadata("nonexistent.group.xyz", "artifact");
         assert!(
             result.is_err(),
             "Should fail for non-existent group metadata"
@@ -184,7 +184,7 @@ mod tests {
     #[test]
     fn test_get_artifact_metadata_large_project() {
         // Test metadata for a project with many versions
-        let result = get_artifact_metadata("com.google.guava", "guava");
+        let result = fetch_artifact_metadata("com.google.guava", "guava");
         assert!(result.is_ok());
 
         let metadata = result.unwrap();
@@ -202,11 +202,11 @@ mod tests {
     #[test]
     fn test_get_pom_and_jar_workflow() {
         // Test the typical workflow: fetch POM, then fetch JAR
-        let pom_result = get_pom(&MavenId::new("junit", "junit", "4.13.2"));
+        let pom_result = fetch_pom(&MavenId::new("junit", "junit", "4.13.2"));
         assert!(pom_result.is_ok());
         let pom = pom_result.unwrap();
 
-        let jar_result = get_jar(&MavenId::new(&pom.group_id, &pom.artifact_id, &pom.version));
+        let jar_result = fetch_jar(&MavenId::new(&pom.group_id, &pom.artifact_id, &pom.version));
         assert!(jar_result.is_ok());
         let jar = jar_result.unwrap();
 
@@ -217,14 +217,14 @@ mod tests {
     #[test]
     fn test_get_metadata_and_pom_workflow() {
         // Test the workflow: fetch metadata to get latest version, then fetch POM
-        let metadata_result = get_artifact_metadata("junit", "junit");
+        let metadata_result = fetch_artifact_metadata("junit", "junit");
         assert!(metadata_result.is_ok());
         let metadata = metadata_result.unwrap();
 
         let latest_version = &metadata.versioning.latest;
         assert!(!latest_version.is_empty(), "Should have latest version");
 
-        let pom_result = get_pom(&MavenId::new("junit", "junit", latest_version));
+        let pom_result = fetch_pom(&MavenId::new("junit", "junit", latest_version));
         assert!(
             pom_result.is_ok(),
             "Should be able to fetch POM for latest version: {:?}",
@@ -238,7 +238,11 @@ mod tests {
     #[test]
     fn test_get_pom_with_parent() {
         // Test fetching a POM that has a parent POM reference
-        let result = get_pom(&MavenId::new("com.fasterxml.jackson.core", "jackson-databind", "2.15.0"));
+        let result = fetch_pom(&MavenId::new(
+            "com.fasterxml.jackson.core",
+            "jackson-databind",
+            "2.15.0",
+        ));
         assert!(
             result.is_ok(),
             "Failed to fetch POM with parent: {:?}",
@@ -259,7 +263,7 @@ mod tests {
     #[test]
     fn test_error_messages_are_descriptive() {
         // Verify that error messages are useful for debugging
-        let result = get_pom(&MavenId::new("invalid.group", "invalid.artifact", "1.0.0"));
+        let result = fetch_pom(&MavenId::new("invalid.group", "invalid.artifact", "1.0.0"));
         assert!(result.is_err());
 
         let error = result.unwrap_err();

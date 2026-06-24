@@ -1,10 +1,10 @@
+mod dependancy_list;
 mod pom;
 mod pom_deserialize;
-mod pom_list;
-mod properties_deserializer;
+mod pom_properties_deserializer;
 
+pub use dependancy_list::MavenDependancyList;
 pub use pom::*;
-pub use pom_list::MavenDependancyList;
 
 #[cfg(test)]
-mod pom_list_tests;
+mod tests;
