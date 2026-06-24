@@ -1,5 +1,6 @@
 use std::{collections::HashMap, fs, io::ErrorKind, mem, path::Path};
 
+use colored::Colorize;
 use maven_version::Maven3ArtifactVersion;
 use serde::{Deserialize, Serialize};
 
@@ -118,16 +119,26 @@ impl LockFile {
             {
                 let name = name.to_string_lossy().to_string();
 
-                if map.remove(name.as_str()).is_none() {
-                    log::debug!("Validation removed {}", name);
-                    fs::remove_file(file.path())?;
+                match map.remove(name.as_str()) {
+                    Some(pack) => {
+                        println!("    {} {}", "Found".green().bold(), pack.id);
+                    }
+                    None => {
+                        let path = file.path();
+                        let stem = path
+                            .file_name()
+                            .map(|s| s.to_string_lossy())
+                            .unwrap_or_default();
+                        println!("    {} {}", "Removed".green().bold(), stem);
+                        fs::remove_file(path)?;
+                    }
                 }
             }
         }
 
         // the packages that do not exist currently
         for (key, value) in map {
-            log::debug!("Validation added {}", value.id);
+            println!("    {} {}", "Downloading".green().bold(), value.id);
             let bin = fetch_bin(&value.url)?;
 
             fs::write(lib.join(key), bin)?;

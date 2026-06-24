@@ -1,3 +1,5 @@
+use colored::Colorize;
+
 use crate::{
     args::AddArgs,
     lazy_java::LazyJava,
@@ -24,6 +26,7 @@ impl LazyJava {
         let version = version?;
 
         let id = MavenId::new(&add_args.group, &add_args.artifact, &version);
+        println!("{} {}", "Adding".green().bold(), id);
         let deps = MavenDependancyList::new(&id)?;
         let dep_count = deps.len();
 
@@ -38,15 +41,26 @@ impl LazyJava {
         let transitive = dep_count - 1;
         if transitive > 0 {
             println!(
-                "Added {}:{}:{} (+ {} transitive {})",
+                "    {} {}:{}:{} (+ {} transitive {})",
+                "Added".green().bold(),
                 add_args.group,
                 add_args.artifact,
                 version,
                 transitive,
-                if transitive == 1 { "dependency" } else { "dependencies" },
+                if transitive == 1 {
+                    "dependency"
+                } else {
+                    "dependencies"
+                },
             );
         } else {
-            println!("Added {}:{}:{}", add_args.group, add_args.artifact, version);
+            println!(
+                "    {} {}:{}:{}",
+                "Added".green().bold(),
+                add_args.group,
+                add_args.artifact,
+                version
+            );
         }
 
         Ok(())

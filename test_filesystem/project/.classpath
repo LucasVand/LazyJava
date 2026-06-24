@@ -1,21 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <classpath>
-    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/jspecify-1.0.0.jar" including="" output="">
-        <attributes/>
-    </classpathentry>
-    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/failureaccess-1.0.3.jar" including="" output="">
-        <attributes/>
-    </classpathentry>
-    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar" including="" output="">
-        <attributes/>
-    </classpathentry>
-    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/j2objc-annotations-3.1.jar" including="" output="">
-        <attributes/>
-    </classpathentry>
-    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/error_prone_annotations-2.47.0.jar" including="" output="">
-        <attributes/>
-    </classpathentry>
     <classpathentry kind="src" path="src" including="" output="bin">
         <attributes/>
     </classpathentry>

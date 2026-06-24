@@ -12,14 +12,13 @@ impl LazyJava {
         let mut lockfile = LockFile::fetch(&self.root)?;
 
         let before = lockfile.packages.len();
+        println!("{} {}", "Adding".green().bold(), id);
 
-        let package = lockfile.remove_package(
+        lockfile.remove_package(
             &remove_args.group,
             &remove_args.artifact,
             remove_args.remove_transitive,
         )?;
-        println!("{} {}", "Removing".green().bold(), package.id);
-
         let removed = before - lockfile.packages.len();
 
         lockfile.write(&self.root)?;

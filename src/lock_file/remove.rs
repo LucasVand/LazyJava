@@ -6,7 +6,7 @@ use std::{
 use log::debug;
 
 use crate::{
-    lock_file::{LockFile, LockFileError},
+    lock_file::{LockFile, LockFileError, LockFilePackage},
     maven_central::MavenIdBuf,
 };
 
@@ -16,7 +16,7 @@ impl LockFile {
         group: &str,
         artifact: &str,
         resolve_transitive: bool,
-    ) -> Result<(), LockFileError> {
+    ) -> Result<LockFilePackage, LockFileError> {
         let pos = self.packages.iter().position(|v| {
             log::debug!("Checking {} against {}:{}", v.id, group, artifact);
             v.id.group == group && v.id.artifact == artifact
@@ -34,7 +34,7 @@ impl LockFile {
                 debug!("Resolving unused packages");
                 self.remove_unneed_packages();
             }
-            Ok(())
+            Ok(package)
         } else {
             Err(LockFileError::PackageNotFound)
         }
