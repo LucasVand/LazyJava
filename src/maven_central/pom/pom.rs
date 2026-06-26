@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename = "project")]
@@ -84,12 +84,13 @@ pub enum Scope {
     System,
     Import,
 }
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Default, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default, PartialOrd, Ord, Serialize)]
 pub enum DependancyType {
     #[default]
     Jar,
     War,
     Pom,
+    Bundle,
 
     Other(String),
 }
@@ -99,14 +100,13 @@ impl<'de> Deserialize<'de> for DependancyType {
     where
         D: Deserializer<'de>,
     {
-        // 1. Read the incoming JSON token strictly as a String
         let s = String::deserialize(deserializer)?;
 
-        // 2. Map exact matches to your variants, fall back to Other
         Ok(match s.as_str() {
             "jar" => DependancyType::Jar,
             "war" => DependancyType::War,
             "pom" => DependancyType::Pom,
+            "bundle" => DependancyType::Bundle,
             _ => DependancyType::Other(s), // Catches absolutely any other string safely
         })
     }

@@ -6,13 +6,18 @@ use crate::{
     lazy_java_error::LazyJavaError,
     lock_file::LockFile,
     lsp::classpath::Classpath,
-    maven_central::{
-        MavenError, MavenId, MavenIdBuf, fetch_artifact_metadata, pom::MavenDependancyList,
-    },
+    maven_central::{MavenError, MavenIdBuf, fetch_artifact_metadata, pom::MavenDependancyList},
 };
 
 impl LazyJava {
     pub fn add(&self, add_args: &AddArgs) -> Result<(), LazyJavaError> {
+        if add_args.dry_run {
+            println!(
+                "{} ({} will be made)",
+                "--dry-run".green().bold(),
+                "No persistent changes".red().bold(),
+            )
+        }
         self.assert_build_lib_src()?;
 
         let mut lockfile = LockFile::fetch(&self.root)?;
@@ -44,11 +49,15 @@ impl LazyJava {
             }
         );
 
-        lockfile.write(&self.root)?;
+        if !add_args.dry_run {
+            lockfile.write(&self.root)?;
+        }
 
-        lockfile.validate_current_packages(&self.lib)?;
+        lockfile.validate_current_packages(&self.lib, add_args.dry_run)?;
 
-        Classpath::generate(self)?;
+        if !add_args.dry_run {
+            Classpath::generate(self)?;
+        }
 
         Ok(())
     }

@@ -7,6 +7,13 @@ use crate::{
 
 impl LazyJava {
     pub fn remove(&self, remove_args: &RemoveArgs) -> Result<(), LazyJavaError> {
+        if remove_args.dry_run {
+            println!(
+                "{} ({} will be made)",
+                "--dry-run".green().bold(),
+                "No persistent changes".red().bold(),
+            )
+        }
         self.assert_build_lib_src()?;
 
         let mut lockfile = LockFile::fetch(&self.root)?;
@@ -24,11 +31,17 @@ impl LazyJava {
         )?;
         println!("    {} {} ", "Removed".green().bold(), package.id);
 
-        lockfile.write(&self.root)?;
+        if !remove_args.dry_run {
+            lockfile.write(&self.root)?;
+        }
 
-        lockfile.validate_current_packages(&self.lib)?;
+        if remove_args.remove_transitive {
+            lockfile.validate_current_packages(&self.lib, remove_args.dry_run)?;
+        }
 
-        Classpath::generate(self)?;
+        if !remove_args.dry_run {
+            Classpath::generate(self)?;
+        }
 
         Ok(())
     }

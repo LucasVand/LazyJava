@@ -50,7 +50,10 @@ pub enum LazyJavaCommand {
         args: RemoveArgs,
     },
     /// Sync the lib folder with the lock file
-    Sync {},
+    Sync {
+        #[command(flatten)]
+        args: SyncArgs,
+    },
 }
 #[derive(Debug, Parser, Clone)]
 pub struct RunArgs {
@@ -127,6 +130,10 @@ pub struct AddArgs {
     pub artifact: String,
     // the specific version to add
     pub artifact_version: Option<String>,
+
+    /// Show what would change without actually doing it
+    #[arg(long = "dry-run", short = 'd')]
+    pub dry_run: bool,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -139,6 +146,17 @@ pub struct RemoveArgs {
     /// Remove transitive dependancies as well
     #[arg(long = "remove-transitive", default_value_t = true)]
     pub remove_transitive: bool,
+
+    /// Show what would change without actually doing it
+    #[arg(long = "dry-run", short = 'd')]
+    pub dry_run: bool,
+}
+
+#[derive(Debug, Parser, Clone)]
+pub struct SyncArgs {
+    /// Show what would change without actually doing it
+    #[arg(long = "dry-run", short = 'd')]
+    pub dry_run: bool,
 }
 
 #[derive(Debug, Parser, Clone)]

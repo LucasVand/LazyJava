@@ -4,14 +4,6 @@ use crate::{
 };
 use reqwest::{Client, Response};
 
-pub async fn fetch_pom(client: Client, id: &MavenId<'_>) -> Result<MavenPom, MavenError> {
-    log::info!("Fetching POM for {}", id);
-    let res = get_from_maven(client, id, "pom").await?;
-
-    let text = res.text().await?;
-
-    MavenPom::deserialize(id, &text)
-}
 pub async fn fetch_jar(client: Client, id: &MavenId<'_>) -> Result<Vec<u8>, MavenError> {
     log::info!("Fetching JAR for {}", id);
     let res = get_from_maven(client, id, "jar").await?;
@@ -21,6 +13,14 @@ pub async fn fetch_jar(client: Client, id: &MavenId<'_>) -> Result<Vec<u8>, Mave
     Ok(bytes)
 }
 
+pub async fn fetch_pom(client: Client, id: &MavenId<'_>) -> Result<MavenPom, MavenError> {
+    log::info!("Fetching POM for {}", id);
+    let res = get_from_maven(client, id, "pom").await?;
+
+    let text = res.text().await?;
+
+    MavenPom::deserialize(id, &text)
+}
 pub fn full_maven_url(id: &MavenId, ext: &str) -> String {
     let url = format!(
         "{}{}/{}-{}.{}",

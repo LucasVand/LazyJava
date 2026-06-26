@@ -7,7 +7,10 @@ use serde::{Deserialize, Serialize};
 use crate::{
     LOCK_FILE_NAME,
     lock_file::LockFileError,
-    maven_central::{MavenIdBuf, pom::MavenDependancyList},
+    maven_central::{
+        MavenIdBuf,
+        pom::{DependancyType, MavenDependancyList},
+    },
 };
 
 #[derive(Serialize, Deserialize)]
@@ -26,6 +29,8 @@ pub struct LockFilePackage {
     pub url: String,
 
     pub dependancies: Vec<MavenIdBuf>,
+
+    pub packaging: DependancyType,
 }
 
 impl LockFile {
@@ -104,7 +109,11 @@ impl LockFile {
 
         self.packages = map.into_values().collect();
     }
-    pub fn validate_current_packages(&self, lib: &Path) -> Result<isize, LockFileError> {
+    pub fn validate_current_packages(
+        &self,
+        lib: &Path,
+        dry_run: bool,
+    ) -> Result<isize, LockFileError> {
         println!(
             "{} dependancies with /{}",
             "Syncing".green().bold(),
@@ -137,7 +146,9 @@ impl LockFile {
                             .map(|s| s.to_string_lossy())
                             .unwrap_or_default();
                         println!("    {} {}", "Removed".green().bold(), stem);
-                        fs::remove_file(path)?;
+                        if !dry_run {
+                            fs::remove_file(path)?;
+                        }
                         removed += 1;
                     }
                 }
@@ -145,7 +156,7 @@ impl LockFile {
         }
 
         let download_change =
-            Self::fetch_packages(lib, map.into_iter().map(|(_k, v)| v).collect())?;
+            Self::fetch_packages(lib, map.into_iter().map(|(_k, v)| v).collect(), dry_run)?;
         added += download_change;
 
         let plural = |change: isize| {

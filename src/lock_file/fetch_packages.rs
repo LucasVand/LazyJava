@@ -7,7 +7,11 @@ use tokio::task::JoinSet;
 use crate::lock_file::{LockFile, LockFileError, LockFilePackage};
 
 impl LockFile {
-    pub fn fetch_packages(lib: &Path, list: Vec<&LockFilePackage>) -> Result<isize, LockFileError> {
+    pub fn fetch_packages(
+        lib: &Path,
+        list: Vec<&LockFilePackage>,
+        dry_run: bool,
+    ) -> Result<isize, LockFileError> {
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
@@ -36,7 +40,9 @@ impl LockFile {
                 let (package_file_name, bin) = result?;
 
                 changes += 1;
-                fs::write(lib.join(package_file_name), bin)?;
+                if !dry_run {
+                    fs::write(lib.join(package_file_name), bin)?;
+                }
             }
             return Ok(changes);
         })

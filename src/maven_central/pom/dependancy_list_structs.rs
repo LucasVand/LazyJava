@@ -34,13 +34,19 @@ pub struct Dependancy {
 
 impl From<MavenDependancy> for LockFilePackage {
     fn from(value: MavenDependancy) -> Self {
-        if value.dependancy_type != DependancyType::Jar {
-            panic!("Only jars are supported currently");
-        }
-        let url = full_maven_url(&value.id.as_maven_id(), "jar");
-        let file_name = format!("{}-{}.{}", &value.id.artifact, &value.id.version, "jar");
+        let ext = |t: &DependancyType| match t {
+            DependancyType::Jar => "jar",
+            DependancyType::War => "war",
+            DependancyType::Bundle => "jar",
+            _ => panic!("Unsupported dependancy type"),
+        };
+        let ext_str = ext(&value.dependancy_type);
+
+        let url = full_maven_url(&value.id.as_maven_id(), ext_str);
+        let file_name = format!("{}-{}.{}", &value.id.artifact, &value.id.version, ext_str);
 
         LockFilePackage {
+            packaging: value.dependancy_type,
             id: value.id,
             url,
             file_name,

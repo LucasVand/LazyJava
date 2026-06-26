@@ -1,27 +1,28 @@
 #[cfg(test)]
 mod tests {
-    use crate::{
-        lock_file::{LockFile, LockFilePackage},
-        maven_central::MavenIdBuf,
-    };
+use crate::{
+    lock_file::{LockFile, LockFilePackage},
+    maven_central::{MavenIdBuf, pom::DependancyType},
+};
 
-    fn package(id: &str, deps: &[&str]) -> LockFilePackage {
-        let parts: Vec<&str> = id.split(':').collect();
-        let dep_ids: Vec<MavenIdBuf> = deps
-            .iter()
-            .map(|d| {
-                let p: Vec<&str> = d.split(':').collect();
-                MavenIdBuf::new(p[0], p[1], p[2])
-            })
-            .collect();
+fn package(id: &str, deps: &[&str]) -> LockFilePackage {
+    let parts: Vec<&str> = id.split(':').collect();
+    let dep_ids: Vec<MavenIdBuf> = deps
+        .iter()
+        .map(|d| {
+            let p: Vec<&str> = d.split(':').collect();
+            MavenIdBuf::new(p[0], p[1], p[2])
+        })
+        .collect();
 
-        LockFilePackage {
-            id: MavenIdBuf::new(parts[0], parts[1], parts[2]),
-            file_name: String::new(),
-            url: String::new(),
-            dependancies: dep_ids,
-        }
+    LockFilePackage {
+        id: MavenIdBuf::new(parts[0], parts[1], parts[2]),
+        file_name: String::new(),
+        url: String::new(),
+        dependancies: dep_ids,
+        packaging: DependancyType::Jar,
     }
+}
 
     fn lockfile(packages: Vec<LockFilePackage>) -> LockFile {
         LockFile { packages }
