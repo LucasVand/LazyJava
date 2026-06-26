@@ -25,4 +25,7 @@ pub enum LockFileError {
 
     #[error("Unable to remove package because it is not included in this project")]
     PackageNotFound,
+
+    #[error("Encountered errors when fetching packages")]
+    FetchError(Vec<LockFileError>),
 }

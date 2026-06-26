@@ -1,7 +1,8 @@
 use std::{fs, path::Path};
 
 use colored::Colorize;
-use reqwest::{Client, Response};
+use reqwest::{Client, Response, StatusCode};
+use thiserror::Error;
 use tokio::task::JoinSet;
 
 use crate::lock_file::{LockFile, LockFileError, LockFilePackage};
@@ -29,32 +30,70 @@ impl LockFile {
                 let url = package.url.clone();
                 let id = package.id.clone();
                 set.spawn(async move {
-                    println!("    {} {}", "Downloading".green().bold(), id);
-                    let bin = fetch_bin(client_clone, url).await?;
+                    let bin = fetch_bin(client_clone, url).await;
 
-                    return Ok((file_name, bin));
+                    match bin {
+                        Ok(bin) => {
+                            println!("    {} {}", "Downloading".green().bold(), id);
+                            return Ok((file_name, bin));
+                        }
+                        Err(err) => match err {
+                            FetchError::StatusCode(code) => {
+                                println!(
+                                    "    {} {} ({})",
+                                    "Download Failed".red().bold(),
+                                    id,
+                                    code,
+                                );
+                                Err(LockFileError::NoFound)
+                            }
+                            FetchError::ReqwestError(err) => Err(LockFileError::RequestError(err)),
+                        },
+                    }
                 });
             }
+            let results = set.join_all().await;
 
-            while let Some(Ok(result)) = set.join_next().await {
-                let (package_file_name, bin) = result?;
+            let mut result_errors = Vec::new();
+            let mut clean_results = Vec::new();
+            results.into_iter().for_each(|result| match result {
+                Ok(res) => clean_results.push(res),
+                Err(err) => result_errors.push(err),
+            });
+
+            if !result_errors.is_empty() {
+                return Err(LockFileError::FetchError(result_errors));
+            }
+
+            for result in clean_results {
+                let (package_file_name, bin) = result;
 
                 changes += 1;
                 if !dry_run {
                     fs::write(lib.join(package_file_name), bin)?;
                 }
             }
+
             return Ok(changes);
         })
     }
 }
-async fn fetch_bin(client: Client, url: String) -> Result<Vec<u8>, LockFileError> {
+
+#[derive(Debug, Error)]
+enum FetchError {
+    #[error("Server returned with a bad status code")]
+    StatusCode(StatusCode),
+    #[error("Could not make the request")]
+    ReqwestError(#[from] reqwest::Error),
+}
+
+async fn fetch_bin(client: Client, url: String) -> Result<Vec<u8>, FetchError> {
     let res: Response = client.get(url).send().await?;
 
     match res.error_for_status() {
         Err(err) => {
             log::warn!("Failed to fetch Maven artifact: {}", err);
-            Err(LockFileError::RequestError(err))
+            Err(FetchError::StatusCode(err.status().unwrap()))
         }
         Ok(res) => {
             let bytes = res.bytes().await?;

@@ -39,7 +39,8 @@ impl LazyJava {
 
         lockfile.add_packages(deps.into_iter().map(|v| v.into()).collect());
         println!(
-            "    Added {} (+ {} transitive {})",
+            "    {} {} (+ {} transitive {})",
+            "Added".green().bold(),
             id,
             dep_count,
             if dep_count != 1 {
