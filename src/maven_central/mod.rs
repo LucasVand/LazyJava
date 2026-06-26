@@ -1,4 +1,5 @@
 mod fetch;
+mod fetch_async;
 mod maven_error;
 
 mod tests;

@@ -1,5 +1,3 @@
-use colored::Colorize;
-
 use crate::{
     lazy_java::LazyJava, lazy_java_error::LazyJavaError, lock_file::LockFile,
     lsp::classpath::Classpath,
@@ -11,10 +9,7 @@ impl LazyJava {
 
         let lockfile = LockFile::fetch(&self.root)?;
 
-        println!("{} dependancies", "Syncing".green().bold());
         lockfile.validate_current_packages(&self.lib)?;
-
-        println!("    {} dependancies", "Synced".green().bold());
 
         Classpath::generate(self)?;
 

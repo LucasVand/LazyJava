@@ -14,9 +14,10 @@ pathdiff = "0.2.3"
 quick-xml = { version = "0.39.2", features = ["serialize"] }
 regex = "1.10"
 reqwest = { version = "0.13.3", features = ["blocking"] }
-tokio = "1.50.0"
+tokio = { version = "1.50.0", features = ["full"]}
 serde = { version = "1.0.228", features = ["derive"] }
 thiserror = "2.0.18"
 env_logger = "0.11.10"
 maven-version-rs = "0.1.0"
 toml = "1.1.2"
+parking_lot = "0.12.5"

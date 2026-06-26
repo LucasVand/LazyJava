@@ -6,7 +6,9 @@ use crate::{
     lazy_java_error::LazyJavaError,
     lock_file::LockFile,
     lsp::classpath::Classpath,
-    maven_central::{MavenError, MavenId, fetch_artifact_metadata, pom::MavenDependancyList},
+    maven_central::{
+        MavenError, MavenId, MavenIdBuf, fetch_artifact_metadata, pom::MavenDependancyList,
+    },
 };
 
 impl LazyJava {
@@ -25,43 +27,28 @@ impl LazyJava {
 
         let version = version?;
 
-        let id = MavenId::new(&add_args.group, &add_args.artifact, &version);
-        println!("{} {}", "Adding".green().bold(), id);
-        let deps = MavenDependancyList::new(&id)?;
+        let id = MavenIdBuf::new(&add_args.group, &add_args.artifact, &version);
+        println!("{} {} to dependency list", "Adding".green().bold(), id);
+        let deps = MavenDependancyList::new(id.clone())?;
         let dep_count = deps.len();
 
         lockfile.add_packages(deps.into_iter().map(|v| v.into()).collect());
+        println!(
+            "    Added {} (+ {} transitive {})",
+            id,
+            dep_count,
+            if dep_count != 1 {
+                "dependencies"
+            } else {
+                "dependency"
+            }
+        );
 
         lockfile.write(&self.root)?;
 
         lockfile.validate_current_packages(&self.lib)?;
 
         Classpath::generate(self)?;
-
-        let transitive = dep_count - 1;
-        if transitive > 0 {
-            println!(
-                "    {} {}:{}:{} (+ {} transitive {})",
-                "Added".green().bold(),
-                add_args.group,
-                add_args.artifact,
-                version,
-                transitive,
-                if transitive == 1 {
-                    "dependency"
-                } else {
-                    "dependencies"
-                },
-            );
-        } else {
-            println!(
-                "    {} {}:{}:{}",
-                "Added".green().bold(),
-                add_args.group,
-                add_args.artifact,
-                version
-            );
-        }
 
         Ok(())
     }

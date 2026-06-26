@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::maven_central::{
     MavenError, MavenId,
-    pom::{dependancy_list::MavenDependancyList, pom::MavenPom},
+    pom::{dependancy_list_structs::MavenDependancyList, pom::MavenPom},
 };
 
 impl MavenPom {

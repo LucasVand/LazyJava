@@ -104,7 +104,14 @@ impl LockFile {
 
         self.packages = map.into_values().collect();
     }
-    pub fn validate_current_packages(&self, lib: &Path) -> Result<(), LockFileError> {
+    pub fn validate_current_packages(&self, lib: &Path) -> Result<isize, LockFileError> {
+        println!(
+            "{} dependancies with /{}",
+            "Syncing".green().bold(),
+            lib.file_name().unwrap().to_string_lossy()
+        );
+        let mut added: isize = 0;
+        let mut removed: isize = 0;
         let mut map: HashMap<&str, &LockFilePackage> = self
             .packages
             .iter()
@@ -131,31 +138,34 @@ impl LockFile {
                             .unwrap_or_default();
                         println!("    {} {}", "Removed".green().bold(), stem);
                         fs::remove_file(path)?;
+                        removed += 1;
                     }
                 }
             }
         }
 
-        // the packages that do not exist currently
-        for (key, value) in map {
-            println!("    {} {}", "Downloading".green().bold(), value.id);
-            let bin = fetch_bin(&value.url)?;
+        let download_change =
+            Self::fetch_packages(lib, map.into_iter().map(|(_k, v)| v).collect())?;
+        added += download_change;
 
-            fs::write(lib.join(key), bin)?;
+        let plural = |change: isize| {
+            if change.abs() != 1 {
+                "dependancies"
+            } else {
+                "dependancy"
+            }
+        };
+        if added != 0 {
+            println!("    {} {} {}", "Added".green().bold(), added, plural(added));
         }
-
-        Ok(())
-    }
-}
-
-fn fetch_bin(url: &str) -> Result<Vec<u8>, LockFileError> {
-    let res = reqwest::blocking::get(url)?;
-
-    match res.error_for_status() {
-        Err(err) => {
-            log::warn!("Failed to fetch Maven artifact: {}", err);
-            Err(LockFileError::RequestError(err))
+        if removed != 0 {
+            println!(
+                "    {} {} {}",
+                "Removed".green().bold(),
+                removed,
+                plural(removed)
+            );
         }
-        Ok(res) => Ok(res.bytes()?.to_vec()),
+        Ok(added - removed)
     }
 }
