@@ -8,7 +8,7 @@ impl LazyJava {
     pub fn interactive_find_main(&self) -> Result<String, LazyJavaError> {
         log::debug!("Finding main classes interactively");
         let options =
-            find_main_classes(&self.src).map_err(|e| return LazyJavaError::CouldntFindMains(e))?;
+            find_main_classes(&self.src).map_err(LazyJavaError::CouldntFindMains)?;
         log::debug!("Found {} main classes", options.len());
 
         if options.is_empty() {
@@ -27,7 +27,7 @@ impl LazyJava {
         let configured_options: Vec<String> = options
             .into_iter()
             .map(|op| {
-                return op.full_package_name;
+                op.full_package_name
             })
             .collect();
 
@@ -38,6 +38,6 @@ impl LazyJava {
             .map_err(|_e| LazyJavaError::PromptError)?;
         log::debug!("User selected main class: {}", res);
 
-        return Ok(res);
+        Ok(res)
     }
 }

@@ -1,25 +1,25 @@
-use LazyJava::args::LazyJavaArgs;
 use anyhow::Result;
 use clap::Parser;
+use lazy_java::{LazyJava, args::LazyJavaArgs};
 use log::LevelFilter;
 
 fn main() -> Result<()> {
     let args = LazyJavaArgs::parse();
-    
+
     let log_level = match args.global_args.verbose {
-        0 => LevelFilter::Off,
+        0 => LevelFilter::Error,
         1 => LevelFilter::Info,
         _ => LevelFilter::Debug,
     };
-    
-    simple_logger::SimpleLogger::new()
-        .with_level(log_level)
-        .env()
-        .init()
-        .unwrap_or_default();
-    
-    let lazy = LazyJava::lazy_java::LazyJava::new(args)?;
+
+    env_logger::builder()
+        .format_target(cfg!(debug_assertions))
+        .filter_level(log_level)
+        .format_timestamp(None)
+        .init();
+
+    let lazy = LazyJava::new(args)?;
     lazy.execute()?;
 
-    return Ok(());
+    Ok(())
 }

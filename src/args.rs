@@ -39,6 +39,21 @@ pub enum LazyJavaCommand {
         #[command(flatten)]
         args: CreateArgs,
     },
+    /// Adds a new dependancy
+    Add {
+        #[command(flatten)]
+        args: AddArgs,
+    },
+    /// Removes a dependancy
+    Remove {
+        #[command(flatten)]
+        args: RemoveArgs,
+    },
+    /// Sync the lib folder with the lock file
+    Sync {
+        #[command(flatten)]
+        args: SyncArgs,
+    },
 }
 #[derive(Debug, Parser, Clone)]
 pub struct RunArgs {
@@ -86,6 +101,8 @@ pub enum BuildSubCommand {
     Dependants {},
     /// Shows all stale files will be recompiled next build
     Stale {},
+    /// Rebuilds the .classfile which is used for jdtls
+    Classpath {},
 }
 #[derive(Debug, Parser, Clone)]
 pub struct FindArgs {}
@@ -103,6 +120,39 @@ pub struct CreateArgs {
     /// Dont initalize with example files
     #[arg(long = "bare", short = 'b')]
     pub bare: bool,
+}
+
+#[derive(Debug, Parser, Clone)]
+pub struct AddArgs {
+    /// the name of the group which the artifact belongs to
+    pub group: String,
+    /// the name of the artifact
+    pub artifact: String,
+    // the specific version to add
+    pub artifact_version: Option<String>,
+
+    /// Show what would change without actually doing it
+    #[arg(long = "dry-run", short = 'd')]
+    pub dry_run: bool,
+}
+
+#[derive(Debug, Parser, Clone)]
+pub struct RemoveArgs {
+    /// the name of the group which the artifact belongs to
+    pub group: String,
+    /// the name of the artifact
+    pub artifact: String,
+
+    /// Show what would change without actually doing it
+    #[arg(long = "dry-run", short = 'd')]
+    pub dry_run: bool,
+}
+
+#[derive(Debug, Parser, Clone)]
+pub struct SyncArgs {
+    /// Show what would change without actually doing it
+    #[arg(long = "dry-run", short = 'd')]
+    pub dry_run: bool,
 }
 
 #[derive(Debug, Parser, Clone)]

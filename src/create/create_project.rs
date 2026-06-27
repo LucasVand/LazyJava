@@ -30,7 +30,7 @@ impl LazyJava {
             None => interactive_git_init_name()?,
         };
         let mut project_dir =
-            env::current_dir().map_err(|e| CreateProjectError::CurrrentDirectoryError(e))?;
+            env::current_dir().map_err(CreateProjectError::CurrrentDirectoryError)?;
         project_dir.push(&name);
 
         log::debug!("Project directory: {:?}", project_dir);
@@ -55,18 +55,18 @@ impl LazyJava {
             example.push(format!("src/{}.java", "Main"));
 
             fs::write(&example, example_class("Main"))
-                .map_err(|e| CreateProjectError::CreateFileError(e))?;
+                .map_err(CreateProjectError::CreateFileError)?;
 
             filetime::set_file_mtime(
                 &example,
                 FileTime::from(SystemTime::now() + Duration::from_mins(1)),
             )
-            .map_err(|e| CreateProjectError::CreateFileError(e))?;
+            .map_err(CreateProjectError::CreateFileError)?;
         }
 
         if git {
             log::debug!("Initializing git repository");
-            let status = git_init(&project_dir).map_err(|e| CreateProjectError::NoInit(e))?;
+            let status = git_init(&project_dir).map_err(CreateProjectError::NoInit)?;
 
             if !status.success() {
                 log::error!("Git initialization failed");
@@ -75,15 +75,15 @@ impl LazyJava {
             log::debug!("Git repository initialized");
         }
 
-        println!("");
+        println!();
         println!("  now run");
-        println!("");
+        println!();
         println!("   cd {}", name);
         println!("   LazyJava run");
-        println!("");
+        println!();
 
         log::info!("Project created successfully: {}", name);
-        return Ok(());
+        Ok(())
     }
 }
 #[derive(Error, Debug)]
@@ -108,7 +108,7 @@ pub enum CreateProjectError {
 }
 
 fn example_class(name: &str) -> String {
-    return format!(
+    format!(
         r#"
 /* Created with LazyJava */ 
 public class {} {{
@@ -120,5 +120,5 @@ public class {} {{
 }}
 "#,
         name
-    );
+    )
 }

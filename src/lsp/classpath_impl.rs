@@ -1,9 +1,14 @@
 use std::{
     ffi::OsStr,
     fs::{self},
-    io::{self},
+    io::{self, Write},
     path::{self, Path, PathBuf},
 };
+
+use quick_xml::events::{BytesDecl, Event};
+use quick_xml::{SeError, Writer};
+use serde::Serialize;
+use std::io::Cursor;
 
 use crate::{
     lazy_java::LazyJava,
@@ -13,8 +18,10 @@ use crate::{
     },
 };
 
+const JAVA_CONTAINER: &str = "org.eclipse.jdt.launching.JRE_CONTAINER";
+
 impl Classpath {
-    pub fn parse(path: &Path) -> Result<Self, ClasspathError> {
+    fn parse(path: &Path) -> Result<Self, ClasspathError> {
         log::debug!("Parsing classpath file: {:?}", path);
         let file = fs::read_to_string(path).map_err(|e| match e.kind() {
             io::ErrorKind::NotFound => {
@@ -39,9 +46,7 @@ impl Classpath {
         log::info!("Generating classpath file");
         let classpath = Self::create(lj)?;
 
-        let prefix = r#"<?xml version="1.0" encoding="UTF-8"?>"#;
-        let mut serialized = quick_xml::se::to_string(&classpath)?;
-        serialized.insert_str(0, prefix);
+        let serialized = Self::to_pretty_xml(&classpath)?;
 
         let mut path = lj.root.clone();
         path.push(".classpath");
@@ -59,7 +64,7 @@ impl Classpath {
         Ok(())
     }
 
-    pub fn create(lj: &LazyJava) -> Result<Classpath, ClasspathError> {
+    fn create(lj: &LazyJava) -> Result<Classpath, ClasspathError> {
         log::debug!("Creating classpath from project structure");
         let src = &lj.args.global_args.source;
         let build = &lj.args.global_args.build;
@@ -83,6 +88,14 @@ impl Classpath {
             path: src.into(),
             including: None,
             output: Some(build.into()),
+            attributes: None,
+        });
+
+        entries.push(ClasspathEntry {
+            kind: "con".into(),
+            path: JAVA_CONTAINER.into(),
+            including: None,
+            output: None,
             attributes: None,
         });
 
@@ -116,17 +129,16 @@ impl Classpath {
                 java_files.append(&mut res);
             }
 
-            if f.extension() == Some(OsStr::new("jar")) {
-                if f.is_file() {
+            if f.extension() == Some(OsStr::new("jar"))
+                && f.is_file() {
                     log::debug!("Found JAR file: {:?}", f);
                     java_files.push(f);
                 }
-            }
         }
         log::debug!("Found {} JAR files in library directory", java_files.len());
-        return Ok(java_files);
+        Ok(java_files)
     }
-    pub fn validate(lj: &LazyJava) -> Result<bool, ClasspathError> {
+    fn validate(lj: &LazyJava) -> Result<bool, ClasspathError> {
         log::debug!("Validating classpath file");
         let root = &lj.root;
 
@@ -161,7 +173,7 @@ impl Classpath {
             let build = path::absolute(Path::new(&lj.build))
                 .map_err(|_| ClasspathError::PathError(lj.build.to_string_lossy().to_string()))?;
 
-            if !(c_src == src) || !(c_output == build) {
+            if (c_src != src) || (c_output != build) {
                 log::debug!("Classpath source entry is out of date");
                 log::debug!(
                     "Source equality: {}, Output eqaulity: {}",
@@ -172,6 +184,11 @@ impl Classpath {
             }
         } else {
             log::debug!("No source entry found in classpath");
+            return Ok(false);
+        }
+
+        let classpath_container = classpath.entries.iter().find(|e| e.kind == "con");
+        if classpath_container.is_none() {
             return Ok(false);
         }
 
@@ -188,7 +205,7 @@ impl Classpath {
             log::debug!("Classpath is valid");
         }
 
-        return Ok(equal);
+        Ok(equal)
     }
     pub fn generate_if_stale(lj: &LazyJava) -> Result<(), ClasspathError> {
         log::debug!("Checking if classpath needs regeneration");
@@ -198,6 +215,25 @@ impl Classpath {
         } else {
             log::debug!("Classpath is up to date");
         }
-        return Ok(());
+        Ok(())
+    }
+    fn to_pretty_xml<T: Serialize>(value: &T) -> Result<String, SeError> {
+        let mut buffer = Cursor::new(Vec::new());
+
+        // 4-space indentation
+        let mut writer = Writer::new_with_indent(&mut buffer, b' ', 4);
+
+        // Optional XML declaration
+        writer
+            .write_event(Event::Decl(BytesDecl::new("1.0", Some("UTF-8"), None)))
+            .unwrap();
+
+        // newline after declaration
+        writer.get_mut().write_all(b"\n").unwrap();
+
+        // serialize the actual XML
+        writer.write_serializable("classpath", value)?;
+
+        Ok(String::from_utf8(buffer.into_inner()).unwrap())
     }
 }

@@ -44,7 +44,7 @@ pub fn find_main_classes(src: &PathBuf) -> Result<Vec<MainClass>, io::Error> {
         }
     }
     log::debug!("Total main classes found: {}", main_classes.len());
-    return Ok(main_classes);
+    Ok(main_classes)
 }
 fn find_main_class(
     class: Captures<'_>,
@@ -60,7 +60,7 @@ fn find_main_class(
     let mut main_vec: Vec<MainClass> = Vec::new();
     if let Some(cap) = main {
         removed_inner_content.replace_range(cap.get_match().range(), "");
-        let full_package = if package != "" {
+        let full_package = if !package.is_empty() {
             format!("{}.{}", package, classname)
         } else {
             classname.to_string()
@@ -98,14 +98,13 @@ pub fn find_java_files(root: &Path) -> Result<Vec<PathBuf>, io::Error> {
             java_files.append(&mut res);
         }
 
-        if f.extension() == Some(OsStr::new("java")) {
-            if f.is_file() {
+        if f.extension() == Some(OsStr::new("java"))
+            && f.is_file() {
                 log::debug!("Found Java file: {:?}", f);
                 java_files.push(f);
             }
-        }
     }
-    return Ok(java_files);
+    Ok(java_files)
 }
 
 #[cfg(test)]

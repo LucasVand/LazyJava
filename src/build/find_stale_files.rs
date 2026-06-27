@@ -32,13 +32,16 @@ pub fn find_modified_files(build: &Path, src: &Path) -> Result<Vec<PathBuf>, io:
     }
 
     log::debug!("Found {} modified files", stale_files.len());
-    return Ok(stale_files);
+    Ok(stale_files)
 }
 pub fn files_to_recompile(
     graph: DependancyGraph,
     stale_files: Vec<PathBuf>,
 ) -> Result<Vec<PathBuf>, LazyJavaError> {
-    log::debug!("Calculating files to recompile from {} stale files", stale_files.len());
+    log::debug!(
+        "Calculating files to recompile from {} stale files",
+        stale_files.len()
+    );
     let mut recompile_files: Vec<PathBuf> = Vec::new();
     for file in stale_files {
         let mut deps = graph.dependancy_list_from_path(&file)?;
@@ -51,6 +54,9 @@ pub fn files_to_recompile(
     let recompile_hash: HashSet<_> = recompile_files.into_iter().collect();
     let unique_recompile: Vec<PathBuf> = recompile_hash.into_iter().collect();
 
-    log::debug!("Total unique files to recompile: {}", unique_recompile.len());
-    return Ok(unique_recompile);
+    log::debug!(
+        "Total unique files to recompile: {}",
+        unique_recompile.len()
+    );
+    Ok(unique_recompile)
 }

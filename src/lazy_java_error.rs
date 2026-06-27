@@ -4,7 +4,7 @@ use thiserror::Error;
 
 use crate::{
     create::create_project::CreateProjectError, dependancy_graph::graph_error::GraphError,
-    lsp::classpath_error::ClasspathError,
+    lock_file::LockFileError, lsp::classpath_error::ClasspathError, maven_central::MavenError,
 };
 
 #[derive(Error, Debug)]
@@ -61,9 +61,18 @@ pub enum LazyJavaError {
     #[error("Unable to set file modification time for build directory")]
     NoBuildModificationTime(io::Error),
 
-    #[error("Graph error occured, {0}")]
+    #[error("IO error: {0}")]
+    IoError(#[from] io::Error),
+
+    #[error("Graph error occured")]
     GraphError(#[from] GraphError),
 
-    #[error("Classpath error occured, {0}")]
+    #[error("Classpath error occured")]
     ClasspathError(#[from] ClasspathError),
+
+    #[error("Maven error occured")]
+    MavenError(#[from] MavenError),
+
+    #[error("Error when operating on lock file")]
+    LockFileError(#[from] LockFileError),
 }

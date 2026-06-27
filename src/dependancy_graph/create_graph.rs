@@ -14,14 +14,14 @@ use crate::{
 impl DependancyGraph {
     pub fn create(src: &Path) -> Result<DependancyGraph, GraphError> {
         log::debug!("Creating dependency graph from source: {:?}", src);
-        let java_files = find_java_files(src).map_err(|e| return GraphError::CreationError(e))?;
+        let java_files = find_java_files(src).map_err(GraphError::CreationError)?;
         log::debug!("Found {} Java files for graph", java_files.len());
 
         let mut graph = DependancyGraph::new();
 
         for file in java_files {
             let node = DependancyNode::from_file(&file)
-                .map_err(|e| return GraphError::CreationError(e))?;
+                .map_err(GraphError::CreationError)?;
 
             graph.add_node(node);
         }
@@ -29,9 +29,9 @@ impl DependancyGraph {
         graph.calculate_package_dependancies();
         log::debug!("Processing dependants");
         graph.calculate_dependants();
-        
+
         log::debug!("Dependency graph created with {} nodes", graph.nodes.len());
-        return Ok(graph);
+        Ok(graph)
     }
     fn calculate_dependants(&mut self) {
         log::debug!("Calculating dependants for all nodes");
@@ -54,7 +54,7 @@ impl DependancyGraph {
         log::debug!("Calculating package dependencies");
         let mut map: HashMap<String, Vec<String>> = HashMap::new();
 
-        for (_key, node) in &self.nodes {
+        for node in self.nodes.values() {
             map.entry(node.package_name.clone())
                 .or_default()
                 .push(node.id.clone());
@@ -64,7 +64,7 @@ impl DependancyGraph {
         self.nodes = std::mem::take(&mut self.nodes)
             .into_iter()
             .map(|(key, mut node)| {
-                if node.package_name == "" {
+                if node.package_name.is_empty() {
                     return (key, node);
                 }
 
@@ -81,7 +81,7 @@ impl DependancyGraph {
                     node.dependancies = hashset.into_iter().collect();
                     return (key, node);
                 }
-                return (key, node);
+                (key, node)
             })
             .collect();
     }
