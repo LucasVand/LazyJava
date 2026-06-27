@@ -1,7 +1,7 @@
 use colored::Colorize;
 
 use crate::{
-    LazyJava, args::RemoveArgs, lazy_java_error::LazyJavaError, lock_file::LockFile,
+    LazyJava, args::RemoveArgs, config::Config, lazy_java_error::LazyJavaError,
     lsp::classpath::Classpath,
 };
 
@@ -16,23 +16,11 @@ impl LazyJava {
         }
         self.assert_build_lib_src()?;
 
-        let mut lockfile = LockFile::fetch(&self.root)?;
+        let mut config = Config::fetch(&self.root)?;
 
-        println!(
-            "{} {} {}",
-            "Removing".green().bold(),
-            remove_args.group,
-            remove_args.artifact
-        );
-        let package = lockfile.remove_package(&remove_args.group, &remove_args.artifact)?;
-        println!("    {} {} ", "Removed".green().bold(), package.id);
+        config.remove_package(remove_args, &self.root, &self.lib)?;
 
-        if !remove_args.dry_run {
-            lockfile.write(&self.root)?;
-        }
-
-        lockfile.validate_current_packages(&self.lib, remove_args.dry_run)?;
-
+        config.write(&self.root)?;
         if !remove_args.dry_run {
             Classpath::generate(self)?;
         }

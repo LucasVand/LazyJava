@@ -1,8 +1,8 @@
 use colored::Colorize;
 
 use crate::{
-    args::SyncArgs, lazy_java::LazyJava, lazy_java_error::LazyJavaError, lock_file::LockFile,
-    lsp::classpath::Classpath,
+    args::SyncArgs, config::Config, lazy_java::LazyJava, lazy_java_error::LazyJavaError,
+    lock_file::LockFile, lsp::classpath::Classpath,
 };
 
 impl LazyJava {
@@ -17,9 +17,12 @@ impl LazyJava {
 
         self.assert_build_lib_src()?;
 
-        let lockfile = LockFile::fetch(&self.root)?;
+        let config = Config::fetch(&self.root)?;
+        let mut lockfile = LockFile::fetch(&self.root)?;
 
-        lockfile.validate_current_packages(&self.lib, sync_args.dry_run)?;
+        config.sync_lock_file(&mut lockfile, &self.root, &self.lib, sync_args.dry_run)?;
+
+        config.write(&self.root)?;
 
         if !sync_args.dry_run {
             Classpath::generate(self)?;

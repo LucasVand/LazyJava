@@ -46,7 +46,7 @@ impl MavenDependancyList {
             list: dep_list.clone(),
             client: client,
         };
-        Self::resolve_related_poms(id, ctx).await?;
+        Self::resolve_related_poms(id.clone(), ctx).await?;
 
         let mut map: HashMap<u64, MavenDependancy> = HashMap::new();
 
@@ -68,8 +68,15 @@ impl MavenDependancyList {
                 map.insert(hash, dep);
             }
         }
+        let mut list: Vec<MavenDependancy> = map.into_values().collect();
 
-        Ok(map.into_values().collect())
+        // set the root dependancy
+        for dep in list.iter_mut() {
+            if dep.id == id {
+                dep.root = true;
+            }
+        }
+        Ok(list)
     }
     pub fn new(id: MavenIdBuf) -> Result<Vec<MavenDependancy>, MavenError> {
         let rt = Runtime::new().unwrap();
@@ -188,6 +195,7 @@ impl MavenDependancyList {
                 id: MavenIdBuf::new(id.group, id.artifact, id.version),
                 dependancy_type: pom.packaging.clone(),
                 dependancies: dependancy_list,
+                root: false,
             });
         }
 

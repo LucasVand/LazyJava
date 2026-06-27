@@ -3,8 +3,9 @@ use std::io;
 use thiserror::Error;
 
 use crate::{
-    create::create_project::CreateProjectError, dependancy_graph::graph_error::GraphError,
-    lock_file::LockFileError, lsp::classpath_error::ClasspathError, maven_central::MavenError,
+    config::ConfigError, create::create_project::CreateProjectError,
+    dependancy_graph::graph_error::GraphError, lock_file::LockFileError,
+    lsp::classpath_error::ClasspathError, maven_central::MavenError,
 };
 
 #[derive(Error, Debug)]
@@ -75,4 +76,7 @@ pub enum LazyJavaError {
 
     #[error("Error when operating on lock file")]
     LockFileError(#[from] LockFileError),
+
+    #[error("Error when operating on config file")]
+    ConfigFileError(#[from] ConfigError),
 }

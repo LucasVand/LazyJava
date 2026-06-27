@@ -1,0 +1,3 @@
+dependancies = ["org.springframework.boot:spring-boot-starter:4.1.0"]
+
+[project]
