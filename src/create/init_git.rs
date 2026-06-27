@@ -1,5 +1,5 @@
 use std::{
-    env, io,
+    env, fs, io,
     path::Path,
     process::{Command, ExitStatus},
 };
@@ -23,6 +23,14 @@ pub fn git_init(project_path: &Path) -> Result<ExitStatus, io::Error> {
     let output = git_command()?;
     env::set_current_dir(&current_path)?;
 
+    let gitignore = project_path.join(".gitignore");
+    if gitignore.exists() {
+        log::info!(".gitignore already exists, skipping");
+    } else {
+        fs::write(&gitignore, GITIGNORE_CONTENTS)?;
+        log::debug!("Created .gitignore");
+    }
+
     if output.success() {
         log::debug!("Git initialization successful");
     } else {
@@ -31,3 +39,14 @@ pub fn git_init(project_path: &Path) -> Result<ExitStatus, io::Error> {
 
     Ok(output)
 }
+const GITIGNORE_CONTENTS: &str = r#"build/
+lib/
+*.class
+*.jar
+*.log
+.env
+.idea/
+.vscode/
+*.iml
+.DS_Store
+"#;

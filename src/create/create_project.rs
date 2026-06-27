@@ -64,16 +64,6 @@ impl LazyJava {
             .map_err(CreateProjectError::CreateFileError)?;
         }
 
-        let mut gitignore = project_dir.clone();
-        gitignore.push(".gitignore");
-        if gitignore.exists() {
-            log::info!(".gitignore already exists, skipping");
-        } else {
-            fs::write(&gitignore, GITIGNORE_CONTENTS)
-                .map_err(CreateProjectError::CreateFileError)?;
-            log::debug!("Created .gitignore");
-        }
-
         if git {
             log::debug!("Initializing git repository");
             let status = git_init(&project_dir).map_err(CreateProjectError::NoInit)?;
@@ -116,17 +106,6 @@ pub enum CreateProjectError {
     #[error("Couldnt run git init, {0}")]
     NoInit(io::Error),
 }
-
-const GITIGNORE_CONTENTS: &str = r#"build/
-lib/
-*.class
-*.jar
-*.log
-.idea/
-.vscode/
-*.iml
-.DS_Store
-"#;
 
 fn example_class(name: &str) -> String {
     format!(
