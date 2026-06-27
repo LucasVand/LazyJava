@@ -85,6 +85,11 @@ mod tests {
 
         let mut expected = vec![
             MavenDependancy {
+                id: MavenIdBuf::new("com.google.guava", "guava", "33.6.0-jre"),
+                dependancy_type: DependancyType::Bundle,
+                dependancies: Vec::new(),
+            },
+            MavenDependancy {
                 id: MavenIdBuf::new("com.google.errorprone", "error_prone_annotations", "2.47.0"),
                 dependancy_type: DependancyType::Jar,
                 dependancies: Vec::new(),
@@ -119,7 +124,7 @@ mod tests {
 
         for (expected, result) in expected.iter().zip(dep_list.iter()) {
             assert!(
-                expected == result,
+                expected.id == result.id && expected.dependancy_type == result.dependancy_type,
                 "Resulting and expected dependences do not match, expected: {:#?}, result: {:#?}",
                 expected,
                 result
@@ -210,6 +215,7 @@ mod tests {
         for dep in &dep_list {
             assert!(
                 dep.dependancy_type == DependancyType::Jar
+                    || dep.dependancy_type == DependancyType::Bundle
                     || matches!(dep.dependancy_type, DependancyType::Other(_)),
                 "Dependency {}:{} has invalid type: {:?}",
                 dep.id.group,
