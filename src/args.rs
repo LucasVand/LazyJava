@@ -143,10 +143,6 @@ pub struct RemoveArgs {
     /// the name of the artifact
     pub artifact: String,
 
-    /// Remove transitive dependancies as well
-    #[arg(long = "remove-transitive", default_value_t = true)]
-    pub remove_transitive: bool,
-
     /// Show what would change without actually doing it
     #[arg(long = "dry-run", short = 'd')]
     pub dry_run: bool,

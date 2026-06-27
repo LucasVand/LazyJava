@@ -15,7 +15,6 @@ impl LockFile {
         &mut self,
         group: &str,
         artifact: &str,
-        resolve_transitive: bool,
     ) -> Result<LockFilePackage, LockFileError> {
         let pos = self.packages.iter().position(|v| {
             log::debug!("Checking {} against {}:{}", v.id, group, artifact);
@@ -30,10 +29,8 @@ impl LockFile {
                 p.dependancies.retain(|dep| dep != &package.id);
             });
 
-            if resolve_transitive {
-                debug!("Resolving unused packages");
-                self.remove_unneed_packages();
-            }
+            debug!("Resolving unused packages");
+            self.remove_unneed_packages();
             Ok(package)
         } else {
             Err(LockFileError::PackageNotFound)

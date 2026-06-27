@@ -24,20 +24,14 @@ impl LazyJava {
             remove_args.group,
             remove_args.artifact
         );
-        let package = lockfile.remove_package(
-            &remove_args.group,
-            &remove_args.artifact,
-            remove_args.remove_transitive,
-        )?;
+        let package = lockfile.remove_package(&remove_args.group, &remove_args.artifact)?;
         println!("    {} {} ", "Removed".green().bold(), package.id);
 
         if !remove_args.dry_run {
             lockfile.write(&self.root)?;
         }
 
-        if remove_args.remove_transitive {
-            lockfile.validate_current_packages(&self.lib, remove_args.dry_run)?;
-        }
+        lockfile.validate_current_packages(&self.lib, remove_args.dry_run)?;
 
         if !remove_args.dry_run {
             Classpath::generate(self)?;
