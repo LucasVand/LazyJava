@@ -13,7 +13,17 @@ pub struct Config {
 }
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ConfigProject {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub group: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub artifact: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -72,6 +82,7 @@ impl<'de> Deserialize<'de> for ConfigDependancy {
         return Ok(ConfigDependancy { id: id });
     }
 }
+
 impl Serialize for ConfigDependancy {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

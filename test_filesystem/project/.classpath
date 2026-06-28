@@ -4,10 +4,22 @@
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-boot-starter-logging-4.1.0.jar" including="" output="">
         <attributes/>
     </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-boot-jackson-4.1.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/jackson-core-3.1.4.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/commons-logging-1.3.5.jar" including="" output="">
         <attributes/>
     </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/jackson-databind-3.1.4.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-aop-7.0.8.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-boot-starter-jackson-4.1.0.jar" including="" output="">
         <attributes/>
     </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/micrometer-observation-1.16.6.jar" including="" output="">
@@ -16,10 +28,34 @@
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/snakeyaml-2.6.jar" including="" output="">
         <attributes/>
     </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-web-7.0.8.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/tomcat-embed-websocket-11.0.22.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-boot-starter-tomcat-runtime-4.1.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-webmvc-7.0.8.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/slf4j-api-2.0.18.jar" including="" output="">
         <attributes/>
     </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/jspecify-1.0.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-boot-web-server-4.1.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/tomcat-embed-core-11.0.22.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-boot-http-converter-4.1.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/tomcat-annotations-api-11.0.22.jar" including="" output="">
         <attributes/>
     </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-boot-4.1.0.jar" including="" output="">
@@ -31,7 +67,13 @@
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-boot-autoconfigure-4.1.0.jar" including="" output="">
         <attributes/>
     </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/jackson-annotations-2.21.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-expression-7.0.8.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-boot-webmvc-4.1.0.jar" including="" output="">
         <attributes/>
     </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/jakarta.annotation-api-3.0.0.jar" including="" output="">
@@ -46,13 +88,22 @@
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-beans-7.0.8.jar" including="" output="">
         <attributes/>
     </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-boot-starter-tomcat-4.1.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-core-7.0.8.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-boot-starter-web-4.1.0.jar" including="" output="">
         <attributes/>
     </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/micrometer-commons-1.16.6.jar" including="" output="">
         <attributes/>
     </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/log4j-to-slf4j-2.25.4.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-boot-tomcat-4.1.0.jar" including="" output="">
         <attributes/>
     </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/jul-to-slf4j-2.0.18.jar" including="" output="">
@@ -62,6 +113,12 @@
         <attributes/>
     </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-context-7.0.8.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-boot-servlet-4.1.0.jar" including="" output="">
+        <attributes/>
+    </classpathentry>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/tomcat-embed-el-11.0.22.jar" including="" output="">
         <attributes/>
     </classpathentry>
     <classpathentry kind="src" path="src" including="" output="bin">

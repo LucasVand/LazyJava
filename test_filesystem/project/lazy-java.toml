@@ -1,3 +1,6 @@
-dependancies = ["org.springframework.boot:spring-boot-starter:4.1.0"]
+dependancies = [
+    "org.springframework.boot:spring-boot-starter-web:4.1.0",
+    "org.springframework.boot:spring-boot-starter-web:4.1.0",
+]
 
 [project]
