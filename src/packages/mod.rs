@@ -1,3 +1,3 @@
 pub mod add;
 pub mod remove;
-pub mod sync;
+pub mod sync_packages;

@@ -21,3 +21,4 @@ env_logger = "0.11.10"
 maven-version-rs = "0.1.0"
 toml = "1.1.2"
 parking_lot = "0.12.5"
+strum = { version = "0.28.0", features = ["derive"] }

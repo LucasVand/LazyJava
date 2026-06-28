@@ -1,4 +1,10 @@
-use std::{collections::HashMap, fs, io::ErrorKind, mem, path::Path};
+use std::{
+    collections::{HashMap, HashSet},
+    fs,
+    io::ErrorKind,
+    mem,
+    path::Path,
+};
 
 use colored::Colorize;
 use maven_version::Maven3ArtifactVersion;
@@ -6,9 +12,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     LOCK_FILE_NAME,
+    config::ConfigDependancy,
     lock_file::LockFileError,
     maven_central::{
-        MavenIdBuf,
+        MavenId, MavenIdBuf,
         pom::{DependancyType, MavenDependancyList},
     },
 };
@@ -31,6 +38,8 @@ pub struct LockFilePackage {
     pub dependancies: Vec<MavenIdBuf>,
 
     pub packaging: DependancyType,
+
+    pub root: bool,
 }
 
 impl LockFile {
@@ -178,5 +187,30 @@ impl LockFile {
             );
         }
         Ok(added - removed)
+    }
+    pub fn contains_package(&self, id: &MavenId) -> bool {
+        return self.packages.iter().any(|p| p.id == *id);
+    }
+    pub fn sync_with_root_packages(
+        &mut self,
+        root_packages: &Vec<ConfigDependancy>,
+    ) -> Result<(), LockFileError> {
+        let mut map: HashSet<MavenIdBuf> = self
+            .packages
+            .iter()
+            .filter(|p| p.root)
+            .map(|p| p.id.to_owned())
+            .collect();
+
+        for root_package in root_packages {
+            map.remove(&root_package.id);
+        }
+
+        for key in map {
+            self.remove_package(&key.group, &key.artifact)?;
+        }
+
+        self.remove_unneed_packages();
+        Ok(())
     }
 }

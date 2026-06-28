@@ -29,15 +29,13 @@ impl LockFile {
                 p.dependancies.retain(|dep| dep != &package.id);
             });
 
-            debug!("Resolving unused packages");
-            self.remove_unneed_packages();
             Ok(package)
         } else {
             Err(LockFileError::PackageNotFound)
         }
     }
 
-    fn remove_unneed_packages(&mut self) {
+    pub fn remove_unneed_packages(&mut self) {
         let packages = mem::take(&mut self.packages);
         let n = packages.len();
         if n == 0 {
@@ -53,7 +51,10 @@ impl LockFile {
         let mut out_edges: Vec<Vec<usize>> = Vec::with_capacity(n);
         let mut in_degree = vec![0usize; n];
 
-        for p in &packages {
+        for (i, p) in packages.iter().enumerate() {
+            if p.root {
+                in_degree[i] += 1;
+            }
             let edges: Vec<usize> = p
                 .dependancies
                 .iter()

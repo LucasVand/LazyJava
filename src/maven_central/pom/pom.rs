@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use strum::AsRefStr;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename = "project")]
@@ -84,7 +85,8 @@ pub enum Scope {
     System,
     Import,
 }
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Default, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default, PartialOrd, Ord, AsRefStr)]
+#[strum(serialize_all = "lowercase")]
 pub enum DependancyType {
     #[default]
     Jar,
@@ -93,6 +95,14 @@ pub enum DependancyType {
     Bundle,
 
     Other(String),
+}
+impl Serialize for DependancyType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.as_ref())
+    }
 }
 
 impl<'de> Deserialize<'de> for DependancyType {

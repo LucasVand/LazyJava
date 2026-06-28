@@ -26,6 +26,7 @@ pub struct MavenDependancy {
     pub id: MavenIdBuf,
     pub dependancy_type: DependancyType,
     pub dependancies: Vec<Dependancy>,
+    pub root: bool,
 }
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Dependancy {
@@ -51,6 +52,7 @@ impl From<MavenDependancy> for LockFilePackage {
             url,
             file_name,
             dependancies: value.dependancies.into_iter().map(|v| v.id).collect(),
+            root: value.root,
         }
     }
 }

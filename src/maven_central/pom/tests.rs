@@ -88,16 +88,19 @@ mod tests {
                 id: MavenIdBuf::new("com.google.guava", "guava", "33.6.0-jre"),
                 dependancy_type: DependancyType::Bundle,
                 dependancies: Vec::new(),
+                root: true,
             },
             MavenDependancy {
                 id: MavenIdBuf::new("com.google.errorprone", "error_prone_annotations", "2.47.0"),
                 dependancy_type: DependancyType::Jar,
                 dependancies: Vec::new(),
+                root: false,
             },
             MavenDependancy {
                 id: MavenIdBuf::new("com.google.guava", "failureaccess", "1.0.3"),
                 dependancy_type: DependancyType::Jar,
                 dependancies: Vec::new(),
+                root: false,
             },
             MavenDependancy {
                 id: MavenIdBuf::new(
@@ -107,16 +110,19 @@ mod tests {
                 ),
                 dependancy_type: DependancyType::Jar,
                 dependancies: Vec::new(),
+                root: false,
             },
             MavenDependancy {
                 id: MavenIdBuf::new("com.google.j2objc", "j2objc-annotations", "3.1"),
                 dependancy_type: DependancyType::Jar,
                 dependancies: Vec::new(),
+                root: false,
             },
             MavenDependancy {
                 id: MavenIdBuf::new("org.jspecify", "jspecify", "1.0.0"),
                 dependancy_type: DependancyType::Jar,
                 dependancies: Vec::new(),
+                root: false,
             },
         ];
         expected.sort();
