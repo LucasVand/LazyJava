@@ -57,6 +57,7 @@ mod tests {
         ]);
 
         lock.remove_package("g", "a").unwrap();
+        lock.remove_unneed_packages();
 
         assert!(lock.packages.is_empty());
     }
@@ -70,6 +71,7 @@ mod tests {
         ]);
 
         lock.remove_package("g", "a").unwrap();
+        lock.remove_unneed_packages();
 
         assert!(lock.packages.is_empty());
     }
@@ -94,6 +96,7 @@ mod tests {
         ]);
 
         lock.remove_package("g", "x").unwrap();
+        lock.remove_unneed_packages();
 
         assert!(lock.packages.is_empty());
     }
