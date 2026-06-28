@@ -25,7 +25,7 @@ impl Classpath {
         log::debug!("Parsing classpath file: {:?}", path);
         let file = fs::read_to_string(path).map_err(|e| match e.kind() {
             io::ErrorKind::NotFound => {
-                log::error!("Classpath file not found: {:?}", path);
+                log::warn!("Classpath file not found: {:?}", path);
                 ClasspathError::NoClasspathFile
             }
             _ => {
@@ -129,11 +129,10 @@ impl Classpath {
                 java_files.append(&mut res);
             }
 
-            if f.extension() == Some(OsStr::new("jar"))
-                && f.is_file() {
-                    log::debug!("Found JAR file: {:?}", f);
-                    java_files.push(f);
-                }
+            if f.extension() == Some(OsStr::new("jar")) && f.is_file() {
+                log::debug!("Found JAR file: {:?}", f);
+                java_files.push(f);
+            }
         }
         log::debug!("Found {} JAR files in library directory", java_files.len());
         Ok(java_files)

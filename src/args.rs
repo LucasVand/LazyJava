@@ -161,14 +161,14 @@ pub struct LazyJavaGlobalArgs {
     pub verbose: u8,
 
     /// Where to find the java files to compile
-    #[arg(long = "source", short = 's', default_value_t = SRC_FOLDER.to_string(), global = true)]
+    #[arg(long = "source", default_value_t = SRC_FOLDER.to_string(), global = true)]
     pub source: String,
 
     /// Where to save the compiled java files
-    #[arg(long = "bin", short = 'b', default_value_t = BUILD_FOLDER.to_string(), global = true)]
+    #[arg(long = "bin", default_value_t = BUILD_FOLDER.to_string(), global = true)]
     pub build: String,
 
     /// Where to look for extra packages
-    #[arg(long = "lib", short = 'l', default_value_t = LIB_FOLDER.to_string(), global = true)]
+    #[arg(long = "lib",  default_value_t = LIB_FOLDER.to_string(), global = true)]
     pub lib: String,
 }

@@ -4,12 +4,16 @@ use std::{
     path::{Path, PathBuf},
 };
 
-const ROOT_MARKERS: [&str; 5] = [
+const ROOT_MARKERS: [&str; 9] = [
     ".git",
     "pom.xml",
     ".idea",
     "build.gradle",
     "build.gradle.kts",
+    "lazy-java.toml",
+    "lazy-java.lock",
+    ".project",
+    ".classpath",
 ];
 
 pub fn find_root(start: &Path) -> Result<Option<PathBuf>, io::Error> {
@@ -19,10 +23,11 @@ pub fn find_root(start: &Path) -> Result<Option<PathBuf>, io::Error> {
     log::debug!("Found {} entries in directory", dirs.len());
     for dir in dirs {
         if let Some(name) = dir.file_name().to_str()
-            && ROOT_MARKERS.contains(&name) {
-                log::debug!("Found root marker: {}", name);
-                return Ok(Some(start.to_path_buf()));
-            }
+            && ROOT_MARKERS.contains(&name)
+        {
+            log::debug!("Found root marker: {}", name);
+            return Ok(Some(start.to_path_buf()));
+        }
     }
     match start.parent() {
         Some(parent) => {
@@ -43,10 +48,11 @@ pub fn find_file_in_dir(dir: &Path, search_name: &str) -> Result<DirEntry, io::E
     log::debug!("Searching for file '{}' in {:?}", search_name, dir);
     for file in list_dir(dir)? {
         if let Some(name) = file.file_name().to_str()
-            && name == search_name {
-                log::debug!("Found file: {}", search_name);
-                return Ok(file);
-            }
+            && name == search_name
+        {
+            log::debug!("Found file: {}", search_name);
+            return Ok(file);
+        }
     }
 
     log::warn!("File not found: {} in {:?}", search_name, dir);

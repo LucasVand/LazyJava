@@ -8,12 +8,14 @@ use thiserror::Error;
 
 use crate::{
     args::CreateArgs,
+    config::Config,
     create::{
         init_git::git_init,
         interactive::{interactive_git_init_name, interactive_project_name},
     },
     lazy_java::LazyJava,
     lazy_java_error::LazyJavaError,
+    lsp::DotProject,
 };
 
 impl LazyJava {
@@ -74,6 +76,13 @@ impl LazyJava {
             }
             log::debug!("Git repository initialized");
         }
+
+        let mut config = Config::fetch(&project_dir)?;
+        config.project.name = Some(name.clone());
+
+        config.write(&project_dir)?;
+
+        DotProject::generate(&project_dir, &config)?;
 
         println!();
         println!("  now run");
