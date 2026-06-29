@@ -18,8 +18,7 @@ fn main() -> Result<()> {
         .format_timestamp(None)
         .init();
 
-    let lazy = LazyJava::new(args)?;
-    lazy.execute()?;
+    LazyJava::execute(args)?;
 
     Ok(())
 }

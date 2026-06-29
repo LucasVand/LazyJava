@@ -1,12 +1,11 @@
 use colored::Colorize;
 
 use crate::{
-    LazyJava, args::RemoveArgs, config::Config, lazy_java_error::LazyJavaError,
-    lsp::classpath::Classpath,
+    Context, LazyJava, args::RemoveArgs, lazy_java_error::LazyJavaError, lsp::classpath::Classpath,
 };
 
 impl LazyJava {
-    pub fn remove(&self, remove_args: &RemoveArgs) -> Result<(), LazyJavaError> {
+    pub fn remove(remove_args: &RemoveArgs, ctx: &mut Context) -> Result<(), LazyJavaError> {
         if remove_args.dry_run {
             println!(
                 "{} ({} will be made)",
@@ -14,15 +13,13 @@ impl LazyJava {
                 "No persistent changes".red().bold(),
             )
         }
-        self.assert_build_lib_src()?;
 
-        let mut config = Config::fetch(&self.root)?;
+        ctx.config
+            .remove_package(remove_args, &ctx.root, &ctx.lib)?;
 
-        config.remove_package(remove_args, &self.root, &self.lib)?;
-
-        config.write(&self.root)?;
+        ctx.config.write(&ctx.root)?;
         if !remove_args.dry_run {
-            Classpath::generate(self)?;
+            Classpath::generate(ctx)?;
         }
 
         Ok(())

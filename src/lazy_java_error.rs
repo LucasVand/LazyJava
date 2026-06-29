@@ -36,7 +36,7 @@ pub enum LazyJavaError {
     #[error(
         "Could not locate root, no root markers were found, try adding in a root marker or manually specify a root"
     )]
-    NoRoot,
+    NoRoot(io::Error),
 
     #[error("Unable to find main classes, {0}")]
     CouldntFindMains(io::Error),

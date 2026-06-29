@@ -8,10 +8,14 @@ pub struct Config {
     pub project: ConfigProject,
 
     #[serde(default)]
+    pub setup: ConfigSetup,
+
+    #[serde(default)]
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub dependancies: Vec<ConfigDependancy>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct ConfigProject {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -26,7 +30,20 @@ pub struct ConfigProject {
     pub version: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
+pub struct ConfigSetup {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lib: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub src: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bin: Option<String>,
+}
+
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct ConfigDependancy {
     pub id: MavenIdBuf,
 }
