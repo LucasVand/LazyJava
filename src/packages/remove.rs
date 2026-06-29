@@ -1,12 +1,11 @@
 use colored::Colorize;
 
 use crate::{
-    Context, LazyJava, args::RemoveArgs, config::Config, lazy_java_error::LazyJavaError,
-    lsp::classpath::Classpath,
+    Context, LazyJava, args::RemoveArgs, lazy_java_error::LazyJavaError, lsp::classpath::Classpath,
 };
 
 impl LazyJava {
-    pub fn remove(remove_args: &RemoveArgs, ctx: &Context) -> Result<(), LazyJavaError> {
+    pub fn remove(remove_args: &RemoveArgs, ctx: &mut Context) -> Result<(), LazyJavaError> {
         if remove_args.dry_run {
             println!(
                 "{} ({} will be made)",
@@ -15,11 +14,10 @@ impl LazyJava {
             )
         }
 
-        let mut config = Config::fetch(&ctx.root)?;
+        ctx.config
+            .remove_package(remove_args, &ctx.root, &ctx.lib)?;
 
-        config.remove_package(remove_args, &ctx.root, &ctx.lib)?;
-
-        config.write(&ctx.root)?;
+        ctx.config.write(&ctx.root)?;
         if !remove_args.dry_run {
             Classpath::generate(ctx)?;
         }

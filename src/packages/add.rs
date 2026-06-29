@@ -1,12 +1,12 @@
 use colored::Colorize;
 
 use crate::{
-    Context, args::AddArgs, config::Config, lazy_java::LazyJava, lazy_java_error::LazyJavaError,
+    Context, args::AddArgs, lazy_java::LazyJava, lazy_java_error::LazyJavaError,
     lsp::classpath::Classpath,
 };
 
 impl LazyJava {
-    pub fn add(add_args: &AddArgs, ctx: &Context) -> Result<(), LazyJavaError> {
+    pub fn add(add_args: &AddArgs, ctx: &mut Context) -> Result<(), LazyJavaError> {
         if add_args.dry_run {
             println!(
                 "{} ({} will be made)",
@@ -15,7 +15,7 @@ impl LazyJava {
             )
         }
 
-        let mut config = Config::fetch(&ctx.root)?;
+        let config = &mut ctx.config;
 
         config.add_package(&add_args, &ctx.root, &ctx.lib)?;
 

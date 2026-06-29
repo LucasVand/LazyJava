@@ -94,18 +94,18 @@ impl Context {
     }
 
     fn bin_path<'a>(args: &'a LazyJavaArgs, config: &'a Config) -> &'a str {
-        if let Some(bin) = &args.global_args.source {
+        if let Some(bin) = &args.global_args.build {
             return bin;
-        } else if let Some(bin) = &config.setup.src {
+        } else if let Some(bin) = &config.setup.bin {
             return bin;
         } else {
             return BUILD_FOLDER;
         }
     }
     fn lib_path<'a>(args: &'a LazyJavaArgs, config: &'a Config) -> &'a str {
-        if let Some(lib) = &args.global_args.source {
+        if let Some(lib) = &args.global_args.lib {
             return lib;
-        } else if let Some(lib) = &config.setup.src {
+        } else if let Some(lib) = &config.setup.lib {
             return lib;
         } else {
             return LIB_FOLDER;
