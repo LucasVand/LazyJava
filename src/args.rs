@@ -128,10 +128,6 @@ pub struct AddArgs {
     pub artifact: String,
     // the specific version to add
     pub artifact_version: Option<String>,
-
-    /// Show what would change without actually doing it
-    #[arg(long = "dry-run", short = 'd')]
-    pub dry_run: bool,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -140,18 +136,10 @@ pub struct RemoveArgs {
     pub group: String,
     /// the name of the artifact
     pub artifact: String,
-
-    /// Show what would change without actually doing it
-    #[arg(long = "dry-run", short = 'd')]
-    pub dry_run: bool,
 }
 
 #[derive(Debug, Parser, Clone)]
-pub struct SyncArgs {
-    /// Show what would change without actually doing it
-    #[arg(long = "dry-run", short = 'd')]
-    pub dry_run: bool,
-}
+pub struct SyncArgs {}
 
 #[derive(Debug, Parser, Clone)]
 pub struct LazyJavaGlobalArgs {
@@ -169,4 +157,8 @@ pub struct LazyJavaGlobalArgs {
     /// Where to look for extra packages
     #[arg(long = "lib", global = true)]
     pub lib: Option<String>,
+
+    /// Show what would change without actually doing it
+    #[arg(long = "dry-run")]
+    pub dry_run: bool,
 }

@@ -12,6 +12,9 @@ pub enum ConfigError {
     #[error("Failed to serialize config file")]
     SerializeFailed(#[from] toml::ser::Error),
 
+    #[error("Failed to serialize config file")]
+    SerializeFailedTomlEdit(#[from] toml_edit::ser::Error),
+
     #[error("Permission denied when trying to read/write config file at {0}")]
     PermissionDenied(String),
 

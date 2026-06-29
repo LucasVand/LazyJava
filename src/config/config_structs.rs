@@ -1,4 +1,10 @@
-use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
+use std::collections::HashMap;
+
+use crate::{
+    config::config_custom_serde::{deserialize_dependencies, serialize_dependencies},
+    maven_central::PartialMavenIdBuf,
+};
+use serde::{Deserialize, Serialize};
 
 use crate::maven_central::MavenIdBuf;
 
@@ -11,8 +17,12 @@ pub struct Config {
     pub setup: ConfigSetup,
 
     #[serde(default)]
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub dependancies: Vec<ConfigDependancy>,
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    #[serde(
+        serialize_with = "serialize_dependencies",
+        deserialize_with = "deserialize_dependencies"
+    )]
+    pub dependancies: HashMap<PartialMavenIdBuf, ConfigDependancy>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(deny_unknown_fields)]
@@ -51,63 +61,5 @@ pub struct ConfigDependancy {
 impl From<MavenIdBuf> for ConfigDependancy {
     fn from(value: MavenIdBuf) -> Self {
         ConfigDependancy { id: value }
-    }
-}
-
-impl<'de> Deserialize<'de> for ConfigDependancy {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-
-        let split = s.split(":");
-        let strings = split.into_iter().map(|s| s.to_string());
-
-        let mut group: Option<String> = None;
-        let mut artifact: Option<String> = None;
-        let mut version: Option<String> = None;
-
-        for string in strings.into_iter() {
-            if group.is_none() {
-                group = Some(string);
-            } else if artifact.is_none() {
-                artifact = Some(string);
-            } else if version.is_none() {
-                version = Some(string);
-            }
-        }
-
-        if group.is_none() {
-            return Err(Error::missing_field(
-                "The Group is missing from the artifact declaration,, expected (Group):(Artifact):(Version)",
-            ));
-        }
-        if artifact.is_none() {
-            return Err(Error::missing_field(
-                "The Artifact is missing from the artifact declaration, expected (Group):(Artifact):(Version)",
-            ));
-        }
-
-        if version.is_none() {
-            return Err(Error::missing_field(
-                "The Artifact is missing from the artifact declaration, expected (Group):(Artifact):(Version)",
-            ));
-        }
-
-        let id = MavenIdBuf::new(group.unwrap(), artifact.unwrap(), version.unwrap());
-        return Ok(ConfigDependancy { id: id });
-    }
-}
-
-impl Serialize for ConfigDependancy {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(&format!(
-            "{}:{}:{}",
-            self.id.group, self.id.artifact, self.id.version
-        ))
     }
 }

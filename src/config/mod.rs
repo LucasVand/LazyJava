@@ -1,4 +1,5 @@
 mod config;
+mod config_custom_serde;
 mod config_error;
 mod config_structs;
 

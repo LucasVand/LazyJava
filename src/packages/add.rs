@@ -7,7 +7,7 @@ use crate::{
 
 impl LazyJava {
     pub fn add(add_args: &AddArgs, ctx: &mut Context) -> Result<(), LazyJavaError> {
-        if add_args.dry_run {
+        if ctx.dry_run {
             println!(
                 "{} ({} will be made)",
                 "--dry-run".green().bold(),
@@ -15,13 +15,11 @@ impl LazyJava {
             )
         }
 
-        let config = &mut ctx.config;
+        ctx.config.add_package(&add_args, ctx)?;
 
-        config.add_package(&add_args, &ctx.root, &ctx.lib)?;
+        ctx.config.write(&ctx.root)?;
 
-        config.write(&ctx.root)?;
-
-        if !add_args.dry_run {
+        if !ctx.dry_run {
             Classpath::generate(ctx)?;
         }
 

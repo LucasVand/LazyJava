@@ -80,6 +80,9 @@ impl MavenIdBuf {
     pub fn as_maven_id(&self) -> MavenId<'_> {
         MavenId::new(&self.group, &self.artifact, &self.version)
     }
+    pub fn to_partial_buf(self) -> PartialMavenIdBuf {
+        self.into()
+    }
 }
 
 impl<'a> From<&'a MavenIdBuf> for MavenId<'a> {
@@ -105,5 +108,30 @@ impl PartialEq<MavenId<'_>> for MavenIdBuf {
 impl fmt::Display for MavenIdBuf {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}:{}:{}", self.group, self.artifact, self.version)
+    }
+}
+
+#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct PartialMavenIdBuf {
+    pub group: String,
+    pub artifact: String,
+}
+impl PartialMavenIdBuf {
+    pub fn new(group: impl Into<String>, artifact: impl Into<String>) -> PartialMavenIdBuf {
+        PartialMavenIdBuf {
+            group: group.into(),
+            artifact: artifact.into(),
+        }
+    }
+    pub fn to_full_buf(self, version: impl Into<String>) -> MavenIdBuf {
+        MavenIdBuf::new(self.group, self.artifact, version.into())
+    }
+}
+impl From<MavenIdBuf> for PartialMavenIdBuf {
+    fn from(value: MavenIdBuf) -> Self {
+        PartialMavenIdBuf {
+            group: value.group,
+            artifact: value.artifact,
+        }
     }
 }

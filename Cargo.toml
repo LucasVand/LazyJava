@@ -22,3 +22,4 @@ maven-version-rs = "0.1.0"
 toml = "1.1.2"
 parking_lot = "0.12.5"
 strum = { version = "0.28.0", features = ["derive"] }
+toml_edit = { version = "0.25", features = ["serde"] }
