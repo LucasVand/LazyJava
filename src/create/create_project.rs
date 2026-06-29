@@ -19,7 +19,7 @@ use crate::{
 };
 
 impl LazyJava {
-    pub fn create(&self, args: &CreateArgs) -> Result<(), LazyJavaError> {
+    pub fn create(args: &CreateArgs) -> Result<(), LazyJavaError> {
         log::info!("Starting create operation");
         let name = match &args.name {
             Some(name) => name.clone(),

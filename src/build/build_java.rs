@@ -1,3 +1,4 @@
+use crate::Context;
 use crate::args::{BuildArgs, BuildCommand, BuildSubCommand};
 use crate::build::find_stale_files::{files_to_recompile, find_modified_files};
 use crate::dependancy_graph::graph::DependancyGraph;
@@ -8,37 +9,35 @@ use crate::lsp::classpath::Classpath;
 use crate::utils::processes::{compile_java, compile_java_files};
 
 impl LazyJava {
-    pub fn build(&self, args: &BuildCommand) -> Result<(), LazyJavaError> {
-        self.assert_build_lib_src()?;
-
+    pub fn build(args: &BuildCommand, ctx: &Context) -> Result<(), LazyJavaError> {
         if let Some(build_command) = &args.command {
             match build_command {
-                BuildSubCommand::Modified {} => self.show_modified_files(),
-                BuildSubCommand::Dependancies {} => self.show_dependancy_graph(),
-                BuildSubCommand::Dependants {} => self.show_depentants_graph(),
-                BuildSubCommand::Stale {} => self.show_rebuild_files(),
-                BuildSubCommand::Classpath {} => self.rebuild_classpath(),
+                BuildSubCommand::Modified {} => Self::show_modified_files(ctx),
+                BuildSubCommand::Dependancies {} => Self::show_dependancy_graph(ctx),
+                BuildSubCommand::Dependants {} => Self::show_depentants_graph(ctx),
+                BuildSubCommand::Stale {} => Self::show_rebuild_files(ctx),
+                BuildSubCommand::Classpath {} => Self::rebuild_classpath(ctx),
             }
         } else {
-            self.build_java(&args.args)
+            Self::build_java(&args.args, ctx)
         }
     }
-    pub fn build_java(&self, args: &BuildArgs) -> Result<(), LazyJavaError> {
+    pub fn build_java(args: &BuildArgs, ctx: &Context) -> Result<(), LazyJavaError> {
         if args.build_all {
-            self.rebuild(args)
+            Self::rebuild(args, ctx)
         } else {
-            self.incrimental_build(args)
+            Self::incrimental_build(args, ctx)
         }
     }
-    fn incrimental_build(&self, args: &BuildArgs) -> Result<(), LazyJavaError> {
+    fn incrimental_build(args: &BuildArgs, ctx: &Context) -> Result<(), LazyJavaError> {
         log::info!("Starting incremental build");
-        Classpath::generate_if_stale(self)?;
+        Classpath::generate_if_stale(ctx)?;
 
-        let graph = DependancyGraph::create(&self.src)?;
+        let graph = DependancyGraph::create(&ctx.src)?;
         log::debug!("Created dependency graph");
 
-        let modified_files = find_modified_files(&self.build, &self.src)
-            .map_err(LazyJavaError::NoStaleFilesError)?;
+        let modified_files =
+            find_modified_files(&ctx.bin, &ctx.src).map_err(LazyJavaError::NoStaleFilesError)?;
 
         if modified_files.is_empty() {
             log::info!("No modified files, skipping compilation");
@@ -49,7 +48,7 @@ impl LazyJava {
         let recompile = files_to_recompile(graph, modified_files)?;
         log::debug!("Need to recompile {} files", recompile.len());
 
-        let status = compile_java_files(&self.build, &self.lib, &args.javac_args, recompile)
+        let status = compile_java_files(&ctx.bin, &ctx.lib, &args.javac_args, recompile)
             .map_err(LazyJavaError::UnableToCompile)?;
 
         log::debug!("Java compilation completed");
@@ -57,7 +56,7 @@ impl LazyJava {
             log::info!("Compilation successful");
 
             let file_time = filetime::FileTime::now();
-            filetime::set_file_mtime(&self.build, file_time)
+            filetime::set_file_mtime(&ctx.bin, file_time)
                 .map_err(LazyJavaError::NoBuildModificationTime)?;
 
             Ok(())
@@ -67,11 +66,11 @@ impl LazyJava {
         }
     }
 
-    fn rebuild(&self, args: &BuildArgs) -> Result<(), LazyJavaError> {
+    fn rebuild(args: &BuildArgs, ctx: &Context) -> Result<(), LazyJavaError> {
         log::info!("Starting full rebuild");
-        Classpath::generate(self)?;
+        Classpath::generate(ctx)?;
 
-        let status = compile_java(&self.src, &self.build, &self.lib, &args.javac_args)
+        let status = compile_java(&ctx.src, &ctx.bin, &ctx.lib, &args.javac_args)
             .map_err(LazyJavaError::UnableToCompile)?;
         log::debug!("Java compilation completed");
 
@@ -79,7 +78,7 @@ impl LazyJava {
             log::info!("Build successful");
 
             let file_time = filetime::FileTime::now();
-            filetime::set_file_mtime(&self.build, file_time)
+            filetime::set_file_mtime(&ctx.bin, file_time)
                 .map_err(LazyJavaError::NoBuildModificationTime)?;
 
             Ok(())
@@ -88,9 +87,9 @@ impl LazyJava {
             Err(LazyJavaError::CompilationErrors)
         }
     }
-    fn show_dependancy_graph(&self) -> Result<(), LazyJavaError> {
+    fn show_dependancy_graph(ctx: &Context) -> Result<(), LazyJavaError> {
         log::info!("Displaying dependency graph");
-        let graph = DependancyGraph::create(&self.src)?;
+        let graph = DependancyGraph::create(&ctx.src)?;
 
         for (_key, entry) in graph.nodes.iter() {
             println!(" {}", entry.file_name,);
@@ -101,10 +100,10 @@ impl LazyJava {
         }
         Ok(())
     }
-    fn show_modified_files(&self) -> Result<(), LazyJavaError> {
+    fn show_modified_files(ctx: &Context) -> Result<(), LazyJavaError> {
         log::info!("Displaying modified files");
-        let stale_files = find_modified_files(&self.build, &self.src)
-            .map_err(LazyJavaError::NoStaleFilesError)?;
+        let stale_files =
+            find_modified_files(&ctx.bin, &ctx.src).map_err(LazyJavaError::NoStaleFilesError)?;
 
         for file in stale_files {
             println!("{}", file.to_string_lossy());
@@ -112,12 +111,12 @@ impl LazyJava {
 
         Ok(())
     }
-    fn show_rebuild_files(&self) -> Result<(), LazyJavaError> {
+    fn show_rebuild_files(ctx: &Context) -> Result<(), LazyJavaError> {
         log::info!("Displaying files to rebuild");
-        let graph = DependancyGraph::create(&self.src)?;
+        let graph = DependancyGraph::create(&ctx.src)?;
 
-        let stale_files = find_modified_files(&self.build, &self.src)
-            .map_err(LazyJavaError::NoStaleFilesError)?;
+        let stale_files =
+            find_modified_files(&ctx.bin, &ctx.src).map_err(LazyJavaError::NoStaleFilesError)?;
 
         let recompile = files_to_recompile(graph, stale_files)?;
 
@@ -127,9 +126,9 @@ impl LazyJava {
 
         Ok(())
     }
-    fn show_depentants_graph(&self) -> Result<(), LazyJavaError> {
+    fn show_depentants_graph(ctx: &Context) -> Result<(), LazyJavaError> {
         log::info!("Displaying dependants graph");
-        let graph = DependancyGraph::create(&self.src)?;
+        let graph = DependancyGraph::create(&ctx.src)?;
         for (_key, entry) in graph.nodes.iter() {
             println!(" {}", entry.file_name,);
             for dep in &entry.dependants {
@@ -140,7 +139,7 @@ impl LazyJava {
 
         Ok(())
     }
-    fn rebuild_classpath(&self) -> Result<(), LazyJavaError> {
-        Ok(Classpath::generate(self)?)
+    fn rebuild_classpath(ctx: &Context) -> Result<(), LazyJavaError> {
+        Ok(Classpath::generate(ctx)?)
     }
 }

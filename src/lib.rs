@@ -6,6 +6,7 @@ pub mod args;
 pub mod build;
 pub mod clean;
 pub mod config;
+mod context;
 pub mod create;
 pub mod dependancy_graph;
 pub mod find;
@@ -18,6 +19,7 @@ pub mod packages;
 pub mod run;
 pub mod utils;
 
+pub use context::Context;
 pub use lazy_java::LazyJava;
 
 pub const BUILD_FOLDER: &str = "bin";

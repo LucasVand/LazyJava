@@ -11,7 +11,7 @@ use serde::Serialize;
 use std::io::Cursor;
 
 use crate::{
-    lazy_java::LazyJava,
+    Context,
     lsp::{
         classpath::{Classpath, ClasspathEntry},
         classpath_error::ClasspathError,
@@ -42,14 +42,13 @@ impl Classpath {
 
         Ok(classpath)
     }
-    pub fn generate(lj: &LazyJava) -> Result<(), ClasspathError> {
+    pub fn generate(ctx: &Context) -> Result<(), ClasspathError> {
         log::info!("Generating classpath file");
-        let classpath = Self::create(lj)?;
+        let classpath = Self::create(ctx)?;
 
         let serialized = Self::to_pretty_xml(&classpath)?;
 
-        let mut path = lj.root.clone();
-        path.push(".classpath");
+        let path = ctx.root.join(".classpath");
 
         log::debug!("Writing classpath to {:?}", path);
         fs::write(&path, serialized).map_err(|e| {
@@ -64,12 +63,10 @@ impl Classpath {
         Ok(())
     }
 
-    fn create(lj: &LazyJava) -> Result<Classpath, ClasspathError> {
+    fn create(ctx: &Context) -> Result<Classpath, ClasspathError> {
         log::debug!("Creating classpath from project structure");
-        let src = &lj.args.global_args.source;
-        let build = &lj.args.global_args.build;
 
-        let dir = Self::lib_files(&lj.lib)?;
+        let dir = Self::lib_files(&ctx.lib)?;
         log::debug!("Found {} library files", dir.len());
 
         let mut entries: Vec<ClasspathEntry> = dir
@@ -85,9 +82,9 @@ impl Classpath {
 
         entries.push(ClasspathEntry {
             kind: "src".into(),
-            path: src.into(),
+            path: ctx.relative_src.clone(),
             including: None,
-            output: Some(build.into()),
+            output: Some(ctx.relative_bin.clone()),
             attributes: None,
         });
 
@@ -137,9 +134,9 @@ impl Classpath {
         log::debug!("Found {} JAR files in library directory", java_files.len());
         Ok(java_files)
     }
-    fn validate(lj: &LazyJava) -> Result<bool, ClasspathError> {
+    fn validate(ctx: &Context) -> Result<bool, ClasspathError> {
         log::debug!("Validating classpath file");
-        let root = &lj.root;
+        let root = &ctx.root;
 
         let classpath = match Self::parse(&root.join(".classpath")) {
             Ok(cp) => cp,
@@ -161,16 +158,16 @@ impl Classpath {
         if let Some(classpath_src) = classpath_src {
             let c_src = path::absolute(Path::new(&classpath_src.path))
                 .map_err(|_| ClasspathError::PathError(classpath_src.path.to_string()))?;
-            let src = path::absolute(&lj.src)
-                .map_err(|_| ClasspathError::PathError(lj.src.to_string_lossy().to_string()))?;
+            let src = path::absolute(&ctx.src)
+                .map_err(|_| ClasspathError::PathError(ctx.src.to_string_lossy().to_string()))?;
 
             let c_output =
                 path::absolute(Path::new(&classpath_src.output.clone().unwrap_or_default()))
                     .map_err(|_| {
                         ClasspathError::PathError(classpath_src.output.clone().unwrap_or_default())
                     })?;
-            let build = path::absolute(Path::new(&lj.build))
-                .map_err(|_| ClasspathError::PathError(lj.build.to_string_lossy().to_string()))?;
+            let build = path::absolute(Path::new(&ctx.bin))
+                .map_err(|_| ClasspathError::PathError(ctx.bin.to_string_lossy().to_string()))?;
 
             if (c_src != src) || (c_output != build) {
                 log::debug!("Classpath source entry is out of date");
@@ -191,7 +188,7 @@ impl Classpath {
             return Ok(false);
         }
 
-        let libs: Vec<String> = Self::lib_files(&lj.lib)?
+        let libs: Vec<String> = Self::lib_files(&ctx.lib)?
             .iter()
             .map(|path| path.to_string_lossy().to_string())
             .collect();
@@ -206,11 +203,11 @@ impl Classpath {
 
         Ok(equal)
     }
-    pub fn generate_if_stale(lj: &LazyJava) -> Result<(), ClasspathError> {
+    pub fn generate_if_stale(ctx: &Context) -> Result<(), ClasspathError> {
         log::debug!("Checking if classpath needs regeneration");
-        if !(Self::validate(lj)?) {
+        if !(Self::validate(ctx)?) {
             log::info!("Classpath is stale, regenerating");
-            Self::generate(lj)?
+            Self::generate(ctx)?
         } else {
             log::debug!("Classpath is up to date");
         }

@@ -1,7 +1,5 @@
 use clap::{Parser, Subcommand};
 
-use crate::{BUILD_FOLDER, LIB_FOLDER, SRC_FOLDER};
-
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 #[command(propagate_version = true)]
@@ -161,14 +159,14 @@ pub struct LazyJavaGlobalArgs {
     pub verbose: u8,
 
     /// Where to find the java files to compile
-    #[arg(long = "source", default_value_t = SRC_FOLDER.to_string(), global = true)]
-    pub source: String,
+    #[arg(long = "source", global = true)]
+    pub source: Option<String>,
 
     /// Where to save the compiled java files
-    #[arg(long = "bin", default_value_t = BUILD_FOLDER.to_string(), global = true)]
-    pub build: String,
+    #[arg(long = "bin", global = true)]
+    pub build: Option<String>,
 
     /// Where to look for extra packages
-    #[arg(long = "lib",  default_value_t = LIB_FOLDER.to_string(), global = true)]
-    pub lib: String,
+    #[arg(long = "lib", global = true)]
+    pub lib: Option<String>,
 }

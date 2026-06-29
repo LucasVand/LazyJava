@@ -1,85 +1,31 @@
-use std::{
-    env,
-    path::{self, PathBuf},
-};
-
 use crate::{
+    Context,
     args::{LazyJavaArgs, LazyJavaCommand},
     lazy_java_error::LazyJavaError,
-    utils::find_root::find_root,
 };
-
-#[derive(Debug, Clone)]
-pub struct LazyJava {
-    pub src: PathBuf,
-    pub build: PathBuf,
-    pub lib: PathBuf,
-    pub root: PathBuf,
-    pub args: LazyJavaArgs,
-}
+pub struct LazyJava;
 
 impl LazyJava {
-    pub fn new(args: LazyJavaArgs) -> Result<LazyJava, LazyJavaError> {
-        let current = env::current_dir().map_err(LazyJavaError::NoCurrentDir)?;
-        log::debug!("Current directory: {:?}", current);
+    pub fn execute(args: LazyJavaArgs) -> Result<(), LazyJavaError> {
+        // commands that do not require contexts go here
+        match &args.command {
+            LazyJavaCommand::Create { args } => Self::create(args)?,
+            _ => (),
+        }
 
-        let root = find_root(&current).map_err(|_e| {
-            log::error!("Could not locate project root");
-            LazyJavaError::NoRoot
-        })?;
-        let root = root.unwrap_or(env::current_dir().map_err(|_e| LazyJavaError::NoRoot)?);
-        log::info!("Project root: {:?}", root);
+        let context = Context::new(&args)?;
 
-        let mut lib = root.clone();
-        lib.push(args.global_args.lib.clone());
-        let mut src = root.clone();
-        src.push(args.global_args.source.clone());
-        let mut build = root.clone();
-        build.push(args.global_args.build.clone());
-
-        log::debug!("Source directory: {:?}", src);
-        log::debug!("Build directory: {:?}", build);
-        log::debug!("Library directory: {:?}", lib);
-
-        let lazy_java = LazyJava {
-            src,
-            build,
-            lib,
-            root,
-            args,
+        // commands that require contexts go here
+        match &args.command {
+            LazyJavaCommand::Run { args } => Self::run(args, &context)?,
+            LazyJavaCommand::Build { args } => Self::build(args, &context)?,
+            LazyJavaCommand::Clean {} => Self::clean(&context)?,
+            LazyJavaCommand::Find { args } => Self::find(args, &context)?,
+            LazyJavaCommand::Add { args } => Self::add(args, &context)?,
+            LazyJavaCommand::Remove { args } => Self::remove(args, &context)?,
+            LazyJavaCommand::Sync { args } => Self::sync(args, &context)?,
+            _ => (),
         };
-
-        Ok(lazy_java)
-    }
-
-    pub fn execute(&self) -> Result<(), LazyJavaError> {
-        match &self.args.command {
-            LazyJavaCommand::Run { args } => self.run(args)?,
-            LazyJavaCommand::Build { args } => self.build(args)?,
-            LazyJavaCommand::Clean {} => self.clean()?,
-            LazyJavaCommand::Find { args } => self.find(args)?,
-            LazyJavaCommand::Create { args } => self.create(args)?,
-            LazyJavaCommand::Add { args } => self.add(args)?,
-            LazyJavaCommand::Remove { args } => self.remove(args)?,
-            LazyJavaCommand::Sync { args } => self.sync(args)?,
-        };
-        Ok(())
-    }
-
-    pub fn assert_build_lib_src(&self) -> Result<(), LazyJavaError> {
-        if !self.src.exists() {
-            let path = path::absolute(self.src.clone()).unwrap();
-            return Err(LazyJavaError::NoSource(path.to_string_lossy().into()));
-        }
-
-        if !self.build.exists() {
-            let path = path::absolute(self.build.clone()).unwrap();
-            return Err(LazyJavaError::NoBuild(path.to_string_lossy().into()));
-        }
-        if !self.lib.exists() {
-            let path = path::absolute(self.lib.clone()).unwrap();
-            return Err(LazyJavaError::NoLib(path.to_string_lossy().into()));
-        }
         Ok(())
     }
 }
