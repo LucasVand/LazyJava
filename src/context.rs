@@ -61,25 +61,37 @@ impl Context {
             config,
         };
 
-        ctx.assert_build_lib_src()?;
-
         Ok(ctx)
     }
 
-    pub fn assert_build_lib_src(&self) -> Result<(), LazyJavaError> {
+    pub fn assert_src_exists(&self) -> Result<(), LazyJavaError> {
         if !self.src.exists() {
             let path = path::absolute(self.src.clone()).unwrap();
             return Err(LazyJavaError::NoSource(path.to_string_lossy().into()));
         }
+        Ok(())
+    }
 
+    pub fn assert_bin_exists(&self) -> Result<(), LazyJavaError> {
         if !self.bin.exists() {
             let path = path::absolute(self.bin.clone()).unwrap();
             return Err(LazyJavaError::NoBuild(path.to_string_lossy().into()));
         }
+        Ok(())
+    }
+
+    pub fn assert_lib_exists(&self) -> Result<(), LazyJavaError> {
         if !self.lib.exists() {
             let path = path::absolute(self.lib.clone()).unwrap();
             return Err(LazyJavaError::NoLib(path.to_string_lossy().into()));
         }
+        Ok(())
+    }
+
+    pub fn assert_build_lib_src(&self) -> Result<(), LazyJavaError> {
+        self.assert_src_exists()?;
+        self.assert_bin_exists()?;
+        self.assert_lib_exists()?;
         Ok(())
     }
 
