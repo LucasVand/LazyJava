@@ -26,8 +26,21 @@ pub struct Context {
 
     pub dry_run: bool,
 }
+
 impl Context {
     pub fn new(args: &LazyJavaArgs) -> Result<Context, LazyJavaError> {
+        Self::new_internal(Some(args), None)
+    }
+    pub fn new_options(
+        args: Option<&LazyJavaArgs>,
+        config: Option<Config>,
+    ) -> Result<Context, LazyJavaError> {
+        Self::new_internal(args, config)
+    }
+    fn new_internal(
+        args: Option<&LazyJavaArgs>,
+        config: Option<Config>,
+    ) -> Result<Context, LazyJavaError> {
         let current = env::current_dir().map_err(LazyJavaError::NoCurrentDir)?;
         log::debug!("Current directory: {:?}", current);
 
@@ -38,7 +51,10 @@ impl Context {
 
         let root = root.unwrap_or(env::current_dir().map_err(|e| LazyJavaError::NoRoot(e))?);
 
-        let config = Config::fetch(&root)?;
+        let config = match config {
+            Some(config) => Ok(config),
+            None => Config::fetch(&root),
+        }?;
 
         log::info!("Project root: {:?}", root);
 
@@ -54,6 +70,11 @@ impl Context {
         log::debug!("Build directory: {:?}", bin);
         log::debug!("Library directory: {:?}", lib);
 
+        let dry_run: bool = match args {
+            Some(args) => args.global_args.dry_run,
+            None => false,
+        };
+
         let ctx = Context {
             relative_bin,
             relative_lib,
@@ -64,7 +85,7 @@ impl Context {
             root,
             current,
             config,
-            dry_run: args.global_args.dry_run,
+            dry_run: dry_run,
         };
 
         Ok(ctx)
@@ -101,8 +122,10 @@ impl Context {
         Ok(())
     }
 
-    fn src_path<'a>(args: &'a LazyJavaArgs, config: &'a Config) -> &'a str {
-        if let Some(src) = &args.global_args.source {
+    fn src_path<'a>(args: Option<&'a LazyJavaArgs>, config: &'a Config) -> &'a str {
+        if args.is_some()
+            && let Some(src) = &args.unwrap().global_args.source
+        {
             return src;
         } else if let Some(src) = &config.setup.src {
             return src;
@@ -111,8 +134,10 @@ impl Context {
         }
     }
 
-    fn bin_path<'a>(args: &'a LazyJavaArgs, config: &'a Config) -> &'a str {
-        if let Some(bin) = &args.global_args.build {
+    fn bin_path<'a>(args: Option<&'a LazyJavaArgs>, config: &'a Config) -> &'a str {
+        if args.is_some()
+            && let Some(bin) = &args.unwrap().global_args.build
+        {
             return bin;
         } else if let Some(bin) = &config.setup.bin {
             return bin;
@@ -120,8 +145,10 @@ impl Context {
             return BUILD_FOLDER;
         }
     }
-    fn lib_path<'a>(args: &'a LazyJavaArgs, config: &'a Config) -> &'a str {
-        if let Some(lib) = &args.global_args.lib {
+    fn lib_path<'a>(args: Option<&'a LazyJavaArgs>, config: &'a Config) -> &'a str {
+        if args.is_some()
+            && let Some(lib) = &args.unwrap().global_args.lib
+        {
             return lib;
         } else if let Some(lib) = &config.setup.lib {
             return lib;

@@ -22,9 +22,9 @@ pub mod utils;
 pub use context::Context;
 pub use lazy_java::LazyJava;
 
-pub const BUILD_FOLDER: &str = "bin";
+pub const BUILD_FOLDER: &str = "target/bin";
 pub const SRC_FOLDER: &str = "src";
-pub const LIB_FOLDER: &str = "lib";
+pub const LIB_FOLDER: &str = "target/lib";
 
 pub const MAVEN_URL: &str = "https://repo1.maven.org/maven2/";
 

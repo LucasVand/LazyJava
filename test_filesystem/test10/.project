@@ -1,18 +1,6 @@
-use std::{fs::write, io, path::Path};
-
-use crate::config::Config;
-
-pub struct DotProject {}
-
-impl DotProject {
-    pub fn generate(root: &Path, config: &Config) -> Result<(), io::Error> {
-        let name: &str = &config.project.name;
-        write(
-            root.join(".project"),
-            format!(
-                r#"<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>{name}</name>
+	<name>test10</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -38,8 +26,3 @@ impl DotProject {
 		</filter>
 	</filteredResources>
 </projectDescription>
-"#
-            ),
-        )
-    }
-}

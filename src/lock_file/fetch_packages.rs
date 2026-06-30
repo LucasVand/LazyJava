@@ -13,6 +13,9 @@ impl LockFile {
         list: Vec<&LockFilePackage>,
         dry_run: bool,
     ) -> Result<isize, LockFileError> {
+        if list.is_empty() {
+            return Ok(0);
+        }
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()

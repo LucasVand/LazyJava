@@ -16,11 +16,14 @@ pub struct ClasspathEntry {
     #[serde(rename = "@path")]
     pub path: String,
     #[serde(rename = "@including")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub including: Option<String>, // Option because it's not on every entry
     #[serde(rename = "@output")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub output: Option<String>,
 
     // Nested <attributes> element
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub attributes: Option<Attributes>,
 }
 

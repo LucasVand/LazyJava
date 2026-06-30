@@ -83,8 +83,15 @@ impl Classpath {
         entries.push(ClasspathEntry {
             kind: "src".into(),
             path: ctx.relative_src.clone(),
+            including: Some("**/*.java".to_string()),
+            output: None,
+            attributes: None,
+        });
+        entries.push(ClasspathEntry {
+            kind: "output".into(),
+            path: ctx.relative_bin.clone(),
             including: None,
-            output: Some(ctx.relative_bin.clone()),
+            output: None,
             attributes: None,
         });
 
@@ -161,21 +168,28 @@ impl Classpath {
             let src = path::absolute(&ctx.src)
                 .map_err(|_| ClasspathError::PathError(ctx.src.to_string_lossy().to_string()))?;
 
-            let c_output =
-                path::absolute(Path::new(&classpath_src.output.clone().unwrap_or_default()))
-                    .map_err(|_| {
-                        ClasspathError::PathError(classpath_src.output.clone().unwrap_or_default())
-                    })?;
-            let build = path::absolute(Path::new(&ctx.bin))
+            if c_src != src {
+                log::debug!("Classpath source entry is out of date");
+                log::debug!("Source equality: {}, ", c_src == src);
+                return Ok(false);
+            }
+        } else {
+            log::debug!("No source entry found in classpath");
+            return Ok(false);
+        }
+        let classpath_output = classpath
+            .entries
+            .iter()
+            .find(|entry| entry.kind == "output");
+        if let Some(classpath_output) = classpath_output {
+            let c_bin = path::absolute(Path::new(&classpath_output.path))
+                .map_err(|_| ClasspathError::PathError(classpath_output.path.to_string()))?;
+            let bin = path::absolute(&ctx.bin)
                 .map_err(|_| ClasspathError::PathError(ctx.bin.to_string_lossy().to_string()))?;
 
-            if (c_src != src) || (c_output != build) {
+            if c_bin != bin {
                 log::debug!("Classpath source entry is out of date");
-                log::debug!(
-                    "Source equality: {}, Output eqaulity: {}",
-                    c_src == src,
-                    c_output == build
-                );
+                log::debug!("Source equality: {}, ", c_bin == bin);
                 return Ok(false);
             }
         } else {
