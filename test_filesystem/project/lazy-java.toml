@@ -1,8 +1,6 @@
-dependancies = [
-    "org.springframework.boot:spring-boot-starter-web:4.1.0",
-    "com.google.guava:guava:33.6.0-jre",
-]
-
 [project]
 
 [setup]
+
+[dependancies]
+spring-boot-starter-web= { group = "org.springframework.boot", version = "4.1.0" }

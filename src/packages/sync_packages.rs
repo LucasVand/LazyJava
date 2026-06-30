@@ -6,8 +6,8 @@ use crate::{
 };
 
 impl LazyJava {
-    pub fn sync(sync_args: &SyncArgs, ctx: &mut Context) -> Result<(), LazyJavaError> {
-        if sync_args.dry_run {
+    pub fn sync(_sync_args: &SyncArgs, ctx: Context) -> Result<(), LazyJavaError> {
+        if ctx.dry_run {
             println!(
                 "{} ({} will be made)",
                 "--dry-run".green().bold(),
@@ -15,15 +15,18 @@ impl LazyJava {
             )
         }
 
-        let config = &mut ctx.config;
-        let mut lockfile = LockFile::fetch(&ctx.root)?;
+        let (inc, exc) = ctx.decompose();
 
-        config.sync_lock_file(&mut lockfile, &ctx.root, &ctx.lib, sync_args.dry_run)?;
+        let mut lockfile = LockFile::fetch(&inc.root)?;
 
-        config.write(&ctx.root)?;
+        exc.config.sync_lock_file(&mut lockfile, &inc)?;
 
-        if !sync_args.dry_run {
-            Classpath::generate(ctx)?;
+        exc.config.write(&inc.root)?;
+
+        let ctx = Context::compose(inc, exc);
+
+        if !ctx.dry_run {
+            Classpath::generate(&ctx)?;
         }
 
         Ok(())

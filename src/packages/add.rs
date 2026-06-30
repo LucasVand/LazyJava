@@ -6,23 +6,23 @@ use crate::{
 };
 
 impl LazyJava {
-    pub fn add(add_args: &AddArgs, ctx: &mut Context) -> Result<(), LazyJavaError> {
-        if add_args.dry_run {
+    pub fn add(add_args: &AddArgs, ctx: Context) -> Result<(), LazyJavaError> {
+        if ctx.dry_run {
             println!(
                 "{} ({} will be made)",
                 "--dry-run".green().bold(),
                 "No persistent changes".red().bold(),
             )
         }
+        let (inc, mut exc) = ctx.decompose();
 
-        let config = &mut ctx.config;
+        exc.config.add_package(&add_args, &inc)?;
+        let ctx = Context::compose(inc, exc);
 
-        config.add_package(&add_args, &ctx.root, &ctx.lib)?;
+        ctx.config.write(&ctx.root)?;
 
-        config.write(&ctx.root)?;
-
-        if !add_args.dry_run {
-            Classpath::generate(ctx)?;
+        if !ctx.dry_run {
+            Classpath::generate(&ctx)?;
         }
 
         Ok(())

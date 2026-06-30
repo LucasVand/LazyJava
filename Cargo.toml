@@ -1,3 +1,6 @@
+[workspace]
+members = ["decompose"]
+
 [package]
 name = "lazy-java"
 version = "0.1.0"
@@ -22,3 +25,8 @@ maven-version-rs = "0.1.0"
 toml = "1.1.2"
 parking_lot = "0.12.5"
 strum = { version = "0.28.0", features = ["derive"] }
+toml_edit = { version = "0.25", features = ["serde"] }
+decompose = { path = "decompose" }
+
+[dev-dependencies]
+tempfile = "3.27.0"

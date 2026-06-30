@@ -13,9 +13,10 @@ use serde::{Deserialize, Serialize};
 use crate::{
     LOCK_FILE_NAME,
     config::ConfigDependancy,
+    context::ContextNoConfig,
     lock_file::LockFileError,
     maven_central::{
-        MavenId, MavenIdBuf,
+        MavenId, MavenIdBuf, PartialMavenIdBuf,
         pom::{DependancyType, MavenDependancyList},
     },
 };
@@ -88,7 +89,13 @@ impl LockFile {
 
         Ok(())
     }
-    pub fn add_packages(&mut self, packages: Vec<LockFilePackage>) {
+    pub fn add_package(&mut self, id: MavenIdBuf) -> Result<isize, LockFileError> {
+        let list: Vec<LockFilePackage> = MavenDependancyList::new(id)?
+            .into_iter()
+            .map(|m| m.into())
+            .collect();
+        let list_len = list.len();
+
         let mut map: HashMap<u64, LockFilePackage> = mem::take(&mut self.packages)
             .into_iter()
             .map(|p| {
@@ -99,7 +106,7 @@ impl LockFile {
             })
             .collect();
 
-        for package in packages {
+        for package in list {
             let hash =
                 MavenDependancyList::hash_maven_bom_id(&package.id.group, &package.id.artifact);
             if let Some(old) = map.remove(&hash) {
@@ -117,16 +124,13 @@ impl LockFile {
         }
 
         self.packages = map.into_values().collect();
+        Ok(list_len as isize)
     }
-    pub fn validate_current_packages(
-        &self,
-        lib: &Path,
-        dry_run: bool,
-    ) -> Result<isize, LockFileError> {
+    pub fn validate_current_packages(&self, ctx: &ContextNoConfig) -> Result<isize, LockFileError> {
         println!(
             "{} dependancies with /{}",
             "Syncing".green().bold(),
-            lib.file_name().unwrap().to_string_lossy()
+            ctx.lib.file_name().unwrap().to_string_lossy()
         );
         let mut added: isize = 0;
         let mut removed: isize = 0;
@@ -136,7 +140,7 @@ impl LockFile {
             .map(|p| (p.file_name.as_str(), p))
             .collect();
 
-        let dir = fs::read_dir(lib)?;
+        let dir = fs::read_dir(&ctx.lib)?;
 
         for file in dir {
             if let Ok(file) = file
@@ -145,8 +149,8 @@ impl LockFile {
                 let name = name.to_string_lossy().to_string();
 
                 match map.remove(name.as_str()) {
-                    Some(pack) => {
-                        println!("    {} {}", "Found".green().bold(), pack.id);
+                    Some(_pack) => {
+                        // println!("    {} {}", "Found".green().bold(), pack.id);
                     }
                     None => {
                         let path = file.path();
@@ -155,7 +159,7 @@ impl LockFile {
                             .map(|s| s.to_string_lossy())
                             .unwrap_or_default();
                         println!("    {} {}", "Removed".green().bold(), stem);
-                        if !dry_run {
+                        if !ctx.dry_run {
                             fs::remove_file(path)?;
                         }
                         removed += 1;
@@ -164,8 +168,11 @@ impl LockFile {
             }
         }
 
-        let download_change =
-            Self::fetch_packages(lib, map.into_iter().map(|(_k, v)| v).collect(), dry_run)?;
+        let download_change = Self::fetch_packages(
+            &ctx.lib,
+            map.into_iter().map(|(_k, v)| v).collect(),
+            ctx.dry_run,
+        )?;
         added += download_change;
 
         let plural = |change: isize| {
@@ -193,17 +200,23 @@ impl LockFile {
     }
     pub fn sync_with_root_packages(
         &mut self,
-        root_packages: &Vec<ConfigDependancy>,
+        root_packages: &HashMap<PartialMavenIdBuf, ConfigDependancy>,
     ) -> Result<(), LockFileError> {
-        let mut map: HashSet<MavenIdBuf> = self
+        let mut map: HashSet<PartialMavenIdBuf> = self
             .packages
             .iter()
             .filter(|p| p.root)
-            .map(|p| p.id.to_owned())
+            .map(|p| p.id.clone().to_partial_buf())
             .collect();
 
-        for root_package in root_packages {
-            map.remove(&root_package.id);
+        for (key, package) in root_packages {
+            if !map.contains(key) {
+                self.add_package(package.id.clone())?;
+            }
+        }
+
+        for (key, _root_package) in root_packages {
+            map.remove(key);
         }
 
         for key in map {

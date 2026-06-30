@@ -3,11 +3,14 @@ use std::{
     path::{self, PathBuf},
 };
 
+use decompose::decompose;
+
 use crate::{
     BUILD_FOLDER, LIB_FOLDER, SRC_FOLDER, args::LazyJavaArgs, config::Config,
     lazy_java_error::LazyJavaError, utils::find_root::find_root,
 };
 
+#[decompose(ContextNoConfig, exclude(config))]
 pub struct Context {
     pub src: PathBuf,
     pub bin: PathBuf,
@@ -20,6 +23,8 @@ pub struct Context {
     pub relative_lib: String,
 
     pub config: Config,
+
+    pub dry_run: bool,
 }
 impl Context {
     pub fn new(args: &LazyJavaArgs) -> Result<Context, LazyJavaError> {
@@ -59,6 +64,7 @@ impl Context {
             root,
             current,
             config,
+            dry_run: args.global_args.dry_run,
         };
 
         Ok(ctx)

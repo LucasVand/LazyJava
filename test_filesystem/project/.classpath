@@ -40,9 +40,6 @@
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-webmvc-7.0.8.jar" including="" output="">
         <attributes/>
     </classpathentry>
-    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/guava-33.6.0-jre.jar" including="" output="">
-        <attributes/>
-    </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/slf4j-api-2.0.18.jar" including="" output="">
         <attributes/>
     </classpathentry>
@@ -70,13 +67,7 @@
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-boot-autoconfigure-4.1.0.jar" including="" output="">
         <attributes/>
     </classpathentry>
-    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/failureaccess-1.0.3.jar" including="" output="">
-        <attributes/>
-    </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/jackson-annotations-2.21.jar" including="" output="">
-        <attributes/>
-    </classpathentry>
-    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar" including="" output="">
         <attributes/>
     </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-expression-7.0.8.jar" including="" output="">
@@ -100,9 +91,6 @@
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-boot-starter-tomcat-4.1.0.jar" including="" output="">
         <attributes/>
     </classpathentry>
-    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/j2objc-annotations-3.1.jar" including="" output="">
-        <attributes/>
-    </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-core-7.0.8.jar" including="" output="">
         <attributes/>
     </classpathentry>
@@ -116,9 +104,6 @@
         <attributes/>
     </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/spring-boot-tomcat-4.1.0.jar" including="" output="">
-        <attributes/>
-    </classpathentry>
-    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/error_prone_annotations-2.47.0.jar" including="" output="">
         <attributes/>
     </classpathentry>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/project/lib/jul-to-slf4j-2.0.18.jar" including="" output="">

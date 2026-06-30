@@ -2,6 +2,8 @@ use std::io;
 
 use thiserror::Error;
 
+use crate::maven_central::MavenError;
+
 #[derive(Error, Debug)]
 pub enum LockFileError {
     #[error("Failed to parse lockfile")]
@@ -28,4 +30,7 @@ pub enum LockFileError {
 
     #[error("Encountered errors when fetching packages")]
     FetchError(Vec<LockFileError>),
+
+    #[error("Encountered an error when fetching maven")]
+    MavenError(#[from] MavenError),
 }

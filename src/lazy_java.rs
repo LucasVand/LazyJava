@@ -46,20 +46,20 @@ impl LazyJava {
     }
 
     fn add_internal(all_args: &LazyJavaArgs, args: &AddArgs) -> Result<(), LazyJavaError> {
-        let mut ctx = Context::new(all_args)?;
+        let ctx = Context::new(all_args)?;
         ctx.assert_build_lib_src()?;
-        Self::add(args, &mut ctx)
+        Self::add(args, ctx)
     }
 
     fn remove_internal(all_args: &LazyJavaArgs, args: &RemoveArgs) -> Result<(), LazyJavaError> {
-        let mut ctx = Context::new(all_args)?;
+        let ctx = Context::new(all_args)?;
         ctx.assert_build_lib_src()?;
-        Self::remove(args, &mut ctx)
+        Self::remove(args, ctx)
     }
 
     fn sync_internal(all_args: &LazyJavaArgs, args: &SyncArgs) -> Result<(), LazyJavaError> {
-        let mut ctx = Context::new(all_args)?;
+        let ctx = Context::new(all_args)?;
         ctx.assert_build_lib_src()?;
-        Self::sync(args, &mut ctx)
+        Self::sync(args, ctx)
     }
 }
