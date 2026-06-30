@@ -102,11 +102,17 @@ fn add_resources(
 fn copy_file(file: &DirEntry, relative: &Path, ctx: &Context) -> Result<PathBuf, LazyJavaError> {
     let dest_path = ctx.bin.join(relative).join(file.file_name());
 
+    let src = file.path();
     if !dest_path.exists() {
-        let src = file.path();
-
         log::info!("Copying {} to {}", src.display(), dest_path.display());
         fs::copy(src, &dest_path)?;
+    } else {
+        let meta_dest = fs::metadata(&dest_path)?;
+        let meta_src = fs::metadata(&src)?;
+
+        if meta_src.modified()? > meta_dest.modified()? {
+            fs::copy(src, &dest_path)?;
+        }
     }
     Ok(dest_path)
 }
