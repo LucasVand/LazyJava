@@ -3,13 +3,13 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::{
-        config::{Config, ConfigDependancy, ConfigProject, ConfigSetup, ConfigError},
+        config::{
+            Config, ConfigDependancy, ConfigError, ConfigProject, ConfigResources, ConfigSetup,
+        },
         maven_central::{MavenIdBuf, PartialMavenIdBuf},
     };
 
-    fn make_deps(
-        entries: &[(&str, &str, &str)],
-    ) -> HashMap<PartialMavenIdBuf, ConfigDependancy> {
+    fn make_deps(entries: &[(&str, &str, &str)]) -> HashMap<PartialMavenIdBuf, ConfigDependancy> {
         entries
             .iter()
             .map(|&(group, artifact, version)| {
@@ -24,7 +24,7 @@ mod tests {
     fn config_round_trip() {
         let config = Config {
             project: ConfigProject {
-                name: Some("my-project".into()),
+                name: "my-project".into(),
                 group: Some("com.example".into()),
                 artifact: Some("my-app".into()),
                 version: Some("1.0.0".into()),
@@ -34,22 +34,32 @@ mod tests {
                 ("org.springframework", "spring-core", "6.0.0"),
                 ("junit", "junit", "4.13.2"),
             ]),
+            resources: ConfigResources {
+                exclude: Vec::new(),
+            },
         };
 
         let toml_str = toml::to_string_pretty(&config).unwrap();
         let deserialized: Config = toml::from_str(&toml_str).unwrap();
 
-        assert_eq!(deserialized.project.name.unwrap(), "my-project");
+        assert_eq!(deserialized.project.name, "my-project");
         assert_eq!(deserialized.project.group.unwrap(), "com.example");
         assert_eq!(deserialized.project.artifact.unwrap(), "my-app");
         assert_eq!(deserialized.project.version.unwrap(), "1.0.0");
         assert_eq!(deserialized.dependancies.len(), 2);
-        assert!(deserialized
-            .dependancies
-            .contains_key(&PartialMavenIdBuf::new("org.springframework", "spring-core")));
-        assert!(deserialized
-            .dependancies
-            .contains_key(&PartialMavenIdBuf::new("junit", "junit")));
+        assert!(
+            deserialized
+                .dependancies
+                .contains_key(&PartialMavenIdBuf::new(
+                    "org.springframework",
+                    "spring-core"
+                ))
+        );
+        assert!(
+            deserialized
+                .dependancies
+                .contains_key(&PartialMavenIdBuf::new("junit", "junit"))
+        );
     }
 
     #[test]
@@ -72,6 +82,7 @@ mod tests {
             project: ConfigProject::default(),
             setup: ConfigSetup::default(),
             dependancies: make_deps(&[("com.example", "my-lib", "2.0.0")]),
+            resources: ConfigResources::default(),
         };
 
         let toml_str = toml::to_string_pretty(&config).unwrap();
@@ -90,21 +101,28 @@ mod tests {
                 ("group.b", "artifact-b", "2.0.0"),
                 ("group.c", "artifact-c", "3.0.0"),
             ]),
+            resources: ConfigResources::default(),
         };
 
         let toml_str = toml::to_string_pretty(&config).unwrap();
         let deserialized: Config = toml::from_str(&toml_str).unwrap();
 
         assert_eq!(deserialized.dependancies.len(), 3);
-        assert!(deserialized
-            .dependancies
-            .contains_key(&PartialMavenIdBuf::new("group.a", "artifact-a")));
-        assert!(deserialized
-            .dependancies
-            .contains_key(&PartialMavenIdBuf::new("group.b", "artifact-b")));
-        assert!(deserialized
-            .dependancies
-            .contains_key(&PartialMavenIdBuf::new("group.c", "artifact-c")));
+        assert!(
+            deserialized
+                .dependancies
+                .contains_key(&PartialMavenIdBuf::new("group.a", "artifact-a"))
+        );
+        assert!(
+            deserialized
+                .dependancies
+                .contains_key(&PartialMavenIdBuf::new("group.b", "artifact-b"))
+        );
+        assert!(
+            deserialized
+                .dependancies
+                .contains_key(&PartialMavenIdBuf::new("group.c", "artifact-c"))
+        );
     }
 
     #[test]
@@ -160,8 +178,9 @@ my-lib = { group = "com.example", version = "" }
         let root = dir.path();
 
         let config = Config {
+            resources: ConfigResources::default(),
             project: ConfigProject {
-                name: Some("test-project".into()),
+                name: "test-project".into(),
                 ..Default::default()
             },
             setup: ConfigSetup::default(),
@@ -171,11 +190,13 @@ my-lib = { group = "com.example", version = "" }
         config.write(root)?;
 
         let loaded = Config::fetch(root)?;
-        assert_eq!(loaded.project.name.unwrap(), "test-project");
+        assert_eq!(loaded.project.name, "test-project");
         assert_eq!(loaded.dependancies.len(), 1);
-        assert!(loaded
-            .dependancies
-            .contains_key(&PartialMavenIdBuf::new("com.test", "test-lib")));
+        assert!(
+            loaded
+                .dependancies
+                .contains_key(&PartialMavenIdBuf::new("com.test", "test-lib"))
+        );
 
         Ok(())
     }

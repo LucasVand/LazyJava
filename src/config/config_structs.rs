@@ -8,13 +8,19 @@ use serde::{Deserialize, Serialize};
 
 use crate::maven_central::MavenIdBuf;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct Config {
     #[serde(default)]
+    #[serde(skip_serializing_if = "is_default")]
     pub project: ConfigProject,
 
     #[serde(default)]
+    #[serde(skip_serializing_if = "is_default")]
     pub setup: ConfigSetup,
+
+    #[serde(default)]
+    #[serde(skip_serializing_if = "is_default")]
+    pub resources: ConfigResources,
 
     #[serde(default)]
     #[serde(skip_serializing_if = "HashMap::is_empty")]
@@ -24,11 +30,10 @@ pub struct Config {
     )]
     pub dependancies: HashMap<PartialMavenIdBuf, ConfigDependancy>,
 }
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ConfigProject {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
+    pub name: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub group: Option<String>,
@@ -40,7 +45,7 @@ pub struct ConfigProject {
     pub version: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ConfigSetup {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -53,7 +58,7 @@ pub struct ConfigSetup {
     pub bin: Option<String>,
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, PartialEq, PartialOrd, Ord, Eq)]
 pub struct ConfigDependancy {
     pub id: MavenIdBuf,
 }
@@ -62,4 +67,16 @@ impl From<MavenIdBuf> for ConfigDependancy {
     fn from(value: MavenIdBuf) -> Self {
         ConfigDependancy { id: value }
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ConfigResources {
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
+    pub exclude: Vec<String>,
+}
+
+fn is_default<T: Default + PartialEq>(value: &T) -> bool {
+    value == &T::default()
 }
