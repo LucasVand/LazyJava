@@ -78,7 +78,7 @@ impl LazyJava {
         }
 
         let mut config = Config::fetch(&project_dir)?;
-        config.project.name = Some(name.clone());
+        config.project.name = name.clone();
 
         config.write(&project_dir)?;
 

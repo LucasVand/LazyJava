@@ -1,6 +1,7 @@
 use crate::Context;
 use crate::args::{BuildArgs, BuildCommand, BuildSubCommand};
 use crate::build::find_stale_files::{files_to_recompile, find_modified_files};
+use crate::build::resources::copy_resources;
 use crate::dependancy_graph::graph::DependancyGraph;
 use crate::lazy_java::LazyJava;
 
@@ -24,10 +25,12 @@ impl LazyJava {
     }
     pub fn build_java(args: &BuildArgs, ctx: &Context) -> Result<(), LazyJavaError> {
         if args.build_all {
-            Self::rebuild(args, ctx)
+            Self::rebuild(args, ctx)?;
         } else {
-            Self::incrimental_build(args, ctx)
+            Self::incrimental_build(args, ctx)?;
         }
+        copy_resources(args, ctx)?;
+        Ok(())
     }
     fn incrimental_build(args: &BuildArgs, ctx: &Context) -> Result<(), LazyJavaError> {
         log::info!("Starting incremental build");

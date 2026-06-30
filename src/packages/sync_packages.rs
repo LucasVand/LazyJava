@@ -1,8 +1,12 @@
 use colored::Colorize;
 
 use crate::{
-    Context, args::SyncArgs, lazy_java::LazyJava, lazy_java_error::LazyJavaError,
-    lock_file::LockFile, lsp::classpath::Classpath,
+    Context,
+    args::SyncArgs,
+    lazy_java::LazyJava,
+    lazy_java_error::LazyJavaError,
+    lock_file::LockFile,
+    lsp::{DotProject, classpath::Classpath},
 };
 
 impl LazyJava {
@@ -27,6 +31,7 @@ impl LazyJava {
 
         if !ctx.dry_run {
             Classpath::generate(&ctx)?;
+            DotProject::generate(&ctx.root, &ctx.config)?;
         }
 
         Ok(())

@@ -1,6 +1,8 @@
 [project]
+name = "project"
 
-[setup]
+[resources]
+exclude = ["*.js"]
 
 [dependancies]
 spring-boot-starter-web= { group = "org.springframework.boot", version = "4.1.0" }

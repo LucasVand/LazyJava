@@ -6,8 +6,7 @@ pub struct DotProject {}
 
 impl DotProject {
     pub fn generate(root: &Path, config: &Config) -> Result<(), io::Error> {
-        let def = "Unamed-Project".to_string();
-        let name: &str = config.project.name.as_ref().unwrap_or(&def);
+        let name: &str = &config.project.name;
         write(
             root.join(".project"),
             format!(
