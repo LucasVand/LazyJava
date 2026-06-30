@@ -27,3 +27,6 @@ parking_lot = "0.12.5"
 strum = { version = "0.28.0", features = ["derive"] }
 toml_edit = { version = "0.25", features = ["serde"] }
 decompose = { path = "decompose" }
+
+[dev-dependencies]
+tempfile = "3.27.0"
