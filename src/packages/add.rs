@@ -6,7 +6,7 @@ use crate::{
 };
 
 impl LazyJava {
-    pub fn add(add_args: &AddArgs, ctx: &mut Context) -> Result<(), LazyJavaError> {
+    pub fn add(add_args: &AddArgs, ctx: Context) -> Result<(), LazyJavaError> {
         if ctx.dry_run {
             println!(
                 "{} ({} will be made)",
@@ -14,13 +14,15 @@ impl LazyJava {
                 "No persistent changes".red().bold(),
             )
         }
+        let (inc, mut exc) = ctx.decompose();
 
-        ctx.config.add_package(&add_args, ctx)?;
+        exc.config.add_package(&add_args, &inc)?;
+        let ctx = Context::compose(inc, exc);
 
         ctx.config.write(&ctx.root)?;
 
         if !ctx.dry_run {
-            Classpath::generate(ctx)?;
+            Classpath::generate(&ctx)?;
         }
 
         Ok(())

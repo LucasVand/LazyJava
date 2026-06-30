@@ -5,7 +5,7 @@ use crate::{
 };
 
 impl LazyJava {
-    pub fn remove(remove_args: &RemoveArgs, ctx: &mut Context) -> Result<(), LazyJavaError> {
+    pub fn remove(remove_args: &RemoveArgs, ctx: Context) -> Result<(), LazyJavaError> {
         if ctx.dry_run {
             println!(
                 "{} ({} will be made)",
@@ -14,11 +14,14 @@ impl LazyJava {
             )
         }
 
-        ctx.config.remove_package(remove_args, ctx)?;
+        let (inc, mut exc) = ctx.decompose();
+        exc.config.remove_package(remove_args, &inc)?;
+
+        let ctx = Context::compose(inc, exc);
 
         ctx.config.write(&ctx.root)?;
         if !ctx.dry_run {
-            Classpath::generate(ctx)?;
+            Classpath::generate(&ctx)?;
         }
 
         Ok(())

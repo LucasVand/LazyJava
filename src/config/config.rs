@@ -4,9 +4,10 @@ use colored::Colorize;
 use toml_edit::{DocumentMut, Item};
 
 use crate::{
-    CONFIG_FILE_NAME, Context,
+    CONFIG_FILE_NAME,
     args::{AddArgs, RemoveArgs},
     config::{config_error::ConfigError, config_structs::Config},
+    context::ContextNoConfig,
     lock_file::LockFile,
     maven_central::{MavenError, MavenIdBuf, PartialMavenIdBuf, fetch_artifact_metadata},
 };
@@ -67,7 +68,11 @@ impl Config {
 
         Ok(())
     }
-    pub fn add_package(&mut self, add_args: &AddArgs, ctx: &Context) -> Result<(), ConfigError> {
+    pub fn add_package(
+        &mut self,
+        add_args: &AddArgs,
+        ctx: &ContextNoConfig,
+    ) -> Result<(), ConfigError> {
         let mut lockfile = LockFile::fetch(&ctx.root)?;
 
         let version: Result<String, MavenError> = match &add_args.artifact_version {
@@ -86,7 +91,7 @@ impl Config {
         if !ctx.dry_run {
             self.dependancies
                 .insert(id.clone().into(), id.clone().into());
-            lockfile.add_package(id);
+            lockfile.add_package(id)?;
         }
 
         self.sync_lock_file(&mut lockfile, ctx)?;
@@ -95,7 +100,7 @@ impl Config {
     pub fn remove_package(
         &mut self,
         remove_args: &RemoveArgs,
-        ctx: &Context,
+        ctx: &ContextNoConfig,
     ) -> Result<(), ConfigError> {
         let mut lockfile = LockFile::fetch(&ctx.root)?;
 
@@ -126,7 +131,7 @@ impl Config {
     pub fn sync_lock_file(
         &self,
         lockfile: &mut LockFile,
-        ctx: &Context,
+        ctx: &ContextNoConfig,
     ) -> Result<(), ConfigError> {
         lockfile.sync_with_root_packages(&self.dependancies)?;
 

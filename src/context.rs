@@ -3,11 +3,14 @@ use std::{
     path::{self, PathBuf},
 };
 
+use decompose::decompose;
+
 use crate::{
     BUILD_FOLDER, LIB_FOLDER, SRC_FOLDER, args::LazyJavaArgs, config::Config,
-    lazy_java_error::LazyJavaError, lock_file::LockFile, utils::find_root::find_root,
+    lazy_java_error::LazyJavaError, utils::find_root::find_root,
 };
 
+#[decompose(ContextNoConfig, exclude(config))]
 pub struct Context {
     pub src: PathBuf,
     pub bin: PathBuf,
@@ -125,12 +128,5 @@ impl Context {
         } else {
             return LIB_FOLDER;
         }
-    }
-    pub fn sync_packages(&mut self) -> Result<(), LazyJavaError> {
-        let mut lockfile = LockFile::fetch(&self.root)?;
-
-        self.config.sync_lock_file(&mut lockfile, self)?;
-
-        Ok(())
     }
 }

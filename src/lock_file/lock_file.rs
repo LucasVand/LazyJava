@@ -11,8 +11,9 @@ use maven_version::Maven3ArtifactVersion;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Context, LOCK_FILE_NAME,
+    LOCK_FILE_NAME,
     config::ConfigDependancy,
+    context::ContextNoConfig,
     lock_file::LockFileError,
     maven_central::{
         MavenId, MavenIdBuf, PartialMavenIdBuf,
@@ -125,7 +126,7 @@ impl LockFile {
         self.packages = map.into_values().collect();
         Ok(list_len as isize)
     }
-    pub fn validate_current_packages(&self, ctx: &Context) -> Result<isize, LockFileError> {
+    pub fn validate_current_packages(&self, ctx: &ContextNoConfig) -> Result<isize, LockFileError> {
         println!(
             "{} dependancies with /{}",
             "Syncing".green().bold(),

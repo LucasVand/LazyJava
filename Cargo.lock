@@ -304,6 +304,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "decompose"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "derive_more"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -906,6 +915,7 @@ dependencies = [
  "anyhow",
  "clap",
  "colored",
+ "decompose",
  "env_logger",
  "filetime",
  "inquire",
