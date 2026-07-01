@@ -13,6 +13,13 @@ use crate::{
 };
 
 impl Config {
+    pub fn assert_config_file_exists(root: &Path) -> Result<(), ConfigError> {
+        let config_path = root.join(CONFIG_FILE_NAME);
+        if !config_path.exists() {
+            return Err(ConfigError::NoConfig(config_path));
+        }
+        Ok(())
+    }
     pub fn fetch(root: &Path) -> Result<Config, ConfigError> {
         Self::fetch_from_fs(root)
     }
