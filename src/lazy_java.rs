@@ -4,6 +4,7 @@ use crate::{
         AddArgs, BuildCommand, FindArgs, LazyJavaArgs, LazyJavaCommand, RemoveArgs, RunArgs,
         SyncArgs,
     },
+    config::Config,
     lazy_java_error::LazyJavaError,
 };
 pub struct LazyJava;
@@ -24,12 +25,13 @@ impl LazyJava {
 
     fn build_internal(all_args: &LazyJavaArgs, args: &BuildCommand) -> Result<(), LazyJavaError> {
         let ctx = Context::new(all_args)?;
-        ctx.assert_build_lib_src()?;
+        ctx.assert_all()?;
         Self::build(args, &ctx)
     }
 
     fn clean_internal(all_args: &LazyJavaArgs) -> Result<(), LazyJavaError> {
         let ctx = Context::new(all_args)?;
+        Config::assert_config_file_exists(&ctx.root)?;
         Self::clean(&ctx)
     }
 
@@ -41,25 +43,25 @@ impl LazyJava {
 
     fn run_internal(all_args: &LazyJavaArgs, args: &RunArgs) -> Result<(), LazyJavaError> {
         let ctx = Context::new(all_args)?;
-        ctx.assert_build_lib_src()?;
+        ctx.assert_all()?;
         Self::run(args, &ctx)
     }
 
     fn add_internal(all_args: &LazyJavaArgs, args: &AddArgs) -> Result<(), LazyJavaError> {
         let ctx = Context::new(all_args)?;
-        ctx.assert_build_lib_src()?;
+        ctx.assert_all()?;
         Self::add(args, ctx)
     }
 
     fn remove_internal(all_args: &LazyJavaArgs, args: &RemoveArgs) -> Result<(), LazyJavaError> {
         let ctx = Context::new(all_args)?;
-        ctx.assert_build_lib_src()?;
+        ctx.assert_all()?;
         Self::remove(args, ctx)
     }
 
     fn sync_internal(all_args: &LazyJavaArgs, args: &SyncArgs) -> Result<(), LazyJavaError> {
         let ctx = Context::new(all_args)?;
-        ctx.assert_build_lib_src()?;
+        ctx.assert_all()?;
         Self::sync(args, ctx)
     }
 }

@@ -39,8 +39,7 @@ pub fn git_init(project_path: &Path) -> Result<ExitStatus, io::Error> {
 
     Ok(output)
 }
-const GITIGNORE_CONTENTS: &str = r#"build/
-lib/
+const GITIGNORE_CONTENTS: &str = r#"target/
 *.class
 *.jar
 *.log

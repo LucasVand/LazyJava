@@ -7,6 +7,7 @@ use filetime::FileTime;
 use thiserror::Error;
 
 use crate::{
+    BUILD_FOLDER, Context, LIB_FOLDER, SRC_FOLDER,
     args::CreateArgs,
     config::Config,
     create::{
@@ -15,7 +16,7 @@ use crate::{
     },
     lazy_java::LazyJava,
     lazy_java_error::LazyJavaError,
-    lsp::DotProject,
+    lsp::sync_lsp_config,
 };
 
 impl LazyJava {
@@ -38,18 +39,26 @@ impl LazyJava {
         log::debug!("Project directory: {:?}", project_dir);
         fs::create_dir(&project_dir).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
 
-        let mut build = project_dir.clone();
-        build.push("bin");
+        let target = project_dir.join("target");
+        let build = target.join(BUILD_FOLDER);
 
-        let mut lib = project_dir.clone();
-        lib.push("lib");
+        let lib = target.join(LIB_FOLDER);
+
         let mut src = project_dir.clone();
-        src.push("src");
+        src.push(SRC_FOLDER);
 
-        log::debug!("Creating subdirectories: bin, lib, src");
+        log::debug!("Creating subdirectories: bin, lib, src, target");
+        fs::create_dir(&target).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
+
         fs::create_dir(&build).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
+
         fs::create_dir(&src).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
         fs::create_dir(&lib).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
+
+        fs::write(
+            &project_dir.join("pom.xml"),
+            "This file is to make sure root finders find this project (do not remove)",
+        )?;
 
         if !args.bare {
             log::debug!("Creating example Main class");
@@ -77,12 +86,16 @@ impl LazyJava {
             log::debug!("Git repository initialized");
         }
 
-        let mut config = Config::fetch(&project_dir)?;
+        let mut config = Config::default();
         config.project.name = name.clone();
 
         config.write(&project_dir)?;
 
-        DotProject::generate(&project_dir, &config)?;
+        env::set_current_dir(&project_dir)?;
+
+        let ctx = Context::new_options(None, Some(config))?;
+
+        sync_lsp_config(&ctx)?;
 
         println!();
         println!("  now run");

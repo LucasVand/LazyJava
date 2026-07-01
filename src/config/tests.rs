@@ -216,9 +216,9 @@ my-lib = { group = "com.example", version = "" }
     }
 
     #[test]
-    fn fetch_returns_default_when_no_file() {
+    fn fetch_errors_when_no_config_file() {
         let dir = tempfile::tempdir().unwrap();
-        let config = Config::fetch(dir.path()).unwrap();
-        assert!(config.dependancies.is_empty());
+        let result = Config::fetch(dir.path());
+        assert!(result.is_err());
     }
 }

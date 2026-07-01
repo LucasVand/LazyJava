@@ -150,13 +150,17 @@ pub struct LazyJavaGlobalArgs {
     #[arg(long = "source", global = true)]
     pub source: Option<String>,
 
-    /// Where to save the compiled java files
+    /// Where to save the compiled java files relative to target
     #[arg(long = "bin", global = true)]
     pub build: Option<String>,
 
-    /// Where to look for extra packages
+    /// Where to look for extra packages relative to target
     #[arg(long = "lib", global = true)]
     pub lib: Option<String>,
+
+    /// Where to look for all build and config info
+    #[arg(long = "target", global = true)]
+    pub target: Option<String>,
 
     /// Show what would change without actually doing it
     #[arg(long = "dry-run")]

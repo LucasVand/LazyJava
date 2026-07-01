@@ -10,8 +10,7 @@ impl DotProject {
         write(
             root.join(".project"),
             format!(
-                r#" 
-<?xml version="1.0" encoding="UTF-8"?>
+                r#"<?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
 	<name>{name}</name>
 	<comment></comment>
@@ -20,6 +19,13 @@ impl DotProject {
 	<natures>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
+  <buildSpec>
+    <buildCommand>
+      <name>org.eclipse.jdt.core.javabuilder</name>
+      <arguments>
+      </arguments>
+    </buildCommand>
+  </buildSpec>
 	<filteredResources>
 		<filter>
 			<id>1779043104810</id>

@@ -1,5 +1,5 @@
 [project]
-name = "project"
+name = "hello"
 
 [resources]
 exclude = ["*.js"]

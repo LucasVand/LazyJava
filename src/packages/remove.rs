@@ -1,7 +1,7 @@
 use colored::Colorize;
 
 use crate::{
-    Context, LazyJava, args::RemoveArgs, lazy_java_error::LazyJavaError, lsp::classpath::Classpath,
+    Context, LazyJava, args::RemoveArgs, lazy_java_error::LazyJavaError, lsp::sync_lsp_config,
 };
 
 impl LazyJava {
@@ -21,7 +21,7 @@ impl LazyJava {
 
         ctx.config.write(&ctx.root)?;
         if !ctx.dry_run {
-            Classpath::generate(&ctx)?;
+            sync_lsp_config(&ctx)?;
         }
 
         Ok(())

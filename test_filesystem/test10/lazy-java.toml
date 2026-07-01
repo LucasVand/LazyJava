@@ -1,0 +1,5 @@
+[project]
+name = "test10"
+
+[dependancies]
+spring-boot-starter-web= { group = "org.springframework.boot", version = "4.1.0" }

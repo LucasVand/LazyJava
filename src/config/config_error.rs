@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, path::PathBuf};
 
 use thiserror::Error;
 
@@ -6,6 +6,9 @@ use crate::{lock_file::LockFileError, maven_central::MavenError};
 
 #[derive(Error, Debug)]
 pub enum ConfigError {
+    #[error("Faild to find config {0}")]
+    NoConfig(PathBuf),
+
     #[error("Failed to parse config file")]
     ParseFailed(#[from] toml::de::Error),
 

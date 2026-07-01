@@ -25,6 +25,7 @@ pub use lazy_java::LazyJava;
 pub const BUILD_FOLDER: &str = "bin";
 pub const SRC_FOLDER: &str = "src";
 pub const LIB_FOLDER: &str = "lib";
+pub const TARGET_FOLDER: &str = "target";
 
 pub const MAVEN_URL: &str = "https://repo1.maven.org/maven2/";
 
