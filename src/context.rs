@@ -1,13 +1,14 @@
 use std::{
-    env,
+    env, fs,
     path::{self, PathBuf},
 };
 
+use colored::Colorize;
 use decompose::decompose;
 
 use crate::{
-    BUILD_FOLDER, LIB_FOLDER, SRC_FOLDER, args::LazyJavaArgs, config::Config,
-    lazy_java_error::LazyJavaError, utils::find_root::find_root,
+    BUILD_FOLDER, LIB_FOLDER, SRC_FOLDER, TARGET_FOLDER, args::LazyJavaArgs,
+    config::Config, lazy_java_error::LazyJavaError, utils::find_root::find_root,
 };
 
 #[decompose(ContextNoConfig, exclude(config))]
@@ -17,10 +18,12 @@ pub struct Context {
     pub lib: PathBuf,
     pub root: PathBuf,
     pub current: PathBuf,
+    pub target: PathBuf,
 
     pub relative_src: String,
     pub relative_bin: String,
     pub relative_lib: String,
+    pub relative_target: String,
 
     pub config: Config,
 
@@ -58,13 +61,17 @@ impl Context {
 
         log::info!("Project root: {:?}", root);
 
+        let relative_target = Self::target_path(args, &config).to_string();
+
         let relative_src = Self::src_path(args, &config).to_string();
         let relative_lib = Self::lib_path(args, &config).to_string();
         let relative_bin = Self::bin_path(args, &config).to_string();
 
-        let lib = root.join(&relative_lib);
+        let target = root.join(&relative_target);
+
+        let lib = target.join(&relative_lib);
         let src = root.join(&relative_src);
-        let bin = root.join(&relative_bin);
+        let bin = target.join(&relative_bin);
 
         log::debug!("Source directory: {:?}", src);
         log::debug!("Build directory: {:?}", bin);
@@ -76,6 +83,8 @@ impl Context {
         };
 
         let ctx = Context {
+            relative_target,
+            target,
             relative_bin,
             relative_lib,
             relative_src,
@@ -99,27 +108,59 @@ impl Context {
         Ok(())
     }
 
-    pub fn assert_bin_exists(&self) -> Result<(), LazyJavaError> {
+    pub fn ensure_bin_exists(&self) -> Result<(), LazyJavaError> {
         if !self.bin.exists() {
-            let path = path::absolute(self.bin.clone()).unwrap();
-            return Err(LazyJavaError::NoBuild(path.to_string_lossy().into()));
+            println!(
+                "{} {}",
+                "Creating".green().bold(),
+                format!("build directory: {}", self.bin.display())
+            );
+            fs::create_dir_all(&self.bin)?;
         }
         Ok(())
     }
 
-    pub fn assert_lib_exists(&self) -> Result<(), LazyJavaError> {
+    pub fn ensure_lib_exists(&self) -> Result<(), LazyJavaError> {
         if !self.lib.exists() {
-            let path = path::absolute(self.lib.clone()).unwrap();
-            return Err(LazyJavaError::NoLib(path.to_string_lossy().into()));
+            println!(
+                "{} {}",
+                "Creating".green().bold(),
+                format!("library directory: {}", self.lib.display())
+            );
+            fs::create_dir_all(&self.lib)?;
         }
         Ok(())
     }
 
-    pub fn assert_build_lib_src(&self) -> Result<(), LazyJavaError> {
-        self.assert_src_exists()?;
-        self.assert_bin_exists()?;
-        self.assert_lib_exists()?;
+    pub fn ensure_target_exists(&self) -> Result<(), LazyJavaError> {
+        if !self.target.exists() {
+            println!(
+                "{} {}",
+                "Creating".green().bold(),
+                format!("target directory: {}", self.target.display())
+            );
+            fs::create_dir_all(&self.target)?;
+        }
         Ok(())
+    }
+
+    pub fn assert_all(&self) -> Result<(), LazyJavaError> {
+        self.assert_src_exists()?;
+        self.ensure_bin_exists()?;
+        self.ensure_lib_exists()?;
+        self.ensure_target_exists()?;
+        Ok(())
+    }
+    fn target_path<'a>(args: Option<&'a LazyJavaArgs>, config: &'a Config) -> &'a str {
+        if args.is_some()
+            && let Some(target) = &args.unwrap().global_args.target
+        {
+            return target;
+        } else if let Some(target) = &config.setup.target {
+            return target;
+        } else {
+            return TARGET_FOLDER;
+        }
     }
 
     fn src_path<'a>(args: Option<&'a LazyJavaArgs>, config: &'a Config) -> &'a str {

@@ -24,4 +24,3 @@ org.eclipse.jdt.core.compiler.codegen.targetPlatform=25
         )
     }
 }
-

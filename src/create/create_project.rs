@@ -39,17 +39,17 @@ impl LazyJava {
         log::debug!("Project directory: {:?}", project_dir);
         fs::create_dir(&project_dir).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
 
-        let mut build = project_dir.clone();
-        build.push(BUILD_FOLDER);
+        let target = project_dir.join("target");
+        let build = target.join(BUILD_FOLDER);
 
-        let mut lib = project_dir.clone();
-        lib.push(LIB_FOLDER);
+        let lib = target.join(LIB_FOLDER);
+
         let mut src = project_dir.clone();
         src.push(SRC_FOLDER);
 
-        log::debug!("Creating subdirectories: bin, lib, src");
-        fs::create_dir(&project_dir.join("target"))
-            .map_err(|_e| CreateProjectError::CreateDirectoryError)?;
+        log::debug!("Creating subdirectories: bin, lib, src, target");
+        fs::create_dir(&target).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
+
         fs::create_dir(&build).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
 
         fs::create_dir(&src).map_err(|_e| CreateProjectError::CreateDirectoryError)?;

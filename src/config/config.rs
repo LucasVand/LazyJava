@@ -13,28 +13,16 @@ use crate::{
 };
 
 impl Config {
-    fn new() -> Self {
-        Self::default()
-    }
     pub fn fetch(root: &Path) -> Result<Config, ConfigError> {
-        let fs_file = Self::fetch_from_fs(root);
-
-        if let Ok(lockfile) = fs_file {
-            Ok(lockfile)
-        } else {
-            match fs_file.err().unwrap() {
-                ConfigError::NoFound => Ok(Config::new()),
-                err => Err(err),
-            }
-        }
+        Self::fetch_from_fs(root)
     }
     fn fetch_from_fs(root: &Path) -> Result<Config, ConfigError> {
         let file = fs::read_to_string(root.join(CONFIG_FILE_NAME)).map_err(|e| match e.kind() {
-            ErrorKind::NotFound => ConfigError::NoFound,
+            ErrorKind::NotFound => ConfigError::NoConfig(root.join(CONFIG_FILE_NAME)),
             ErrorKind::PermissionDenied => {
                 ConfigError::PermissionDenied(root.to_string_lossy().into())
             }
-            _ => ConfigError::NoFound,
+            _ => ConfigError::NoConfig(root.join(CONFIG_FILE_NAME)),
         })?;
 
         let lockfile: Config = toml::from_str(&file)?;
