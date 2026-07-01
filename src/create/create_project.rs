@@ -86,7 +86,7 @@ impl LazyJava {
             log::debug!("Git repository initialized");
         }
 
-        let mut config = Config::fetch(&project_dir)?;
+        let mut config = Config::default();
         config.project.name = name.clone();
 
         config.write(&project_dir)?;
