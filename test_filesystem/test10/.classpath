@@ -42,6 +42,6 @@
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/test10/target/lib/spring-boot-servlet-4.1.0.jar"/>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/test10/target/lib/tomcat-embed-el-11.0.22.jar"/>
     <classpathentry kind="src" path="src" including="**/*.java"/>
-    <classpathentry kind="output" path="target/bin"/>
+    <classpathentry kind="output" path="bin"/>
     <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 </classpath>
