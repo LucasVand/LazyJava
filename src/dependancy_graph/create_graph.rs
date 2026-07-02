@@ -20,8 +20,7 @@ impl DependancyGraph {
         let mut graph = DependancyGraph::new();
 
         for file in java_files {
-            let node = DependancyNode::from_file(&file)
-                .map_err(GraphError::CreationError)?;
+            let node = DependancyNode::from_file(&file).map_err(GraphError::CreationError)?;
 
             graph.add_node(node);
         }

@@ -79,4 +79,7 @@ pub enum LazyJavaError {
 
     #[error("Error when operating on config file")]
     ConfigFileError(#[from] ConfigError),
+
+    #[error("Error serializing")]
+    SeError(#[from] toml::ser::Error),
 }

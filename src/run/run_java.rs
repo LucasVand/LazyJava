@@ -9,7 +9,10 @@ impl LazyJava {
 
         if !args.no_build {
             log::debug!("Building before run");
-            Self::build_java(&args.build_args, ctx)?;
+            let status = Self::build_java(&args.build_args, ctx)?;
+            if !status.success() {
+                return Ok(());
+            }
         }
 
         let class = match &args.class {

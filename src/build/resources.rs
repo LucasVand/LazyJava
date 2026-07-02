@@ -6,9 +6,9 @@ use std::{
 
 use globset::{Glob, GlobSet, GlobSetBuilder};
 
-use crate::{Context, args::BuildArgs, lazy_java_error::LazyJavaError};
+use crate::{Context, lazy_java_error::LazyJavaError};
 
-pub fn copy_resources(_args: &BuildArgs, ctx: &Context) -> Result<(), LazyJavaError> {
+pub fn copy_resources(ctx: &Context) -> Result<(), LazyJavaError> {
     let glob_set = build_globset(ctx);
     let resource_paths = add_resources(&ctx.src, Path::new(""), &glob_set, ctx)?;
     log::info!("Found {} resources", resource_paths.len());

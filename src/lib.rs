@@ -31,6 +31,7 @@ pub const MAVEN_URL: &str = "https://repo1.maven.org/maven2/";
 
 pub const LOCK_FILE_NAME: &str = "lazy-java.lock";
 pub const CONFIG_FILE_NAME: &str = "lazy-java.toml";
+pub const BUILD_METADATA_NAME: &str = ".lazy-java-build";
 
 pub fn create_maven_url(group: &str, artifact: &str) -> String {
     format!("{}{}/{}/", MAVEN_URL, group.replace(".", "/"), artifact)
