@@ -9,7 +9,10 @@ mod tests {
     use filetime::FileTime;
 
     use crate::{
-        build::find_stale_files::{files_to_recompile, find_modified_files},
+        build::{
+            find_stale_files::{files_to_recompile, find_modified_files},
+            metadata::BuildMetadata,
+        },
         dependancy_graph::graph::DependancyGraph,
     };
 
@@ -65,26 +68,27 @@ mod tests {
 
         return Ok(());
     }
-    fn setup() -> Result<()> {
+    fn setup() -> Result<BuildMetadata> {
         let mut current = env::current_dir()?;
         current.push("test_filesystem");
         current.push("inc_build_test");
 
-        let mut build = current.clone();
-        build.push("build");
-        let time: FileTime = FileTime::from(SystemTime::now() - Duration::from_millis(1000));
-        filetime::set_file_mtime(build, time)?;
-
         let mut dep2 = current.clone();
         dep2.push("dir1");
         dep2.push("Dep2.java");
-
         filetime::set_file_mtime(dep2, FileTime::now())?;
-        return Ok(());
+
+        Ok(BuildMetadata {
+            time_stamp: SystemTime::now() - Duration::from_millis(1000),
+            java_version: String::new(),
+            lib_hash: 0,
+            bin_hash: 0,
+            build_passed: true,
+        })
     }
     #[test]
     fn incrimental_build_test_1() -> Result<()> {
-        setup()?;
+        let build_data = setup()?;
 
         let mut current = env::current_dir()?;
         current.push("test_filesystem/inc_build_test");
@@ -99,10 +103,7 @@ mod tests {
             println!("");
         }
 
-        let mut build = current.clone();
-        build.push("build");
-
-        let stale = find_modified_files(&build, &current)?;
+        let stale = find_modified_files(&build_data, &current)?;
 
         let mut test1 = current.clone();
         test1.push("dir1/Dep2.java");
