@@ -1,6 +1,11 @@
+use std::process::ExitStatus;
+
+use colored::Colorize;
+
 use crate::Context;
 use crate::args::{BuildArgs, BuildCommand, BuildSubCommand};
 use crate::build::find_stale_files::{files_to_recompile, find_modified_files};
+use crate::build::metadata::{BuildMetadata, hash_directory, save_metadata};
 use crate::build::resources::copy_resources;
 use crate::dependancy_graph::graph::DependancyGraph;
 use crate::lazy_java::LazyJava;
@@ -20,19 +25,40 @@ impl LazyJava {
                 BuildSubCommand::Classpath {} => Self::rebuild_classpath(ctx),
             }
         } else {
-            Self::build_java(&args.args, ctx)
+            Self::build_java(&args.args, ctx)?;
+            return Ok(());
         }
     }
-    pub fn build_java(args: &BuildArgs, ctx: &Context) -> Result<(), LazyJavaError> {
-        if args.build_all {
-            Self::rebuild(args, ctx)?;
+
+    pub fn build_java(args: &BuildArgs, ctx: &Context) -> Result<ExitStatus, LazyJavaError> {
+        let build_data = BuildMetadata::fetch(&ctx.target);
+        if build_data.is_none() {
+            let status = Self::rebuild(args, ctx)?;
+            copy_resources(ctx)?;
+            save_metadata(ctx, status, None)?;
+
+            return Ok(status);
+        }
+        let build_data = build_data.unwrap();
+
+        let lib_hash_match = hash_directory(&ctx.lib) == build_data.lib_hash;
+        let bin_hash_match = hash_directory(&ctx.bin) == build_data.bin_hash;
+
+        let status = if args.build_all || !lib_hash_match || !bin_hash_match {
+            Self::rebuild(args, ctx)
         } else {
-            Self::incrimental_build(args, ctx)?;
-        }
-        copy_resources(args, ctx)?;
-        Ok(())
+            Self::incrimental_build(args, ctx, &build_data)
+        }?;
+        copy_resources(ctx)?;
+        save_metadata(ctx, status, Some(build_data))?;
+
+        Ok(status)
     }
-    fn incrimental_build(args: &BuildArgs, ctx: &Context) -> Result<(), LazyJavaError> {
+    fn incrimental_build(
+        args: &BuildArgs,
+        ctx: &Context,
+        build_data: &BuildMetadata,
+    ) -> Result<ExitStatus, LazyJavaError> {
         log::info!("Starting incremental build");
         Classpath::generate_if_stale(ctx)?;
 
@@ -40,55 +66,47 @@ impl LazyJava {
         log::debug!("Created dependency graph");
 
         let modified_files =
-            find_modified_files(&ctx.bin, &ctx.src).map_err(LazyJavaError::NoStaleFilesError)?;
+            find_modified_files(build_data, &ctx.src).map_err(LazyJavaError::NoStaleFilesError)?;
+        println!(
+            "{} using incrimental build ({} stale file{})",
+            "Compiling".bold().green(),
+            modified_files.len(),
+            if modified_files.len() == 1 { "" } else { "s" }
+        );
 
         if modified_files.is_empty() {
             log::info!("No modified files, skipping compilation");
-            return Ok(());
+            return Ok(ExitStatus::default());
         }
 
         log::debug!("Found {} modified files", modified_files.len());
         let recompile = files_to_recompile(graph, modified_files)?;
+
+        println!(
+            "{} {} source file{}",
+            "Compiling".bold().green(),
+            recompile.len(),
+            if recompile.len() == 1 { "" } else { "s" }
+        );
         log::debug!("Need to recompile {} files", recompile.len());
 
         let status = compile_java_files(&ctx.bin, &ctx.lib, &args.javac_args, recompile)
             .map_err(LazyJavaError::UnableToCompile)?;
 
-        log::debug!("Java compilation completed");
-        if status.success() {
-            log::info!("Compilation successful");
-
-            let file_time = filetime::FileTime::now();
-            filetime::set_file_mtime(&ctx.bin, file_time)
-                .map_err(LazyJavaError::NoBuildModificationTime)?;
-
-            Ok(())
-        } else {
-            log::error!("Compilation failed with non-zero exit code");
-            Err(LazyJavaError::CompilationErrors)
-        }
+        log::debug!("Java compilation completed status {}", status);
+        return Ok(status);
     }
 
-    fn rebuild(args: &BuildArgs, ctx: &Context) -> Result<(), LazyJavaError> {
+    fn rebuild(args: &BuildArgs, ctx: &Context) -> Result<ExitStatus, LazyJavaError> {
+        println!("{} using full rebuild", "Compiling".bold().green());
         log::info!("Starting full rebuild");
         Classpath::generate(ctx)?;
 
         let status = compile_java(&ctx.src, &ctx.bin, &ctx.lib, &args.javac_args)
             .map_err(LazyJavaError::UnableToCompile)?;
-        log::debug!("Java compilation completed");
+        log::debug!("Java compilation completed status {}", status);
 
-        if status.success() {
-            log::info!("Build successful");
-
-            let file_time = filetime::FileTime::now();
-            filetime::set_file_mtime(&ctx.bin, file_time)
-                .map_err(LazyJavaError::NoBuildModificationTime)?;
-
-            Ok(())
-        } else {
-            log::error!("Build failed with non-zero exit code");
-            Err(LazyJavaError::CompilationErrors)
-        }
+        Ok(status)
     }
     fn show_dependancy_graph(ctx: &Context) -> Result<(), LazyJavaError> {
         log::info!("Displaying dependency graph");
@@ -104,9 +122,11 @@ impl LazyJava {
         Ok(())
     }
     fn show_modified_files(ctx: &Context) -> Result<(), LazyJavaError> {
+        let build_data = BuildMetadata::fetch(&ctx.target).unwrap_or(BuildMetadata::new());
+
         log::info!("Displaying modified files");
         let stale_files =
-            find_modified_files(&ctx.bin, &ctx.src).map_err(LazyJavaError::NoStaleFilesError)?;
+            find_modified_files(&build_data, &ctx.src).map_err(LazyJavaError::NoStaleFilesError)?;
 
         for file in stale_files {
             println!("{}", file.to_string_lossy());
@@ -115,11 +135,13 @@ impl LazyJava {
         Ok(())
     }
     fn show_rebuild_files(ctx: &Context) -> Result<(), LazyJavaError> {
+        let build_data = BuildMetadata::fetch(&ctx.target).unwrap_or(BuildMetadata::new());
+
         log::info!("Displaying files to rebuild");
         let graph = DependancyGraph::create(&ctx.src)?;
 
         let stale_files =
-            find_modified_files(&ctx.bin, &ctx.src).map_err(LazyJavaError::NoStaleFilesError)?;
+            find_modified_files(&build_data, &ctx.src).map_err(LazyJavaError::NoStaleFilesError)?;
 
         let recompile = files_to_recompile(graph, stale_files)?;
 

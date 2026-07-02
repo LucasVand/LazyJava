@@ -4,6 +4,7 @@ package Web;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -21,5 +22,10 @@ public class Web {
     @GetMapping("/")
     public String get() {
         return "This is from spring";
+    }
+
+    @PostMapping("/")
+    public String post() {
+        return "This is a post";
     }
 }

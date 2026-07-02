@@ -1,19 +1,18 @@
 use std::{
     collections::HashSet,
-    fs, io,
+    io,
     path::{Path, PathBuf},
 };
 
 use crate::{
-    dependancy_graph::graph::DependancyGraph, lazy_java_error::LazyJavaError,
-    utils::find_main::find_java_files,
+    build::metadata::BuildMetadata, dependancy_graph::graph::DependancyGraph,
+    lazy_java_error::LazyJavaError, utils::find_main::find_java_files,
 };
 
-pub fn find_modified_files(build: &Path, src: &Path) -> Result<Vec<PathBuf>, io::Error> {
+pub fn find_modified_files(build: &BuildMetadata, src: &Path) -> Result<Vec<PathBuf>, io::Error> {
     log::debug!("Finding modified files in src: {:?}", src);
-    let build_meta = fs::metadata(build)?;
 
-    let last_build_time = build_meta.modified()?;
+    let last_build_time = build.time_stamp;
     log::debug!("Last build time: {:?}", last_build_time);
 
     let java_files = find_java_files(src)?;

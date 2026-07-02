@@ -6,9 +6,14 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
+import Web.User;
+
 public class Main {
 
     public static void main(String[] args) throws Exception {
+        User u = new User();
+
+        String name = u.getName();
         System.out.println("Hello world!");
         System.out.println("Welcome to your LazyJava project");
 
