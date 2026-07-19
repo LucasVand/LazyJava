@@ -4,10 +4,10 @@ use colored::Colorize;
 
 use crate::Context;
 use crate::args::{BuildArgs, BuildCommand, BuildSubCommand};
+use crate::build::dependancy_graph::DependancyGraph;
 use crate::build::find_stale_files::{files_to_recompile, find_modified_files};
 use crate::build::metadata::{BuildMetadata, hash_directory, save_metadata};
 use crate::build::resources::copy_resources;
-use crate::dependancy_graph::graph::DependancyGraph;
 use crate::lazy_java::LazyJava;
 
 use crate::lazy_java_error::LazyJavaError;
@@ -90,8 +90,15 @@ impl LazyJava {
         );
         log::debug!("Need to recompile {} files", recompile.len());
 
-        let status = compile_java_files(&ctx.bin, &ctx.lib, &args.javac_args, recompile)
-            .map_err(LazyJavaError::UnableToCompile)?;
+        let status = compile_java_files(
+            recompile,
+            &ctx.bin,
+            &ctx.lib,
+            &ctx.lib_annotations,
+            &ctx.src_generated,
+            &args.javac_args,
+        )
+        .map_err(LazyJavaError::UnableToCompile)?;
 
         log::debug!("Java compilation completed status {}", status);
         return Ok(status);
@@ -102,8 +109,15 @@ impl LazyJava {
         log::info!("Starting full rebuild");
         Classpath::generate(ctx)?;
 
-        let status = compile_java(&ctx.src, &ctx.bin, &ctx.lib, &args.javac_args)
-            .map_err(LazyJavaError::UnableToCompile)?;
+        let status = compile_java(
+            &ctx.src,
+            &ctx.bin,
+            &ctx.lib,
+            &ctx.lib_annotations,
+            &ctx.src_generated,
+            &args.javac_args,
+        )
+        .map_err(LazyJavaError::UnableToCompile)?;
         log::debug!("Java compilation completed status {}", status);
 
         Ok(status)

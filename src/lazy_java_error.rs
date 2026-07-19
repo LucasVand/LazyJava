@@ -3,9 +3,8 @@ use std::io;
 use thiserror::Error;
 
 use crate::{
-    config::ConfigError, create::create_project::CreateProjectError,
-    dependancy_graph::graph_error::GraphError, lock_file::LockFileError,
-    lsp::classpath_error::ClasspathError, maven_central::MavenError,
+    build::GraphError, config::ConfigError, create::create_project::CreateProjectError,
+    lock_file::LockFileError, lsp::classpath_error::ClasspathError, maven_central::MavenError,
 };
 
 #[derive(Error, Debug)]

@@ -1,9 +1,10 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
 use crate::{
     config::config_custom_serde::{deserialize_dependencies, serialize_dependencies},
     maven_central::PartialMavenIdBuf,
 };
+use decompose::decompose;
 use serde::{Deserialize, Serialize};
 
 use crate::maven_central::MavenIdBuf;
@@ -23,6 +24,10 @@ pub struct Config {
     pub resources: ConfigResources,
 
     #[serde(default)]
+    #[serde(skip_serializing_if = "is_default")]
+    pub processers: ConfigProcessers,
+
+    #[serde(default)]
     #[serde(skip_serializing_if = "HashMap::is_empty")]
     #[serde(
         serialize_with = "serialize_dependencies",
@@ -30,6 +35,32 @@ pub struct Config {
     )]
     pub dependancies: HashMap<PartialMavenIdBuf, ConfigDependancy>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ConfigProcessers {
+    pub processers: Vec<ConfigProcesserDefinition>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+#[decompose(
+    ConfigProcesserDefinitionEntry,
+    exclude(class_name),
+    derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)
+)]
+pub struct ConfigProcesserDefinition {
+    pub class_name: String,
+    pub kind: ProcesserType,
+    pub path: Option<PathBuf>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ProcesserType {
+    Annotation,
+    Processer,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ConfigProject {

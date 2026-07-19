@@ -7,15 +7,18 @@ use colored::Colorize;
 use decompose::decompose;
 
 use crate::{
-    BUILD_FOLDER, LIB_FOLDER, SRC_FOLDER, TARGET_FOLDER, args::LazyJavaArgs,
-    config::Config, lazy_java_error::LazyJavaError, utils::find_root::find_root,
+    BUILD_FOLDER, LIB_FOLDER, SRC_FOLDER, TARGET_FOLDER, args::LazyJavaArgs, config::Config,
+    lazy_java_error::LazyJavaError, utils::find_root::find_root,
 };
 
 #[decompose(ContextNoConfig, exclude(config))]
 pub struct Context {
     pub src: PathBuf,
     pub bin: PathBuf,
+    pub bin_processors: PathBuf,
     pub lib: PathBuf,
+    pub lib_annotations: PathBuf,
+    pub src_generated: PathBuf,
     pub root: PathBuf,
     pub current: PathBuf,
     pub target: PathBuf,
@@ -23,7 +26,10 @@ pub struct Context {
     pub relative_src: String,
     pub relative_bin: String,
     pub relative_lib: String,
+    pub relative_lib_annotations: String,
+    pub relative_src_generated: String,
     pub relative_target: String,
+    pub relative_bin_processors: String,
 
     pub config: Config,
 
@@ -66,12 +72,18 @@ impl Context {
         let relative_src = Self::src_path(args, &config).to_string();
         let relative_lib = Self::lib_path(args, &config).to_string();
         let relative_bin = Self::bin_path(args, &config).to_string();
+        let relative_lib_annotations = format!("{}-annotations", relative_lib);
+        let relative_src_generated: String = "generated-source".into();
+        let relative_bin_processors: String = "processor-bin".into();
 
         let target = root.join(&relative_target);
 
         let lib = target.join(&relative_lib);
         let src = root.join(&relative_src);
         let bin = target.join(&relative_bin);
+        let lib_annotations = target.join(&relative_lib_annotations);
+        let src_generated = target.join(&relative_src_generated);
+        let bin_processors = target.join(&relative_bin_processors);
 
         log::debug!("Source directory: {:?}", src);
         log::debug!("Build directory: {:?}", bin);
@@ -95,6 +107,12 @@ impl Context {
             current,
             config,
             dry_run: dry_run,
+            lib_annotations,
+            relative_lib_annotations,
+            src_generated,
+            relative_src_generated,
+            bin_processors,
+            relative_bin_processors,
         };
 
         Ok(ctx)
@@ -117,6 +135,17 @@ impl Context {
             );
             fs::create_dir_all(&self.bin)?;
         }
+        if !self.bin_processors.exists() {
+            println!(
+                "{} {}",
+                "Creating".green().bold(),
+                format!(
+                    "build processor directory: {}",
+                    self.bin_processors.display()
+                )
+            );
+            fs::create_dir_all(&self.bin_processors)?;
+        }
         Ok(())
     }
 
@@ -128,6 +157,25 @@ impl Context {
                 format!("library directory: {}", self.lib.display())
             );
             fs::create_dir_all(&self.lib)?;
+        }
+        if !self.lib_annotations.exists() {
+            println!(
+                "{} {}",
+                "Creating".green().bold(),
+                format!(
+                    "annotation library directory: {}",
+                    self.lib_annotations.display()
+                )
+            );
+            fs::create_dir_all(&self.lib_annotations)?;
+        }
+        if !self.src_generated.exists() {
+            println!(
+                "{} {}",
+                "Creating".green().bold(),
+                format!("generated src directory: {}", self.src_generated.display())
+            );
+            fs::create_dir_all(&self.src_generated)?;
         }
         Ok(())
     }

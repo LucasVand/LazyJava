@@ -130,11 +130,11 @@ impl Config {
     ) -> Result<(), ConfigError> {
         lockfile.sync_with_root_packages(&self.dependancies)?;
 
+        lockfile.validate_current_packages(ctx)?;
+
         if !ctx.dry_run {
             lockfile.write(&ctx.root)?;
         }
-
-        lockfile.validate_current_packages(ctx)?;
         Ok(())
     }
 }

@@ -11,6 +11,7 @@ use syn::{
 struct DecomposeArgs {
     new_name: Ident,
     mode: DecomposeMode,
+    derives: Vec<Ident>,
 }
 
 enum DecomposeMode {
@@ -49,7 +50,26 @@ impl Parse for DecomposeArgs {
             }
         };
 
-        Ok(DecomposeArgs { new_name, mode })
+        let mut derives = Vec::new();
+        if input.peek(Token![,]) {
+            let _comma: Token![,] = input.parse()?;
+            let derive_ident: Ident = input.parse()?;
+            if derive_ident.to_string() == "derive" {
+                let derive_content;
+                syn::parenthesized!(derive_content in input);
+                derives = derive_content
+                    .parse_terminated(Ident::parse, Token![,])?
+                    .into_iter()
+                    .collect();
+            } else {
+                return Err(syn::Error::new(
+                    derive_ident.span(),
+                    "expected `derive`",
+                ));
+            }
+        }
+
+        Ok(DecomposeArgs { new_name, mode, derives })
     }
 }
 
@@ -62,8 +82,14 @@ pub fn decompose(attr: TokenStream, item: TokenStream) -> TokenStream {
     let new_name = &args.new_name;
     let excluded_name = Ident::new(&format!("{}Excluded", new_name), new_name.span());
     let vis = &input.vis;
-    let attrs = &input.attrs;
     let generics = &input.generics;
+
+    let derive_attr = if args.derives.is_empty() {
+        quote! {}
+    } else {
+        let traits = &args.derives;
+        quote! { #[derive(#(#traits),*)] }
+    };
 
     let fields = match &input.fields {
         syn::Fields::Named(named) => &named.named,
@@ -208,13 +234,13 @@ pub fn decompose(attr: TokenStream, item: TokenStream) -> TokenStream {
     let output = quote! {
         #input
 
-        #(#attrs)*
+        #derive_attr
         #[allow(dead_code)]
         #vis struct #new_name #include_angled #include_where {
             #(#include_vis #include_names: #include_tys),*
         }
 
-        #(#attrs)*
+        #derive_attr
         #[allow(dead_code)]
         #vis struct #excluded_name #exclude_angled #exclude_where {
             #(#exclude_vis #exclude_names: #exclude_tys),*

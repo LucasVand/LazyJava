@@ -13,7 +13,6 @@ public class Main {
     public static void main(String[] args) throws Exception {
         User u = new User();
 
-        String name = u.getName();
         System.out.println("Hello world!");
         System.out.println("Welcome to your LazyJava project");
 

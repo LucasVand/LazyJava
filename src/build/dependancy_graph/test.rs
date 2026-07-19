@@ -8,13 +8,12 @@ mod tests {
     use anyhow::Result;
     use filetime::FileTime;
 
-    use crate::{
-        build::{
-            find_stale_files::{files_to_recompile, find_modified_files},
-            metadata::BuildMetadata,
-        },
-        dependancy_graph::graph::DependancyGraph,
+    use crate::build::{
+        find_stale_files::{files_to_recompile, find_modified_files},
+        metadata::BuildMetadata,
     };
+
+    use super::super::graph::DependancyGraph;
 
     #[test]
     fn dependancy_list_test_1() -> Result<()> {

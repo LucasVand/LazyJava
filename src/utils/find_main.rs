@@ -5,6 +5,7 @@ use std::{
 };
 
 use regex::Captures;
+use walkdir::WalkDir;
 
 use crate::{CLASS_REGEX, MAIN_REGEX, PACKAGE_REGEX};
 
@@ -18,7 +19,7 @@ pub struct MainClass {
 pub fn find_main_classes(src: &PathBuf) -> Result<Vec<MainClass>, io::Error> {
     log::debug!("Scanning for main classes in {:?}", src);
     let mut main_classes: Vec<MainClass> = Vec::new();
-    let java_files = find_java_files(src)?;
+    let java_files = find_java_files(src);
     log::debug!("Found {} Java files to scan", java_files.len());
 
     for file in java_files {
@@ -86,25 +87,19 @@ fn find_main_class(
     Ok(main_vec)
 }
 
-pub fn find_java_files(root: &Path) -> Result<Vec<PathBuf>, io::Error> {
+pub fn find_java_files(root: &Path) -> Vec<PathBuf> {
     log::debug!("Recursively searching for Java files in {:?}", root);
     let mut java_files: Vec<PathBuf> = Vec::new();
 
-    for file in fs::read_dir(root)? {
-        let f = file?.path();
-
-        if f.is_dir() {
-            let mut res = find_java_files(&f)?;
-            java_files.append(&mut res);
-        }
-
-        if f.extension() == Some(OsStr::new("java"))
-            && f.is_file() {
-                log::debug!("Found Java file: {:?}", f);
-                java_files.push(f);
+    for entry in WalkDir::new(root) {
+        if let Ok(file) = entry {
+            if file.file_type().is_dir() && file.path().extension() == Some(OsStr::new("java")) {
+                java_files.push(file.into_path());
             }
+        }
     }
-    Ok(java_files)
+
+    java_files
 }
 
 #[cfg(test)]

@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     ffi::OsStr,
     fs::{self},
     io::{self, Write},
@@ -13,7 +14,7 @@ use std::io::Cursor;
 use crate::{
     Context,
     lsp::{
-        classpath::{Classpath, ClasspathEntry},
+        classpath::{Attribute, Attributes, Classpath, ClasspathEntry},
         classpath_error::ClasspathError,
     },
 };
@@ -62,11 +63,55 @@ impl Classpath {
         log::info!("Classpath file generated successfully");
         Ok(())
     }
+    fn defualt_entries(ctx: &Context) -> Vec<ClasspathEntry> {
+        let mut entries = Vec::new();
+        entries.push(ClasspathEntry {
+            kind: "src".into(),
+            path: ctx.relative_src.clone(),
+            including: Some("**/*.java".to_string()),
+            output: None,
+            attributes: None,
+        });
+        entries.push(ClasspathEntry {
+            kind: "src".into(),
+            path: format!("{}/{}", ctx.relative_target, ctx.relative_src_generated),
+            including: Some("**/*.java".to_string()),
+            output: None,
+            attributes: Some(Attributes {
+                list: vec![
+                    Attribute {
+                        name: "optional".to_string(),
+                        value: "true".into(),
+                    },
+                    Attribute {
+                        name: "ignore_optional_problems".into(),
+                        value: "true".into(),
+                    },
+                ],
+            }),
+        });
+        entries.push(ClasspathEntry {
+            kind: "output".into(),
+            path: format!("{}/{}", ctx.relative_target, ctx.relative_bin),
+            including: None,
+            output: None,
+            attributes: None,
+        });
+
+        entries.push(ClasspathEntry {
+            kind: "con".into(),
+            path: JAVA_CONTAINER.into(),
+            including: None,
+            output: None,
+            attributes: None,
+        });
+        return entries;
+    }
 
     fn create(ctx: &Context) -> Result<Classpath, ClasspathError> {
         log::debug!("Creating classpath from project structure");
 
-        let dir = Self::lib_files(&ctx.lib)?;
+        let dir = Self::lib_files(ctx)?;
         log::debug!("Found {} library files", dir.len());
 
         let mut entries: Vec<ClasspathEntry> = dir
@@ -80,66 +125,34 @@ impl Classpath {
             })
             .collect();
 
-        entries.push(ClasspathEntry {
-            kind: "src".into(),
-            path: ctx.relative_src.clone(),
-            including: Some("**/*.java".to_string()),
-            output: None,
-            attributes: None,
-        });
-        entries.push(ClasspathEntry {
-            kind: "output".into(),
-            path: ctx.relative_bin.clone(),
-            including: None,
-            output: None,
-            attributes: None,
-        });
-
-        entries.push(ClasspathEntry {
-            kind: "con".into(),
-            path: JAVA_CONTAINER.into(),
-            including: None,
-            output: None,
-            attributes: None,
-        });
+        entries.extend(Self::defualt_entries(ctx));
 
         log::debug!("Created classpath with {} total entries", entries.len());
         let classpath = Classpath { entries };
 
         Ok(classpath)
     }
-    fn lib_files(lib: &Path) -> Result<Vec<PathBuf>, ClasspathError> {
-        log::debug!("Scanning library directory: {:?}", lib);
+    fn lib_files(ctx: &Context) -> Result<Vec<PathBuf>, ClasspathError> {
+        log::debug!("Scanning library directory: {:?}", &ctx.lib_annotations);
         let mut java_files: Vec<PathBuf> = Vec::new();
 
-        let files = fs::read_dir(lib).map_err(|e| {
-            log::error!("Failed to read library directory {:?}: {}", lib, e);
-            ClasspathError::OSErrorLib(path::absolute(lib).unwrap().to_string_lossy().into(), e)
-        })?;
+        java_files.extend(Self::find_jars(&ctx.lib)?);
+        java_files.extend(Self::find_jars(&ctx.lib_annotations)?);
 
-        for file in files {
-            let f = file
-                .map_err(|e| {
-                    log::error!("Error reading file in library directory: {}", e);
-                    ClasspathError::OSErrorLib(
-                        path::absolute(lib).unwrap().to_string_lossy().into(),
-                        e,
-                    )
-                })?
-                .path();
-
-            if f.is_dir() {
-                let mut res = Self::lib_files(&f)?;
-                java_files.append(&mut res);
-            }
-
-            if f.extension() == Some(OsStr::new("jar")) && f.is_file() {
-                log::debug!("Found JAR file: {:?}", f);
-                java_files.push(f);
-            }
-        }
         log::debug!("Found {} JAR files in library directory", java_files.len());
         Ok(java_files)
+    }
+    fn find_jars(root: &Path) -> Result<Vec<PathBuf>, ClasspathError> {
+        let mut java_files: Vec<PathBuf> = Vec::new();
+        for file in walkdir::WalkDir::new(root) {
+            if let Ok(file) = file {
+                let path = file.path();
+                if path.extension() == Some(OsStr::new("jar")) {
+                    java_files.push(path.to_path_buf());
+                }
+            }
+        }
+        return Ok(java_files);
     }
     fn validate(ctx: &Context) -> Result<bool, ClasspathError> {
         log::debug!("Validating classpath file");
@@ -161,48 +174,7 @@ impl Classpath {
             .map(|entry| entry.path.clone())
             .collect();
 
-        let classpath_src = classpath.entries.iter().find(|entry| entry.kind == "src");
-        if let Some(classpath_src) = classpath_src {
-            let c_src = path::absolute(Path::new(&classpath_src.path))
-                .map_err(|_| ClasspathError::PathError(classpath_src.path.to_string()))?;
-            let src = path::absolute(&ctx.src)
-                .map_err(|_| ClasspathError::PathError(ctx.src.to_string_lossy().to_string()))?;
-
-            if c_src != src {
-                log::debug!("Classpath source entry is out of date");
-                log::debug!("Source equality: {}, ", c_src == src);
-                return Ok(false);
-            }
-        } else {
-            log::debug!("No source entry found in classpath");
-            return Ok(false);
-        }
-        let classpath_output = classpath
-            .entries
-            .iter()
-            .find(|entry| entry.kind == "output");
-        if let Some(classpath_output) = classpath_output {
-            let c_bin = path::absolute(Path::new(&classpath_output.path))
-                .map_err(|_| ClasspathError::PathError(classpath_output.path.to_string()))?;
-            let bin = path::absolute(&ctx.bin)
-                .map_err(|_| ClasspathError::PathError(ctx.bin.to_string_lossy().to_string()))?;
-
-            if c_bin != bin {
-                log::debug!("Classpath source entry is out of date");
-                log::debug!("Source equality: {}, ", c_bin == bin);
-                return Ok(false);
-            }
-        } else {
-            log::debug!("No source entry found in classpath");
-            return Ok(false);
-        }
-
-        let classpath_container = classpath.entries.iter().find(|e| e.kind == "con");
-        if classpath_container.is_none() {
-            return Ok(false);
-        }
-
-        let libs: Vec<String> = Self::lib_files(&ctx.lib)?
+        let libs: Vec<String> = Self::lib_files(ctx)?
             .iter()
             .map(|path| path.to_string_lossy().to_string())
             .collect();
@@ -211,11 +183,26 @@ impl Classpath {
 
         if !equal {
             log::warn!("Classpath library entries do not match filesystem");
+            return Ok(false);
         } else {
             log::debug!("Classpath is valid");
         }
 
-        Ok(equal)
+        let expected_defaults: HashSet<ClasspathEntry> =
+            Self::defualt_entries(ctx).into_iter().collect();
+
+        let defaults: HashSet<&ClasspathEntry> = classpath
+            .entries
+            .iter()
+            .filter(|e| e.kind != "lib")
+            .collect();
+
+        for expected in expected_defaults {
+            if !defaults.contains(&expected) {
+                return Ok(false);
+            }
+        }
+        return Ok(true);
     }
     pub fn generate_if_stale(ctx: &Context) -> Result<(), ClasspathError> {
         log::debug!("Checking if classpath needs regeneration");

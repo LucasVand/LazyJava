@@ -8,7 +8,6 @@ pub mod clean;
 pub mod config;
 mod context;
 pub mod create;
-pub mod dependancy_graph;
 pub mod find;
 mod lazy_java;
 pub mod lazy_java_error;

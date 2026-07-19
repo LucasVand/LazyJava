@@ -3,18 +3,17 @@ use std::{
     path::Path,
 };
 
-use crate::{
-    dependancy_graph::{
-        graph::{DependancyGraph, DependancyNode},
-        graph_error::GraphError,
-    },
-    utils::find_main::find_java_files,
+use super::{
+    graph::{DependancyGraph, DependancyNode},
+    graph_error::GraphError,
 };
+
+use crate::utils::find_main::find_java_files;
 
 impl DependancyGraph {
     pub fn create(src: &Path) -> Result<DependancyGraph, GraphError> {
         log::debug!("Creating dependency graph from source: {:?}", src);
-        let java_files = find_java_files(src).map_err(GraphError::CreationError)?;
+        let java_files = find_java_files(src);
         log::debug!("Found {} Java files for graph", java_files.len());
 
         let mut graph = DependancyGraph::new();

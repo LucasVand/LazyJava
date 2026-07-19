@@ -4,7 +4,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{IMPORT_REGEX, PACKAGE_REGEX, dependancy_graph::graph_error::GraphError};
+use super::graph_error::GraphError;
+use crate::{IMPORT_REGEX, PACKAGE_REGEX};
 
 #[derive(Debug, Clone)]
 pub struct DependancyGraph {

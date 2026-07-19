@@ -4,80 +4,51 @@ use std::{
     process::{Command, ExitStatus, Output, Stdio},
 };
 
+use crate::utils::destructure_dir::{destructure_dir, find_all_java_files};
 fn compile_command(
-    src: &str,
-    build: &str,
-    lib: &str,
+    src_list: &str,
+    build_dir: &str,
+    lib_dir: &str,
+    annotation_lib_list: &str,
+    src_generated_dir: &str,
+    src_generated_list: &str,
     javac_args: &Vec<String>,
 ) -> Result<Output, io::Error> {
     let args = javac_args.join(" ");
-    if cfg!(target_os = "windows") {
-        let command = format!(
-            r#"& {{javac -classpath "{}/*" -d "{}" {} (Get-ChildItem -Recurse -Filter *.java -Path "{}").FullName}}"#,
-            lib, build, args, src
-        );
-        log::debug!("Windows javac command: {}", command);
+    let sep = if cfg!(target_os = "windows") {
+        ";"
+    } else {
+        ":"
+    };
+    let replace_sep = |input: &str, sep: &str| {
+        return input.replace(sep, " ");
+    };
 
+    let source_list_replaced = replace_sep(src_generated_list, sep);
+    let command = format!(
+        r#"javac -s "{src_generated_dir}" -processorpath "{annotation_lib_list}" -classpath "{annotation_lib_list}{sep}{lib_dir}/*" -d "{build_dir}" {args} {src_list} {source_list_replaced}"#
+    );
+
+    log::info!("Compile Command: {}", command);
+
+    let command = if cfg!(target_os = "windows") {
         Command::new("powershell")
             .args(["-Command", &command])
-            .stdout(Stdio::inherit()) // Inherit the parent's stdout
-            .stderr(Stdio::inherit()) // Inherit the parent's stderr
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
             .output()
     } else {
-        let command = format!(
-            r#"find {} -name "*.java" -exec javac -classpath "{}/*" -d "{}" {} {{}} +"#,
-            src, lib, build, args
-        );
-        log::debug!("Unix javac command: {}", command);
-
         Command::new("sh")
             .arg("-c")
             .arg(command)
-            .stdout(Stdio::inherit()) // Inherit the parent's stdout
-            .stderr(Stdio::inherit()) // Inherit the parent's stderr
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
             .output()
-    }
+    };
+
+    return command;
 }
-fn compile_files_command(
-    build: &str,
-    lib: &str,
-    files: Vec<String>,
-    javac_args: &Vec<String>,
-) -> Result<Output, io::Error> {
-    let files_str = files.join(" ");
-    let args = javac_args.join(" ");
-    if cfg!(target_os = "windows") {
-        let command = format!(
-            r#"&{{ javac -classpath "{};{}/*" -d "{}" {} {} }}"#,
-            build, lib, build, args, files_str
-        );
 
-        log::debug!("Windows javac compile files command: {}", command);
-
-        
-
-        Command::new("powershell")
-            .args(["-Command", &command])
-            .stdout(Stdio::inherit()) // Inherit the parent's stdout
-            .stderr(Stdio::inherit()) // Inherit the parent's stderr
-            .output()
-    } else {
-        let command = format!(
-            r#"javac -classpath "{}:{}/*" -d "{}" {} {} "#,
-            build, lib, build, args, files_str
-        );
-
-        log::debug!("Unix javac compile files command: {}", command);
-
-        
-
-        Command::new("sh")
-            .args(["-c", &command])
-            .stdout(Stdio::inherit()) // Inherit the parent's stdout
-            .stderr(Stdio::inherit()) // Inherit the parent's stderr
-            .output()
-    }
-}
 fn run_command(
     build: &str,
     lib: &str,
@@ -115,20 +86,28 @@ pub fn compile_java(
     src: &Path,
     dest: &Path,
     lib: &Path,
+    annotation_lib: &Path,
+    src_generated: &Path,
     javac_args: &Vec<String>,
 ) -> Result<ExitStatus, io::Error> {
     log::info!("Compiling Java from {:?} to {:?}", src, dest);
     log::debug!("Using library path: {:?}", lib);
     log::debug!("Javac arguments: {:?}", javac_args);
 
-    let ab_src = path::absolute(src)?;
+    let src_des = find_all_java_files(&src);
     let ab_dest = path::absolute(dest)?;
     let ab_lib = path::absolute(lib)?;
+    let ab_annotation_lib = destructure_dir(annotation_lib);
+    let src_generated = path::absolute(src_generated)?;
+    let src_generated_destructured = destructure_dir(&src_generated);
 
     let command = compile_command(
-        ab_src.to_str().unwrap(),
+        &src_des,
         ab_dest.to_str().unwrap(),
         ab_lib.to_str().unwrap(),
+        ab_annotation_lib.to_str().unwrap(),
+        src_generated.to_str().unwrap(),
+        src_generated_destructured.to_str().unwrap(),
         javac_args,
     );
 
@@ -147,38 +126,49 @@ pub fn compile_java(
 }
 
 pub fn compile_java_files(
-    build: &Path,
-    lib: &Path,
-    javac_args: &Vec<String>,
     files: Vec<PathBuf>,
+    dest: &Path,
+    lib: &Path,
+    annotation_lib: &Path,
+    src_generated: &Path,
+    javac_args: &Vec<String>,
 ) -> Result<ExitStatus, io::Error> {
-    log::info!("Compiling {} Java file(s) to {:?}", files.len(), build);
+    log::info!("Compiling Java to to {:?}", dest);
     log::debug!("Using library path: {:?}", lib);
-    log::debug!("Files to compile: {:?}", files);
     log::debug!("Javac arguments: {:?}", javac_args);
 
-    let ab_build = path::absolute(build)?;
-    let ab_lib = path::absolute(lib)?;
-
-    let file_str: Vec<String> = files
+    let src_des: String = files
         .into_iter()
-        .map(|f| {
-            format!(r#"{}"#, f.to_string_lossy())
+        .filter_map(|f| {
+            return path::absolute(f).ok();
         })
-        .collect();
+        .map(|a| a.to_string_lossy().to_string())
+        .collect::<Vec<String>>()
+        .join(" ");
 
-    let output = compile_files_command(
-        ab_build.to_str().unwrap(),
+    let ab_dest = path::absolute(dest)?;
+    let ab_lib = path::absolute(lib)?;
+    let ab_annotation_lib = destructure_dir(annotation_lib);
+    let src_generated = path::absolute(src_generated)?;
+    let src_generated_destructured = destructure_dir(&src_generated);
+
+    let command = compile_command(
+        src_des.as_str(),
+        ab_dest.to_str().unwrap(),
         ab_lib.to_str().unwrap(),
-        file_str,
+        ab_annotation_lib.to_str().unwrap(),
+        src_generated.to_str().unwrap(),
+        src_generated_destructured.to_str().unwrap(),
         javac_args,
-    )?;
+    );
+
+    let output = command.expect("Compile Command Failed");
 
     if output.status.success() {
-        log::info!("File compilation completed successfully");
+        log::info!("Compilation completed successfully");
     } else {
         log::warn!(
-            "File compilation failed with exit code: {:?}",
+            "Compilation failed with exit code: {:?}",
             output.status.code()
         );
     }
@@ -289,7 +279,14 @@ mod tests {
         lib.pop();
         lib.push("lib");
 
-        let comp = compile_java(&src, &build, &lib, &Vec::new());
+        let comp = compile_java(
+            &src,
+            &build,
+            &lib,
+            &build.join("lib-annotations"),
+            &build.join("src-generated"),
+            &Vec::new(),
+        );
 
         assert!(comp.is_ok(), "Compile Command was an error");
 
