@@ -1,6 +1,5 @@
-use std::ffi::OsStr;
 use std::path;
-use std::{ffi::OsString, path::Path};
+use std::path::Path;
 
 use log::{debug, warn};
 use walkdir::WalkDir;
@@ -27,24 +26,5 @@ pub fn join_directory(path: &Path, seperator: char) -> String {
         }
     }
     debug!("Des Result: {:#?}", des);
-    return des;
-}
-
-pub fn find_all_java_files(path: &Path) -> String {
-    let mut des = String::new();
-
-    for entry in WalkDir::new(path).into_iter() {
-        if let Ok(f) = entry
-            && f.file_type().is_file()
-        {
-            if let Ok(ab) = path::absolute(f.path())
-                && ab.extension() == Some(OsStr::new("java"))
-            {
-                des.push_str(&ab.to_string_lossy());
-                des.push(' ');
-            }
-        }
-    }
-    debug!("Find All Result: {:#?}", des);
     return des;
 }
