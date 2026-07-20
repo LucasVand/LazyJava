@@ -8,7 +8,7 @@ pub struct Classpath {
     pub entries: Vec<ClasspathEntry>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Eq, PartialEq, Hash)]
 pub struct ClasspathEntry {
     // Use #[serde(rename = "@...")] to map to XML attributes
     #[serde(rename = "@kind")]
@@ -27,14 +27,14 @@ pub struct ClasspathEntry {
     pub attributes: Option<Attributes>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct Attributes {
     // Nested list of <attribute> tags
     #[serde(rename = "attribute", default)]
     pub list: Vec<Attribute>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct Attribute {
     #[serde(rename = "@name")]
     pub name: String,

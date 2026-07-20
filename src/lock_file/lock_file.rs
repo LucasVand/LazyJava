@@ -41,6 +41,9 @@ pub struct LockFilePackage {
     pub packaging: DependancyType,
 
     pub root: bool,
+
+    #[serde(default)]
+    pub annotations: Vec<String>,
 }
 
 impl LockFile {
@@ -126,26 +129,20 @@ impl LockFile {
         self.packages = map.into_values().collect();
         Ok(list_len as isize)
     }
-    pub fn validate_current_packages(&self, ctx: &ContextNoConfig) -> Result<isize, LockFileError> {
-        println!(
-            "{} dependancies with /{}",
-            "Syncing".green().bold(),
-            ctx.lib.file_name().unwrap().to_string_lossy()
-        );
-        let mut added: isize = 0;
-        let mut removed: isize = 0;
-        let mut map: HashMap<&str, &LockFilePackage> = self
-            .packages
-            .iter()
-            .map(|p| (p.file_name.as_str(), p))
-            .collect();
-
-        let dir = fs::read_dir(&ctx.lib)?;
-
-        for file in dir {
-            if let Ok(file) = file
-                && let Some(name) = file.path().file_name()
-            {
+    fn validate_dir(
+        path: &Path,
+        map: &mut HashMap<String, &mut LockFilePackage>,
+        dry_run: bool,
+    ) -> Result<isize, LockFileError> {
+        println!("    {} {}", "Validating".green().bold(), path.display());
+        let mut removed = 0;
+        for file in walkdir::WalkDir::new(path)
+            .into_iter()
+            .filter(|p| p.is_ok())
+            .map(|p| p.unwrap())
+            .filter(|p| !p.file_type().is_dir())
+        {
+            if let Some(name) = file.path().file_name() {
                 let name = name.to_string_lossy().to_string();
 
                 match map.remove(name.as_str()) {
@@ -158,8 +155,8 @@ impl LockFile {
                             .file_name()
                             .map(|s| s.to_string_lossy())
                             .unwrap_or_default();
-                        println!("    {} {}", "Removed".green().bold(), stem);
-                        if !ctx.dry_run {
+                        println!("        {} {}", "Removed".green().bold(), stem);
+                        if !dry_run {
                             fs::remove_file(path)?;
                         }
                         removed += 1;
@@ -168,11 +165,26 @@ impl LockFile {
             }
         }
 
-        let download_change = Self::fetch_packages(
-            &ctx.lib,
-            map.into_iter().map(|(_k, v)| v).collect(),
-            ctx.dry_run,
-        )?;
+        return Ok(removed);
+    }
+    pub fn validate_current_packages(
+        &mut self,
+        ctx: &ContextNoConfig,
+    ) -> Result<isize, LockFileError> {
+        println!("{} dependancies", "Syncing".green().bold(),);
+        let mut added: isize = 0;
+        let mut removed: isize = 0;
+        let mut map: HashMap<String, &mut LockFilePackage> = self
+            .packages
+            .iter_mut()
+            .map(|p| (p.file_name.as_str().to_string(), p))
+            .collect();
+
+        removed += Self::validate_dir(&ctx.lib, &mut map, ctx.dry_run)?;
+        removed += Self::validate_dir(&ctx.lib_annotations, &mut map, ctx.dry_run)?;
+
+        let download_change =
+            Self::fetch_packages(ctx, map.into_iter().map(|(_k, v)| v).collect())?;
         added += download_change;
 
         let plural = |change: isize| {
@@ -183,11 +195,11 @@ impl LockFile {
             }
         };
         if added != 0 {
-            println!("    {} {} {}", "Added".green().bold(), added, plural(added));
+            println!("{} {} {}", "Added".green().bold(), added, plural(added));
         }
         if removed != 0 {
             println!(
-                "    {} {} {}",
+                "{} {} {}",
                 "Removed".green().bold(),
                 removed,
                 plural(removed)

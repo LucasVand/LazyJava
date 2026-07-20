@@ -22,6 +22,7 @@ mod tests {
             dependancies: dep_ids,
             packaging: DependancyType::Jar,
             root: false,
+            annotations: Vec::new(),
         }
     }
 

@@ -1,6 +1,7 @@
 use std::io;
 
 use thiserror::Error;
+use zip::result::ZipError;
 
 use crate::maven_central::MavenError;
 
@@ -33,4 +34,7 @@ pub enum LockFileError {
 
     #[error("Encountered an error when fetching maven")]
     MavenError(#[from] MavenError),
+
+    #[error("Error when processing downloaded file")]
+    ZipError(#[from] ZipError),
 }

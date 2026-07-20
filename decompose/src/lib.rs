@@ -11,6 +11,9 @@ use syn::{
 struct DecomposeArgs {
     new_name: Ident,
     mode: DecomposeMode,
+    derives: Vec<Ident>,
+    ref_derives: Vec<Ident>,
+    gen_refs: bool,
 }
 
 enum DecomposeMode {
@@ -49,7 +52,43 @@ impl Parse for DecomposeArgs {
             }
         };
 
-        Ok(DecomposeArgs { new_name, mode })
+        let mut derives = Vec::new();
+        let mut ref_derives = Vec::new();
+        let mut gen_refs = false;
+
+        while input.peek(Token![,]) {
+            let _comma: Token![,] = input.parse()?;
+            let kw: Ident = input.parse()?;
+            match kw.to_string().as_str() {
+                "derive" => {
+                    let derive_content;
+                    syn::parenthesized!(derive_content in input);
+                    derives = derive_content
+                        .parse_terminated(Ident::parse, Token![,])?
+                        .into_iter()
+                        .collect();
+                }
+                "ref_derive" => {
+                    let derive_content;
+                    syn::parenthesized!(derive_content in input);
+                    ref_derives = derive_content
+                        .parse_terminated(Ident::parse, Token![,])?
+                        .into_iter()
+                        .collect();
+                }
+                "refs" => {
+                    gen_refs = true;
+                }
+                other => {
+                    return Err(syn::Error::new(
+                        kw.span(),
+                        format!("expected `derive`, `ref_derive`, or `refs`, got `{}`", other),
+                    ));
+                }
+            }
+        }
+
+        Ok(DecomposeArgs { new_name, mode, derives, ref_derives, gen_refs })
     }
 }
 
@@ -62,8 +101,21 @@ pub fn decompose(attr: TokenStream, item: TokenStream) -> TokenStream {
     let new_name = &args.new_name;
     let excluded_name = Ident::new(&format!("{}Excluded", new_name), new_name.span());
     let vis = &input.vis;
-    let attrs = &input.attrs;
     let generics = &input.generics;
+
+    let derive_attr = if args.derives.is_empty() {
+        quote! {}
+    } else {
+        let traits = &args.derives;
+        quote! { #[derive(#(#traits),*)] }
+    };
+
+    let ref_derive_attr = if args.ref_derives.is_empty() {
+        quote! {}
+    } else {
+        let traits = &args.ref_derives;
+        quote! { #[derive(#(#traits),*)] }
+    };
 
     let fields = match &input.fields {
         syn::Fields::Named(named) => &named.named,
@@ -205,16 +257,80 @@ pub fn decompose(attr: TokenStream, item: TokenStream) -> TokenStream {
         quote! { #name: exc.#name }
     }).collect();
 
+    let ref_output = if args.gen_refs {
+        let new_name_ref = Ident::new(&format!("{}Ref", new_name), new_name.span());
+        let excluded_name_ref = Ident::new(&format!("{}ExcludedRef", new_name), new_name.span());
+
+        let include_ref_tys: Vec<_> = include_tys.iter().map(|ty| {
+            quote! { &'a #ty }
+        }).collect();
+        let exclude_ref_tys: Vec<_> = exclude_tys.iter().map(|ty| {
+            quote! { &'a #ty }
+        }).collect();
+
+        let ref_include_angled = if include_generics_params.is_empty() {
+            quote! { <'a> }
+        } else {
+            quote! { <'a, #include_generics_params> }
+        };
+        let ref_exclude_angled = if exclude_generics_params.is_empty() {
+            quote! { <'a> }
+        } else {
+            quote! { <'a, #exclude_generics_params> }
+        };
+        let ref_method_angled = if inlined_generics.is_empty() {
+            quote! { <'a> }
+        } else {
+            quote! { <'a, #inlined_generics> }
+        };
+
+        let decompose_ref_new_fields: Vec<_> = include_names.iter().map(|name| {
+            quote! { #name: &self.#name }
+        }).collect();
+        let decompose_ref_excluded_fields: Vec<_> = exclude_names.iter().map(|name| {
+            quote! { #name: &self.#name }
+        }).collect();
+
+        quote! {
+            #ref_derive_attr
+            #[allow(dead_code)]
+            #vis struct #new_name_ref #ref_include_angled #include_where {
+                #(#include_vis #include_names: #include_ref_tys),*
+            }
+
+            #ref_derive_attr
+            #[allow(dead_code)]
+            #vis struct #excluded_name_ref #ref_exclude_angled #exclude_where {
+                #(#exclude_vis #exclude_names: #exclude_ref_tys),*
+            }
+
+            impl #original_name #orig_angled {
+                pub fn decompose_ref #ref_method_angled (&'a self) -> (#new_name_ref #ref_include_angled, #excluded_name_ref #ref_exclude_angled) {
+                    (
+                        #new_name_ref {
+                            #(#decompose_ref_new_fields),*
+                        },
+                        #excluded_name_ref {
+                            #(#decompose_ref_excluded_fields),*
+                        },
+                    )
+                }
+            }
+        }
+    } else {
+        quote! {}
+    };
+
     let output = quote! {
         #input
 
-        #(#attrs)*
+        #derive_attr
         #[allow(dead_code)]
         #vis struct #new_name #include_angled #include_where {
             #(#include_vis #include_names: #include_tys),*
         }
 
-        #(#attrs)*
+        #derive_attr
         #[allow(dead_code)]
         #vis struct #excluded_name #exclude_angled #exclude_where {
             #(#exclude_vis #exclude_names: #exclude_tys),*
@@ -242,6 +358,8 @@ pub fn decompose(attr: TokenStream, item: TokenStream) -> TokenStream {
                 }
             }
         }
+
+        #ref_output
     };
 
     output.into()

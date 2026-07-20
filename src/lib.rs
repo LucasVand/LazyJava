@@ -8,7 +8,6 @@ pub mod clean;
 pub mod config;
 mod context;
 pub mod create;
-pub mod dependancy_graph;
 pub mod find;
 mod lazy_java;
 pub mod lazy_java_error;
@@ -32,6 +31,12 @@ pub const MAVEN_URL: &str = "https://repo1.maven.org/maven2/";
 pub const LOCK_FILE_NAME: &str = "lazy-java.lock";
 pub const CONFIG_FILE_NAME: &str = "lazy-java.toml";
 pub const BUILD_METADATA_NAME: &str = ".lazy-java-build";
+
+pub const JAVAC_SEPERATOR: char = if cfg!(target_os = "windows") {
+    ';'
+} else {
+    ':'
+};
 
 pub fn create_maven_url(group: &str, artifact: &str) -> String {
     format!("{}{}/{}/", MAVEN_URL, group.replace(".", "/"), artifact)

@@ -33,6 +33,7 @@
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/test10/target/lib/spring-boot-starter-tomcat-4.1.0.jar"/>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/test10/target/lib/spring-core-7.0.8.jar"/>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/test10/target/lib/spring-boot-starter-web-4.1.0.jar"/>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/test10/target/lib/auto-value-annotations-1.11.1.jar"/>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/test10/target/lib/micrometer-commons-1.16.6.jar"/>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/test10/target/lib/log4j-to-slf4j-2.25.4.jar"/>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/test10/target/lib/spring-boot-tomcat-4.1.0.jar"/>
@@ -41,7 +42,14 @@
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/test10/target/lib/spring-context-7.0.8.jar"/>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/test10/target/lib/spring-boot-servlet-4.1.0.jar"/>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/test10/target/lib/tomcat-embed-el-11.0.22.jar"/>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/test10/target/lib-annotations/auto-value-1.11.1.jar"/>
     <classpathentry kind="src" path="src" including="**/*.java"/>
-    <classpathentry kind="output" path="bin"/>
+    <classpathentry kind="src" path="target/generated-source" including="**/*.java">
+        <attributes>
+            <attribute name="optional" value="true"/>
+            <attribute name="ignore_optional_problems" value="true"/>
+        </attributes>
+    </classpathentry>
+    <classpathentry kind="output" path="target/bin"/>
     <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 </classpath>

@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    build::metadata::BuildMetadata, dependancy_graph::graph::DependancyGraph,
+    build::dependancy_graph::DependancyGraph, build::metadata::BuildMetadata,
     lazy_java_error::LazyJavaError, utils::find_main::find_java_files,
 };
 
@@ -15,7 +15,7 @@ pub fn find_modified_files(build: &BuildMetadata, src: &Path) -> Result<Vec<Path
     let last_build_time = build.time_stamp;
     log::debug!("Last build time: {:?}", last_build_time);
 
-    let java_files = find_java_files(src)?;
+    let java_files = find_java_files(src);
     log::debug!("Found {} Java files to check", java_files.len());
 
     let mut stale_files = Vec::new();

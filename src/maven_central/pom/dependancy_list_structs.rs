@@ -53,6 +53,7 @@ impl From<MavenDependancy> for LockFilePackage {
             file_name,
             dependancies: value.dependancies.into_iter().map(|v| v.id).collect(),
             root: value.root,
+            annotations: Vec::new(),
         }
     }
 }

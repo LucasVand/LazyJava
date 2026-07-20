@@ -163,6 +163,6 @@ pub struct LazyJavaGlobalArgs {
     pub target: Option<String>,
 
     /// Show what would change without actually doing it
-    #[arg(long = "dry-run")]
+    #[arg(long = "dry-run", global = true)]
     pub dry_run: bool,
 }
