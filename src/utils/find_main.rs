@@ -93,7 +93,7 @@ pub fn find_java_files(root: &Path) -> Vec<PathBuf> {
 
     for entry in WalkDir::new(root) {
         if let Ok(file) = entry {
-            if file.file_type().is_dir() && file.path().extension() == Some(OsStr::new("java")) {
+            if file.file_type().is_file() && file.path().extension() == Some(OsStr::new("java")) {
                 java_files.push(file.into_path());
             }
         }

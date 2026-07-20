@@ -4,15 +4,17 @@ use colored::Colorize;
 
 use crate::Context;
 use crate::args::{BuildArgs, BuildCommand, BuildSubCommand};
+use crate::build::compile::compile_java;
 use crate::build::dependancy_graph::DependancyGraph;
 use crate::build::find_stale_files::{files_to_recompile, find_modified_files};
 use crate::build::metadata::{BuildMetadata, hash_directory, save_metadata};
+use crate::build::processors::build_processors;
 use crate::build::resources::copy_resources;
 use crate::lazy_java::LazyJava;
 
 use crate::lazy_java_error::LazyJavaError;
 use crate::lsp::classpath::Classpath;
-use crate::utils::processes::{compile_java, compile_java_files};
+use crate::utils::find_main::find_java_files;
 
 impl LazyJava {
     pub fn build(args: &BuildCommand, ctx: &Context) -> Result<(), LazyJavaError> {
@@ -40,6 +42,8 @@ impl LazyJava {
             return Ok(status);
         }
         let build_data = build_data.unwrap();
+
+        build_processors(args, ctx)?;
 
         let lib_hash_match = hash_directory(&ctx.lib) == build_data.lib_hash;
         let bin_hash_match = hash_directory(&ctx.bin) == build_data.bin_hash;
@@ -90,15 +94,8 @@ impl LazyJava {
         );
         log::debug!("Need to recompile {} files", recompile.len());
 
-        let status = compile_java_files(
-            recompile,
-            &ctx.bin,
-            &ctx.lib,
-            &ctx.lib_annotations,
-            &ctx.src_generated,
-            &args.javac_args,
-        )
-        .map_err(LazyJavaError::UnableToCompile)?;
+        let status = compile_java(recompile, &ctx.bin, ctx, &args.javac_args, true)
+            .map_err(LazyJavaError::UnableToCompile)?;
 
         log::debug!("Java compilation completed status {}", status);
         return Ok(status);
@@ -109,15 +106,10 @@ impl LazyJava {
         log::info!("Starting full rebuild");
         Classpath::generate(ctx)?;
 
-        let status = compile_java(
-            &ctx.src,
-            &ctx.bin,
-            &ctx.lib,
-            &ctx.lib_annotations,
-            &ctx.src_generated,
-            &args.javac_args,
-        )
-        .map_err(LazyJavaError::UnableToCompile)?;
+        let files = find_java_files(&ctx.src);
+
+        let status = compile_java(files, &ctx.bin, ctx, &args.javac_args, true)
+            .map_err(LazyJavaError::UnableToCompile)?;
         log::debug!("Java compilation completed status {}", status);
 
         Ok(status)

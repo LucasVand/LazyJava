@@ -4,7 +4,10 @@ use std::{
     process::{Command, ExitStatus, Output, Stdio},
 };
 
-use crate::utils::destructure_dir::{destructure_dir, find_all_java_files};
+use crate::{
+    JAVAC_SEPERATOR,
+    utils::destructure_dir::{find_all_java_files, join_directory},
+};
 fn compile_command(
     src_list: &str,
     build_dir: &str,
@@ -97,17 +100,17 @@ pub fn compile_java(
     let src_des = find_all_java_files(&src);
     let ab_dest = path::absolute(dest)?;
     let ab_lib = path::absolute(lib)?;
-    let ab_annotation_lib = destructure_dir(annotation_lib);
+    let ab_annotation_lib = join_directory(annotation_lib, JAVAC_SEPERATOR);
     let src_generated = path::absolute(src_generated)?;
-    let src_generated_destructured = destructure_dir(&src_generated);
+    let src_generated_destructured = join_directory(&src_generated, JAVAC_SEPERATOR);
 
     let command = compile_command(
         &src_des,
         ab_dest.to_str().unwrap(),
         ab_lib.to_str().unwrap(),
-        ab_annotation_lib.to_str().unwrap(),
+        &ab_annotation_lib,
         src_generated.to_str().unwrap(),
-        src_generated_destructured.to_str().unwrap(),
+        &src_generated_destructured,
         javac_args,
     );
 
@@ -148,17 +151,17 @@ pub fn compile_java_files(
 
     let ab_dest = path::absolute(dest)?;
     let ab_lib = path::absolute(lib)?;
-    let ab_annotation_lib = destructure_dir(annotation_lib);
+    let ab_annotation_lib = join_directory(annotation_lib, JAVAC_SEPERATOR);
     let src_generated = path::absolute(src_generated)?;
-    let src_generated_destructured = destructure_dir(&src_generated);
+    let src_generated_destructured = join_directory(&src_generated, JAVAC_SEPERATOR);
 
     let command = compile_command(
         src_des.as_str(),
         ab_dest.to_str().unwrap(),
         ab_lib.to_str().unwrap(),
-        ab_annotation_lib.to_str().unwrap(),
+        &ab_annotation_lib,
         src_generated.to_str().unwrap(),
-        src_generated_destructured.to_str().unwrap(),
+        &src_generated_destructured,
         javac_args,
     );
 

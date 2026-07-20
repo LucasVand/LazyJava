@@ -23,6 +23,7 @@ mod tests {
     #[test]
     fn config_round_trip() {
         let config = Config {
+            processors: Vec::new(),
             project: ConfigProject {
                 name: "my-project".into(),
                 group: Some("com.example".into()),
@@ -79,6 +80,7 @@ mod tests {
     #[test]
     fn dependencies_serialize_as_map_keyed_by_artifact() {
         let config = Config {
+            processors: Vec::new(),
             project: ConfigProject::default(),
             setup: ConfigSetup::default(),
             dependancies: make_deps(&[("com.example", "my-lib", "2.0.0")]),
@@ -94,6 +96,7 @@ mod tests {
     #[test]
     fn multiple_dependencies_round_trip() {
         let config = Config {
+            processors: Vec::new(),
             project: ConfigProject::default(),
             setup: ConfigSetup::default(),
             dependancies: make_deps(&[
@@ -178,6 +181,7 @@ my-lib = { group = "com.example", version = "" }
         let root = dir.path();
 
         let config = Config {
+            processors: Vec::new(),
             resources: ConfigResources::default(),
             project: ConfigProject {
                 name: "test-project".into(),

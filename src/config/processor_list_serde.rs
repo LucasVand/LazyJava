@@ -1,3 +1,4 @@
+use crate::config::ConfigProcesserDefinitionEntryRef;
 use std::collections::HashMap;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -14,11 +15,11 @@ pub fn serialize_processors<S>(
 where
     S: Serializer,
 {
-    let mut map: HashMap<String, ConfigProcesserDefinitionEntry> =
+    let mut map: HashMap<&String, ConfigProcesserDefinitionEntryRef> =
         HashMap::with_capacity(procs.len());
 
     for proc in procs {
-        let (entry, ex) = proc.decompose();
+        let (entry, ex) = proc.decompose_ref();
 
         map.insert(ex.class_name, entry);
     }

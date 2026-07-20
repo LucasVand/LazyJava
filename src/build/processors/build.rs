@@ -1,37 +1,83 @@
-use std::{ffi::OsStr, path::PathBuf, process::ExitStatus};
+use std::{fs, io, path::PathBuf, process::ExitStatus};
 
 use crate::{
-    Context,
+    Context, args::BuildArgs, build::compile::compile_java, config::ProcesserType,
     lazy_java_error::LazyJavaError,
-    utils::{find_main::find_java_files, processes::compile_java_files},
 };
 
-pub fn build_processors(ctx: &Context) -> Result<ExitStatus, LazyJavaError> {
-    let files = find_java_files(&ctx.src);
+pub fn build_processors(
+    build_args: &BuildArgs,
+    ctx: &Context,
+) -> Result<ExitStatus, LazyJavaError> {
+    let processor_count = ctx.config.processors.len();
+    log::info!("Building {} annotation processor(s)", processor_count);
 
-    let os_str: Vec<&OsStr> = ctx
+    let full_paths: Vec<PathBuf> = ctx
         .config
-        .processers
-        .processers
+        .processors
         .iter()
-        .map(|c| OsStr::new(&c.class_name))
+        .map(|p| p.path.clone())
         .collect();
 
-    let mut full_paths: Vec<PathBuf> = Vec::new();
-    for file in files {
-        if let Some(file_name) = file.file_name()
-            && os_str.contains(&file_name)
-        {
-            full_paths.push(file);
-        }
-    }
+    log::debug!("Processor source paths: {:?}", full_paths);
 
-    return Ok(compile_java_files(
+    fs::remove_dir_all(&ctx.bin_processors.join("META-INF"))?;
+
+    log::info!(
+        "Compiling {} processor source(s) to {:?}",
+        processor_count,
+        ctx.bin_processors
+    );
+    let result = compile_java(
         full_paths,
         &ctx.bin_processors,
-        &ctx.lib,
-        &ctx.lib_annotations,
-        &ctx.src_generated,
-        &Vec::new(),
-    )?);
+        ctx,
+        &build_args.javac_args,
+        false,
+    )?;
+    log::info!(
+        "Annotation processor compilation completed with status: {}",
+        result
+    );
+    create_meta_folder(ctx)?;
+
+    Ok(result)
+}
+
+fn create_meta_folder(ctx: &Context) -> Result<(), io::Error> {
+    let dir = ctx.bin_processors.join("META-INF").join("services");
+
+    let mut file_contents: String = String::new();
+    let mut first = true;
+    for p in ctx
+        .config
+        .processors
+        .iter()
+        .filter(|p| p.kind == ProcesserType::Processor)
+    {
+        if !first {
+            file_contents.push('\n');
+        }
+        file_contents.push_str(&format!("{}.{}", p.package, p.class_name));
+        first = false;
+    }
+
+    log::debug!("Creating META-INF/services directory at {:?}", dir);
+    fs::create_dir_all(&dir)?;
+
+    let service_file = dir.join("javax.annotation.processing.Processor");
+    log::info!(
+        "Writing processor service file to {:?} with {} entr{}",
+        service_file,
+        ctx.config.processors.len(),
+        if ctx.config.processors.len() == 1 {
+            "y"
+        } else {
+            "ies"
+        }
+    );
+    log::debug!("Processor service file contents:\n{}", file_contents);
+    fs::write(&service_file, file_contents)?;
+
+    Ok(())
 }
