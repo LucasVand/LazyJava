@@ -3,6 +3,8 @@ pub mod find_stale_files;
 pub(crate) mod metadata;
 
 mod compile;
+#[cfg(test)]
+mod compile_tests;
 mod dependancy_graph;
 #[cfg(test)]
 mod metadata_tests;

@@ -10,7 +10,7 @@ use crate::{Context, JAVAC_SEPERATOR, utils::join_directory};
 
 /// Anything postfixed with list should be a : or ; seperated list depending on platform, expect
 /// src_list that is a space seperated list
-fn compile_command(
+pub(crate) fn compile_command(
     src_list: &str,
     output_dir: &str,
     bin_dir: &str,

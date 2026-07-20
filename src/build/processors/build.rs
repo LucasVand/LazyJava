@@ -21,7 +21,7 @@ pub fn build_processors(
 
     log::debug!("Processor source paths: {:?}", full_paths);
 
-    fs::remove_dir_all(&ctx.bin_processors.join("META-INF"))?;
+    let _ = fs::remove_dir_all(&ctx.bin_processors.join("META-INF"));
 
     log::info!(
         "Compiling {} processor source(s) to {:?}",
@@ -66,11 +66,12 @@ fn create_meta_folder(ctx: &Context) -> Result<(), io::Error> {
     fs::create_dir_all(&dir)?;
 
     let service_file = dir.join("javax.annotation.processing.Processor");
+    let processor_count = ctx.config.processors.iter().filter(|p| p.kind == ProcesserType::Processor).count();
     log::info!(
         "Writing processor service file to {:?} with {} entr{}",
         service_file,
-        ctx.config.processors.len(),
-        if ctx.config.processors.len() == 1 {
+        processor_count,
+        if processor_count == 1 {
             "y"
         } else {
             "ies"
