@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<classpath>
+    <classpathentry kind="src" path="src" including="**/*.java"/>
+    <classpathentry kind="src" path="target/generated-source" including="**/*.java">
+        <attributes>
+            <attribute name="optional" value="true"/>
+            <attribute name="ignore_optional_problems" value="true"/>
+        </attributes>
+    </classpathentry>
+    <classpathentry kind="output" path="target/bin"/>
+    <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+</classpath>
