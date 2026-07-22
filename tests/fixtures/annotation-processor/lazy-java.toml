@@ -1,0 +1,6 @@
+[project]
+name = "annotation-processor"
+
+[processors]
+MyAnnotation = { path = "./src/processor/MyAnnotation.java", kind = "annotation", package = "processor" }
+MyProcessor = { path = "./src/processor/MyProcessor.java", kind = "processor", package = "processor" }

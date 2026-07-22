@@ -33,6 +33,10 @@ impl LazyJava {
     }
 
     pub fn build_java(args: &BuildArgs, ctx: &Context) -> Result<ExitStatus, LazyJavaError> {
+        if !build_processors(args, ctx)? {
+            return Err(LazyJavaError::CompilationErrors);
+        }
+
         let build_data = BuildMetadata::fetch(&ctx.target);
         if build_data.is_none() {
             let status = Self::rebuild(args, ctx)?;
@@ -42,8 +46,6 @@ impl LazyJava {
             return Ok(status);
         }
         let build_data = build_data.unwrap();
-
-        build_processors(args, ctx)?;
 
         let lib_hash_match = hash_directory(&ctx.lib) == build_data.lib_hash;
         let bin_hash_match = hash_directory(&ctx.bin) == build_data.bin_hash;

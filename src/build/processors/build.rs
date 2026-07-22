@@ -1,14 +1,12 @@
-use std::{fs, io, path::PathBuf, process::ExitStatus};
+use std::{fs, io, path::PathBuf};
 
 use crate::{
     Context, args::BuildArgs, build::compile::compile_java, config::ProcesserType,
     lazy_java_error::LazyJavaError,
 };
 
-pub fn build_processors(
-    build_args: &BuildArgs,
-    ctx: &Context,
-) -> Result<ExitStatus, LazyJavaError> {
+pub fn build_processors(build_args: &BuildArgs, ctx: &Context) -> Result<bool, LazyJavaError> {
+    // TODO: add errors for this this is very lazy
     let processor_count = ctx.config.processors.len();
     log::info!("Building {} annotation processor(s)", processor_count);
 
@@ -18,6 +16,10 @@ pub fn build_processors(
         .iter()
         .map(|p| p.path.clone())
         .collect();
+
+    if full_paths.is_empty() {
+        return Ok(true);
+    }
 
     log::debug!("Processor source paths: {:?}", full_paths);
 
@@ -41,7 +43,7 @@ pub fn build_processors(
     );
     create_meta_folder(ctx)?;
 
-    Ok(result)
+    Ok(true)
 }
 
 fn create_meta_folder(ctx: &Context) -> Result<(), io::Error> {
@@ -66,16 +68,17 @@ fn create_meta_folder(ctx: &Context) -> Result<(), io::Error> {
     fs::create_dir_all(&dir)?;
 
     let service_file = dir.join("javax.annotation.processing.Processor");
-    let processor_count = ctx.config.processors.iter().filter(|p| p.kind == ProcesserType::Processor).count();
+    let processor_count = ctx
+        .config
+        .processors
+        .iter()
+        .filter(|p| p.kind == ProcesserType::Processor)
+        .count();
     log::info!(
         "Writing processor service file to {:?} with {} entr{}",
         service_file,
         processor_count,
-        if processor_count == 1 {
-            "y"
-        } else {
-            "ies"
-        }
+        if processor_count == 1 { "y" } else { "ies" }
     );
     log::debug!("Processor service file contents:\n{}", file_contents);
     fs::write(&service_file, file_contents)?;
