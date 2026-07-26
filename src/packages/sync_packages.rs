@@ -21,7 +21,9 @@ impl LazyJava {
 
         exc.config.sync_lock_file(&mut lockfile, &inc)?;
 
-        exc.config.write(&inc.root)?;
+        if !inc.dry_run {
+            exc.config.write(&inc.root)?;
+        }
 
         let ctx = Context::compose(inc, exc);
 

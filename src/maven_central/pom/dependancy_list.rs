@@ -196,6 +196,7 @@ impl MavenDependancyList {
                 dependancy_type: pom.packaging.clone(),
                 dependancies: dependancy_list,
                 root: false,
+                scope: Scope::Compile,
             });
         }
 

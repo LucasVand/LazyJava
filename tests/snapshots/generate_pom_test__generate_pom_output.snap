@@ -1,8 +1,13 @@
+---
+source: tests/generate_pom_test.rs
+assertion_line: 52
+expression: pom_content
+---
 <project>
     <modelVersion>4.0.0</modelVersion>
-    <groupId>group1</groupId>
-    <artifactId>artifact</artifactId>
-    <version>1.0.0</version>
+    <groupId>com.example</groupId>
+    <artifactId>generate-pom</artifactId>
+    <version>2.0.0</version>
     <packaging>jar</packaging>
     <dependencies>
         <dependency>
@@ -14,17 +19,17 @@
             <type>jar</type>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-            <version>4.1.0</version>
+            <groupId>com.google.auto.value</groupId>
+            <artifactId>auto-value-annotations</artifactId>
+            <version>1.11.1</version>
             <scope>compile</scope>
             <optional>false</optional>
             <type>jar</type>
         </dependency>
         <dependency>
-            <groupId>com.google.auto.value</groupId>
-            <artifactId>auto-value-annotations</artifactId>
-            <version>1.11.1</version>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.20.0</version>
             <scope>compile</scope>
             <optional>false</optional>
             <type>jar</type>

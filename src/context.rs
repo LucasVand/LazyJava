@@ -8,7 +8,8 @@ use decompose::decompose;
 
 use crate::{
     BUILD_FOLDER, LIB_FOLDER, SRC_FOLDER, TARGET_FOLDER, args::LazyJavaArgs, config::Config,
-    lazy_java_error::LazyJavaError, utils::find_root::find_root,
+    lazy_java_error::LazyJavaError, lock_file::LockFile, lsp::sync_lsp_config,
+    utils::find_root::find_root,
 };
 
 #[decompose(ContextNoConfig, exclude(config))]
@@ -198,6 +199,25 @@ impl Context {
         self.ensure_lib_exists()?;
         self.ensure_target_exists()?;
         Ok(())
+    }
+    pub fn assert_packages(self) -> Result<Context, LazyJavaError> {
+        let (inc, exc) = self.decompose();
+
+        let mut lockfile = LockFile::fetch(&inc.root)?;
+
+        exc.config.sync_lock_file(&mut lockfile, &inc)?;
+
+        if !inc.dry_run {
+            exc.config.write(&inc.root)?;
+        }
+
+        let ctx = Context::compose(inc, exc);
+
+        if !ctx.dry_run {
+            sync_lsp_config(&ctx)?;
+        }
+
+        Ok(ctx)
     }
     fn target_path<'a>(args: Option<&'a LazyJavaArgs>, config: &'a Config) -> &'a str {
         if args.is_some()

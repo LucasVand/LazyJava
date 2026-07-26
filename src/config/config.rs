@@ -32,9 +32,9 @@ impl Config {
             _ => ConfigError::NoConfig(root.join(CONFIG_FILE_NAME)),
         })?;
 
-        let lockfile: Config = toml::from_str(&file)?;
+        let config: Config = toml::from_str(&file)?;
 
-        Ok(lockfile)
+        Ok(config)
     }
     pub fn write(&self, root: &Path) -> Result<(), ConfigError> {
         let str = toml::to_string_pretty(self)?;

@@ -1,0 +1,5 @@
+[project]
+name = "generate-pom"
+group = "com.example"
+artifact = "generate-pom"
+version = "2.0.0"

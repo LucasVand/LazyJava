@@ -7,7 +7,7 @@ use crate::{
     maven_central::{
         MavenIdBuf,
         fetch::full_maven_url,
-        pom::{DependancyType, MavenPom},
+        pom::{DependancyType, MavenPom, Scope},
     },
 };
 
@@ -26,6 +26,7 @@ pub struct MavenDependancy {
     pub id: MavenIdBuf,
     pub dependancy_type: DependancyType,
     pub dependancies: Vec<Dependancy>,
+    pub scope: Scope,
     pub root: bool,
 }
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -54,6 +55,7 @@ impl From<MavenDependancy> for LockFilePackage {
             dependancies: value.dependancies.into_iter().map(|v| v.id).collect(),
             root: value.root,
             annotations: Vec::new(),
+            scope: value.scope,
         }
     }
 }
