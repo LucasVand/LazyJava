@@ -12,7 +12,7 @@ impl MavenPom {
 
         pom.group_id = id.group.to_string();
         pom.version = id.version.to_string();
-
+        //
         // creates the dependency_management_map
         pom.dependency_management_map = match &pom.dependency_management {
             Some(boms) => boms

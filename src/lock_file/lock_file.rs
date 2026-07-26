@@ -17,7 +17,7 @@ use crate::{
     lock_file::LockFileError,
     maven_central::{
         MavenId, MavenIdBuf, PartialMavenIdBuf,
-        pom::{DependancyType, MavenDependancyList},
+        pom::{DependancyType, MavenDependancyList, Scope},
     },
 };
 
@@ -41,6 +41,7 @@ pub struct LockFilePackage {
     pub packaging: DependancyType,
 
     pub root: bool,
+    pub scope: Scope,
 
     #[serde(default)]
     pub annotations: Vec<String>,
@@ -134,7 +135,11 @@ impl LockFile {
         map: &mut HashMap<String, &mut LockFilePackage>,
         dry_run: bool,
     ) -> Result<isize, LockFileError> {
-        println!("    {} {}", "Validating".green().bold(), path.display());
+        println!(
+            "    {} {}",
+            "Validating".green().bold(),
+            path.file_stem().unwrap().display()
+        );
         let mut removed = 0;
         for file in walkdir::WalkDir::new(path)
             .into_iter()

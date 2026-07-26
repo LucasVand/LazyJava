@@ -4,11 +4,16 @@ use thiserror::Error;
 
 use crate::{
     build::GraphError, config::ConfigError, create::create_project::CreateProjectError,
-    lock_file::LockFileError, lsp::classpath_error::ClasspathError, maven_central::MavenError,
+    generate::GenerateError, import::ImportError, lock_file::LockFileError,
+    lsp::classpath_error::ClasspathError, maven_central::MavenError,
 };
 
 #[derive(Error, Debug)]
 pub enum LazyJavaError {
+    #[error("Could not generate value")]
+    GenerateError(#[from] GenerateError),
+    #[error("Could not import value")]
+    ImportError(#[from] ImportError),
     #[error("Could not create project")]
     CreateError(#[from] CreateProjectError),
 

@@ -1,8 +1,8 @@
 use crate::{
     Context,
     args::{
-        AddArgs, BuildCommand, FindArgs, LazyJavaArgs, LazyJavaCommand, RemoveArgs, RunArgs,
-        SyncArgs,
+        AddArgs, BuildCommand, FindArgs, GenerateArgs, ImportArgs, LazyJavaArgs, LazyJavaCommand,
+        RemoveArgs, RunArgs, SyncArgs,
     },
     config::Config,
     lazy_java_error::LazyJavaError,
@@ -20,12 +20,27 @@ impl LazyJava {
             LazyJavaCommand::Add { args } => Self::add_internal(&cli_args, args),
             LazyJavaCommand::Remove { args } => Self::remove_internal(&cli_args, args),
             LazyJavaCommand::Sync { args } => Self::sync_internal(&cli_args, args),
+            LazyJavaCommand::Generate { args } => Self::generate_internal(&cli_args, args),
+            LazyJavaCommand::Import { args } => Self::import_internal(&cli_args, args),
         }
+    }
+    fn import_internal(_all_args: &LazyJavaArgs, args: &ImportArgs) -> Result<(), LazyJavaError> {
+        Self::import(args)
+    }
+    fn generate_internal(
+        all_args: &LazyJavaArgs,
+        args: &GenerateArgs,
+    ) -> Result<(), LazyJavaError> {
+        let ctx = Context::new(all_args)?;
+        ctx.assert_all()?;
+        let ctx = ctx.assert_packages()?;
+        Self::generate(args, &ctx)
     }
 
     fn build_internal(all_args: &LazyJavaArgs, args: &BuildCommand) -> Result<(), LazyJavaError> {
         let ctx = Context::new(all_args)?;
         ctx.assert_all()?;
+        let ctx = ctx.assert_packages()?;
         Self::build(args, &ctx)
     }
 
@@ -44,6 +59,7 @@ impl LazyJava {
     fn run_internal(all_args: &LazyJavaArgs, args: &RunArgs) -> Result<(), LazyJavaError> {
         let ctx = Context::new(all_args)?;
         ctx.assert_all()?;
+        let ctx = ctx.assert_packages()?;
         Self::run(args, &ctx)
     }
 

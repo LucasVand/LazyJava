@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
 
@@ -20,7 +20,7 @@ pub fn serialize_dependencies<S>(
 where
     S: Serializer,
 {
-    let mut map = HashMap::with_capacity(deps.len());
+    let mut map = BTreeMap::new();
 
     for (_key, dep) in deps {
         let entry = DependencyEntry {

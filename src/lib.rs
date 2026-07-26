@@ -9,6 +9,8 @@ pub mod config;
 mod context;
 pub mod create;
 pub mod find;
+pub mod generate;
+pub mod import;
 mod lazy_java;
 pub mod lazy_java_error;
 pub mod lock_file;

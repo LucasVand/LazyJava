@@ -22,6 +22,7 @@ mod tests {
             dependancies: dep_ids,
             packaging: DependancyType::Jar,
             root: false,
+            scope: crate::maven_central::pom::Scope::Compile,
             annotations: Vec::new(),
         }
     }

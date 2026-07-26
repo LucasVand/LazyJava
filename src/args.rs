@@ -52,6 +52,14 @@ pub enum LazyJavaCommand {
         #[command(flatten)]
         args: SyncArgs,
     },
+    Generate {
+        #[command(flatten)]
+        args: GenerateArgs,
+    },
+    Import {
+        #[command(flatten)]
+        args: ImportArgs,
+    },
 }
 #[derive(Debug, Parser, Clone)]
 pub struct RunArgs {
@@ -140,6 +148,41 @@ pub struct RemoveArgs {
 
 #[derive(Debug, Parser, Clone)]
 pub struct SyncArgs {}
+
+#[derive(Debug, Parser, Clone)]
+pub struct GenerateArgs {
+    #[command(subcommand)]
+    pub command: GenerateCommand,
+}
+
+#[derive(Subcommand, Debug, Clone)]
+pub enum GenerateCommand {
+    Pom,
+}
+
+#[derive(Debug, Parser, Clone)]
+pub struct ImportArgs {
+    #[command(subcommand)]
+    pub command: ImportCommand,
+}
+
+#[derive(Subcommand, Debug, Clone)]
+pub enum ImportCommand {
+    Pom {
+        #[command(flatten)]
+        args: ImportPomArgs,
+    },
+}
+#[derive(Parser, Debug, Clone)]
+pub struct ImportPomArgs {
+    /// Path to the pom.xml file to import
+    #[arg(long = "pom-path", default_value = "pom.xml")]
+    pub pom_path: String,
+
+    /// Overwrite existing lazy-java.toml if it exists
+    #[arg(long = "overwrite")]
+    pub overwrite: bool,
+}
 
 #[derive(Debug, Parser, Clone)]
 pub struct LazyJavaGlobalArgs {
