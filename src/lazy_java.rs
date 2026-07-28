@@ -1,3 +1,5 @@
+use colored::Colorize;
+
 use crate::{
     Context,
     args::{
@@ -11,6 +13,13 @@ pub struct LazyJava;
 
 impl LazyJava {
     pub fn execute(cli_args: LazyJavaArgs) -> Result<(), LazyJavaError> {
+        if cli_args.global_args.dry_run {
+            println!(
+                "{} ({} will be made)",
+                "--dry-run".green().bold(),
+                "No persistent changes".red().bold(),
+            )
+        }
         match &cli_args.command {
             LazyJavaCommand::Create { args } => Self::create(args, &cli_args),
             LazyJavaCommand::Build { args } => Self::build_internal(&cli_args, args),

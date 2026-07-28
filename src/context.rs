@@ -95,14 +95,6 @@ impl Context {
             None => false,
         };
 
-        if dry_run {
-            println!(
-                "{} ({} will be made)",
-                "--dry-run".green().bold(),
-                "No persistent changes".red().bold(),
-            )
-        }
-
         let ctx = Context {
             relative_target,
             target,

@@ -1,3 +1,5 @@
+use colored::Colorize;
+
 use crate::{
     Context, args::RunArgs, lazy_java::LazyJava, lazy_java_error::LazyJavaError,
     run::interactive_run::interactive_find_main, utils::processes::execute_java,
@@ -6,6 +8,15 @@ use crate::{
 impl LazyJava {
     pub fn run(args: &RunArgs, ctx: &Context) -> Result<(), LazyJavaError> {
         log::info!("Starting run operation");
+
+        if ctx.dry_run {
+            let class = match &args.class {
+                Some(class) => class.clone(),
+                None => "<interactive selection>".into(),
+            };
+            println!("{} {}", "Running".bold().green(), class);
+            return Ok(());
+        }
 
         if !args.no_build {
             log::debug!("Building before run");
