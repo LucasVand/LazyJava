@@ -155,7 +155,7 @@ mod tests {
             "spring-boot-starter-web",
             "4.1.0-RC1",
         ));
-        assert!(result.is_ok());
+        assert!(result.is_ok(), "Fetch Failed {:?}", result.err());
 
         let dep_list = result.unwrap();
         let original_len = dep_list.len();

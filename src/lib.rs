@@ -34,6 +34,8 @@ pub const LOCK_FILE_NAME: &str = "lazy-java.lock";
 pub const CONFIG_FILE_NAME: &str = "lazy-java.toml";
 pub const BUILD_METADATA_NAME: &str = ".lazy-java-build";
 
+pub const ARTIFACT_LOCK_FILE: &str = "lock";
+
 pub const JAVAC_SEPERATOR: char = if cfg!(target_os = "windows") {
     ';'
 } else {
