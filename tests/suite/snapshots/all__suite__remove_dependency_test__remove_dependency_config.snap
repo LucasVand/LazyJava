@@ -1,0 +1,8 @@
+---
+source: tests/suite/remove_dependency_test.rs
+expression: toml_after_remove
+---
+[project]
+name = "with-dependency"
+
+[dependancies]

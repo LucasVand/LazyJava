@@ -1,0 +1,8 @@
+mod annotation_processor_test;
+mod auto_value_test;
+mod build_and_run_test;
+mod create_test;
+mod generate_pom_test;
+mod import_pom_test;
+mod remove_dependency_test;
+mod sync_build_run_test;

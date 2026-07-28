@@ -27,7 +27,7 @@ pub struct LockFile {
     pub packages: Vec<LockFilePackage>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
 pub struct LockFilePackage {
     #[serde(flatten)]
     pub id: MavenIdBuf,
@@ -78,7 +78,13 @@ impl LockFile {
 
         Ok(lockfile)
     }
-    pub fn write(&self, root: &Path) -> Result<(), LockFileError> {
+    pub fn write(&mut self, root: &Path) -> Result<(), LockFileError> {
+        self.packages.sort();
+        for pkg in &mut self.packages {
+            pkg.dependancies.sort();
+            pkg.annotations.sort();
+        }
+
         let str = toml::to_string_pretty(self)?;
 
         let res = fs::write(root.join(LOCK_FILE_NAME), str);
@@ -228,7 +234,8 @@ impl LockFile {
 
         for (key, package) in root_packages {
             if !map.contains(key) {
-                self.add_package(package.id.clone())?;
+                let id = key.clone().to_full_buf(package.version.clone());
+                self.add_package(id)?;
             }
         }
 

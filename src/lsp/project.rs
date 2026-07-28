@@ -1,12 +1,12 @@
 use std::{fs::write, io, path::Path};
 
-use crate::config::Config;
+use crate::config::ConfigTomlEdit;
 
 pub struct DotProject {}
 
 impl DotProject {
-    pub fn generate(root: &Path, config: &Config) -> Result<(), io::Error> {
-        let name: &str = &config.project.name;
+    pub fn generate(root: &Path, config: &ConfigTomlEdit) -> Result<(), io::Error> {
+        let name: &str = &config.project().unwrap().name().unwrap();
         write(
             root.join(".project"),
             format!(

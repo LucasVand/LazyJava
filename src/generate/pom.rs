@@ -23,18 +23,21 @@ pub fn generate_pom(ctx: &Context) -> Result<(), GenerateError> {
 
     pom.serialize(serializer)?;
 
-    fs::write(ctx.root.join("pom.xml"), buffer)?;
+    if !ctx.dry_run {
+        fs::write(ctx.root.join("pom.xml"), buffer)?;
+    }
     println!("{} pom.xml", "Generated".green().bold());
 
     return Ok(());
 }
 
 fn create_pom(ctx: &Context) -> Result<MavenPom, GenerateError> {
-    let group_id = assert(ctx.config.project.group.as_ref(), "group")?;
-    let artifact_id = assert(ctx.config.project.artifact.as_ref(), "artifact")?;
-    let version_id = assert(ctx.config.project.version.as_ref(), "version")?;
+    let project = assert(ctx.config.project(), "project")?;
+    let group_id = assert(project.group(), "group")?;
+    let artifact_id = assert(project.artifact(), "artifact")?;
+    let version_id = assert(project.version(), "version")?;
 
-    if !ctx.config.processors.is_empty() {
+    if ctx.config.processors().is_some_and(|p| !p.is_empty()) {
         eprintln!(
             "{} Local annotation processors are not supported in generated pom.xml. Only Maven-sourced processors are included.",
             "Warning:".yellow().bold()
@@ -92,7 +95,11 @@ fn create_pom(ctx: &Context) -> Result<MavenPom, GenerateError> {
             classifier: None,
         })
         .collect();
-    dependancies.sort_by(|a, b| a.group_id.cmp(&b.group_id).then(a.artifact_id.cmp(&b.artifact_id)));
+    dependancies.sort_by(|a, b| {
+        a.group_id
+            .cmp(&b.group_id)
+            .then(a.artifact_id.cmp(&b.artifact_id))
+    });
     let dependancies = Dependencies {
         dependency: dependancies,
     };
@@ -113,7 +120,7 @@ fn create_pom(ctx: &Context) -> Result<MavenPom, GenerateError> {
         dependency_management_map: HashMap::new(),
     })
 }
-fn assert<'a, T>(value: Option<&'a T>, value_name: &'static str) -> Result<&'a T, GenerateError> {
+fn assert<T>(value: Option<T>, value_name: &'static str) -> Result<T, GenerateError> {
     match value {
         Some(v) => Ok(v),
         None => Err(GenerateError::MissingValue {

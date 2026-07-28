@@ -1,6 +1,7 @@
 use std::io;
 
 use thiserror::Error;
+use toml_edit_derive::TomlError;
 
 use crate::{
     build::GraphError, config::ConfigError, create::create_project::CreateProjectError,
@@ -10,10 +11,15 @@ use crate::{
 
 #[derive(Error, Debug)]
 pub enum LazyJavaError {
+    #[error("Toml Edit Error")]
+    TomlEditError(#[from] TomlError),
+
     #[error("Could not generate value")]
     GenerateError(#[from] GenerateError),
+
     #[error("Could not import value")]
     ImportError(#[from] ImportError),
+
     #[error("Could not create project")]
     CreateError(#[from] CreateProjectError),
 

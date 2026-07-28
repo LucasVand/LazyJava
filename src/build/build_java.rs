@@ -33,6 +33,11 @@ impl LazyJava {
     }
 
     pub fn build_java(args: &BuildArgs, ctx: &Context) -> Result<ExitStatus, LazyJavaError> {
+        if ctx.dry_run {
+            println!("{} java sources", "Compiling".bold().green());
+            return Ok(ExitStatus::default());
+        }
+
         if !build_processors(args, ctx)? {
             return Err(LazyJavaError::CompilationErrors);
         }

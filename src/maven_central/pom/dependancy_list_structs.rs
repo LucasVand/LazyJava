@@ -1,6 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use parking_lot::RwLock;
+use tokio::sync::Notify;
 
 use crate::{
     lock_file::LockFilePackage,
@@ -15,7 +16,7 @@ pub struct MavenDependancyList {}
 
 pub enum PomState {
     Resolved(Arc<MavenPom>),
-    Resolving,
+    Resolving(Arc<Notify>),
 }
 
 pub type Cache = Arc<RwLock<HashMap<u64, PomState>>>;

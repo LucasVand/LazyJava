@@ -7,7 +7,7 @@ use colored::Colorize;
 use decompose::decompose;
 
 use crate::{
-    BUILD_FOLDER, LIB_FOLDER, SRC_FOLDER, TARGET_FOLDER, args::LazyJavaArgs, config::Config,
+    SRC_FOLDER, TARGET_FOLDER, args::LazyJavaArgs, config::ConfigTomlEdit,
     lazy_java_error::LazyJavaError, lock_file::LockFile, lsp::sync_lsp_config,
     utils::find_root::find_root,
 };
@@ -32,7 +32,7 @@ pub struct Context {
     pub relative_target: String,
     pub relative_bin_processors: String,
 
-    pub config: Config,
+    pub config: ConfigTomlEdit,
 
     pub dry_run: bool,
 }
@@ -43,13 +43,13 @@ impl Context {
     }
     pub fn new_options(
         args: Option<&LazyJavaArgs>,
-        config: Option<Config>,
+        config: Option<ConfigTomlEdit>,
     ) -> Result<Context, LazyJavaError> {
         Self::new_internal(args, config)
     }
     fn new_internal(
         args: Option<&LazyJavaArgs>,
-        config: Option<Config>,
+        config: Option<ConfigTomlEdit>,
     ) -> Result<Context, LazyJavaError> {
         let current = env::current_dir().map_err(LazyJavaError::NoCurrentDir)?;
         log::debug!("Current directory: {:?}", current);
@@ -63,7 +63,7 @@ impl Context {
 
         let config = match config {
             Some(config) => Ok(config),
-            None => Config::fetch(&root),
+            None => ConfigTomlEdit::fetch(&root),
         }?;
 
         log::info!("Project root: {:?}", root);
@@ -71,8 +71,8 @@ impl Context {
         let relative_target = Self::target_path(args, &config).to_string();
 
         let relative_src = Self::src_path(args, &config).to_string();
-        let relative_lib = Self::lib_path(args, &config).to_string();
-        let relative_bin = Self::bin_path(args, &config).to_string();
+        let relative_lib: String = "lib".into();
+        let relative_bin: String = "bin".into();
         let relative_lib_annotations = format!("{}-annotations", relative_lib);
         let relative_src_generated: String = "generated-source".into();
         let relative_bin_processors: String = "processor-bin".into();
@@ -207,10 +207,6 @@ impl Context {
 
         exc.config.sync_lock_file(&mut lockfile, &inc)?;
 
-        if !inc.dry_run {
-            exc.config.write(&inc.root)?;
-        }
-
         let ctx = Context::compose(inc, exc);
 
         if !ctx.dry_run {
@@ -219,50 +215,31 @@ impl Context {
 
         Ok(ctx)
     }
-    fn target_path<'a>(args: Option<&'a LazyJavaArgs>, config: &'a Config) -> &'a str {
+    fn target_path<'a>(args: Option<&'a LazyJavaArgs>, config: &'a ConfigTomlEdit) -> String {
         if args.is_some()
             && let Some(target) = &args.unwrap().global_args.target
         {
-            return target;
-        } else if let Some(target) = &config.setup.target {
+            return target.to_string();
+        } else if let Some(setup) = &config.setup()
+            && let Some(target) = setup.target()
+        {
             return target;
         } else {
-            return TARGET_FOLDER;
+            return TARGET_FOLDER.to_string();
         }
     }
 
-    fn src_path<'a>(args: Option<&'a LazyJavaArgs>, config: &'a Config) -> &'a str {
+    fn src_path<'a>(args: Option<&'a LazyJavaArgs>, config: &'a ConfigTomlEdit) -> String {
         if args.is_some()
             && let Some(src) = &args.unwrap().global_args.source
         {
-            return src;
-        } else if let Some(src) = &config.setup.src {
-            return src;
-        } else {
-            return SRC_FOLDER;
-        }
-    }
-
-    fn bin_path<'a>(args: Option<&'a LazyJavaArgs>, config: &'a Config) -> &'a str {
-        if args.is_some()
-            && let Some(bin) = &args.unwrap().global_args.build
+            return src.to_string();
+        } else if let Some(setup) = &config.setup()
+            && let Some(src) = setup.src()
         {
-            return bin;
-        } else if let Some(bin) = &config.setup.bin {
-            return bin;
+            return src;
         } else {
-            return BUILD_FOLDER;
-        }
-    }
-    fn lib_path<'a>(args: Option<&'a LazyJavaArgs>, config: &'a Config) -> &'a str {
-        if args.is_some()
-            && let Some(lib) = &args.unwrap().global_args.lib
-        {
-            return lib;
-        } else if let Some(lib) = &config.setup.lib {
-            return lib;
-        } else {
-            return LIB_FOLDER;
+            return SRC_FOLDER.to_string();
         }
     }
 }

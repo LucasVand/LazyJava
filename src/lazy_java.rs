@@ -1,18 +1,27 @@
+use colored::Colorize;
+
 use crate::{
     Context,
     args::{
         AddArgs, BuildCommand, FindArgs, GenerateArgs, ImportArgs, LazyJavaArgs, LazyJavaCommand,
         RemoveArgs, RunArgs, SyncArgs,
     },
-    config::Config,
+    config::ConfigTomlEdit,
     lazy_java_error::LazyJavaError,
 };
 pub struct LazyJava;
 
 impl LazyJava {
     pub fn execute(cli_args: LazyJavaArgs) -> Result<(), LazyJavaError> {
+        if cli_args.global_args.dry_run {
+            println!(
+                "{} ({} will be made)",
+                "--dry-run".green().bold(),
+                "No persistent changes".red().bold(),
+            )
+        }
         match &cli_args.command {
-            LazyJavaCommand::Create { args } => Self::create(args),
+            LazyJavaCommand::Create { args } => Self::create(args, &cli_args),
             LazyJavaCommand::Build { args } => Self::build_internal(&cli_args, args),
             LazyJavaCommand::Clean {} => Self::clean_internal(&cli_args),
             LazyJavaCommand::Find { args } => Self::find_internal(&cli_args, args),
@@ -24,8 +33,8 @@ impl LazyJava {
             LazyJavaCommand::Import { args } => Self::import_internal(&cli_args, args),
         }
     }
-    fn import_internal(_all_args: &LazyJavaArgs, args: &ImportArgs) -> Result<(), LazyJavaError> {
-        Self::import(args)
+    fn import_internal(all_args: &LazyJavaArgs, args: &ImportArgs) -> Result<(), LazyJavaError> {
+        Self::import(args, all_args)
     }
     fn generate_internal(
         all_args: &LazyJavaArgs,
@@ -46,7 +55,7 @@ impl LazyJava {
 
     fn clean_internal(all_args: &LazyJavaArgs) -> Result<(), LazyJavaError> {
         let ctx = Context::new(all_args)?;
-        Config::assert_config_file_exists(&ctx.root)?;
+        ConfigTomlEdit::assert_config_file_exists(&ctx.root)?;
         Self::clean(&ctx)
     }
 

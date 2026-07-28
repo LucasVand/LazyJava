@@ -1213,6 +1213,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "toml",
+ "toml-edit-derive",
  "toml_edit",
  "walkdir",
  "zip",
@@ -2285,6 +2286,23 @@ dependencies = [
  "toml_parser",
  "toml_writer",
  "winnow",
+]
+
+[[package]]
+name = "toml-edit-derive"
+version = "0.1.0"
+dependencies = [
+ "toml-edit-derive-macro",
+ "toml_edit",
+]
+
+[[package]]
+name = "toml-edit-derive-macro"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

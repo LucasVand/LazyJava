@@ -54,11 +54,15 @@ fn remove_file(resources: &HashSet<PathBuf>, dir: &DirEntry) -> Result<isize, La
 }
 fn build_globset(ctx: &Context) -> GlobSet {
     let mut builder = GlobSetBuilder::new();
-    for rule in &ctx.config.resources.exclude {
-        if let Ok(glob_rule) = Glob::new(rule) {
-            builder.add(glob_rule);
-        } else {
-            log::warn!("Invalid glob rule, \"{}\" is not a valid rule", rule);
+    if let Some(r) = ctx.config.resources()
+        && let Some(exclude) = r.exclude()
+    {
+        for rule in exclude {
+            if let Ok(glob_rule) = Glob::new(&rule) {
+                builder.add(glob_rule);
+            } else {
+                log::warn!("Invalid glob rule, \"{}\" is not a valid rule", rule);
+            }
         }
     }
 

@@ -1,11 +1,18 @@
 use std::{io, path::PathBuf};
 
 use thiserror::Error;
+use toml_edit_derive::TomlError;
 
 use crate::{lock_file::LockFileError, maven_central::MavenError};
 
 #[derive(Error, Debug)]
 pub enum ConfigError {
+    #[error("Could not parse ConfigDependancy missing field '{0}'")]
+    MissingValue(&'static str),
+
+    #[error("Failed to parse")]
+    ParseError(#[from] TomlError),
+
     #[error("Faild to find config {0}")]
     NoConfig(PathBuf),
 
