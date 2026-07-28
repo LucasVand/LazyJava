@@ -25,6 +25,7 @@ name = "original""#)
             pom_path: "pom.xml".into(),
             overwrite: false,
         },
+        false,
     )
     .unwrap();
 
@@ -54,6 +55,7 @@ name = "original""#)
             pom_path: "pom.xml".into(),
             overwrite: true,
         },
+        false,
     )
     .unwrap();
 

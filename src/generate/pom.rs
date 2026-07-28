@@ -23,7 +23,9 @@ pub fn generate_pom(ctx: &Context) -> Result<(), GenerateError> {
 
     pom.serialize(serializer)?;
 
-    fs::write(ctx.root.join("pom.xml"), buffer)?;
+    if !ctx.dry_run {
+        fs::write(ctx.root.join("pom.xml"), buffer)?;
+    }
     println!("{} pom.xml", "Generated".green().bold());
 
     return Ok(());
@@ -35,7 +37,7 @@ fn create_pom(ctx: &Context) -> Result<MavenPom, GenerateError> {
     let artifact_id = assert(project.artifact(), "artifact")?;
     let version_id = assert(project.version(), "version")?;
 
-    if !ctx.config.processors().is_some_and(|p| p.is_empty()) {
+    if ctx.config.processors().is_some_and(|p| !p.is_empty()) {
         eprintln!(
             "{} Local annotation processors are not supported in generated pom.xml. Only Maven-sourced processors are included.",
             "Warning:".yellow().bold()

@@ -1,5 +1,3 @@
-use colored::Colorize;
-
 use crate::{
     Context, args::SyncArgs, lazy_java::LazyJava, lazy_java_error::LazyJavaError,
     lock_file::LockFile, lsp::sync_lsp_config,
@@ -7,14 +5,6 @@ use crate::{
 
 impl LazyJava {
     pub fn sync(_sync_args: &SyncArgs, ctx: Context) -> Result<(), LazyJavaError> {
-        if ctx.dry_run {
-            println!(
-                "{} ({} will be made)",
-                "--dry-run".green().bold(),
-                "No persistent changes".red().bold(),
-            )
-        }
-
         let (inc, exc) = ctx.decompose();
 
         let mut lockfile = LockFile::fetch(&inc.root)?;

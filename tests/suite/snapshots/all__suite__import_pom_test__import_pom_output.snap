@@ -1,5 +1,5 @@
 ---
-source: tests/import_pom_test.rs
+source: tests/suite/import_pom_test.rs
 expression: toml_content
 ---
 [project]

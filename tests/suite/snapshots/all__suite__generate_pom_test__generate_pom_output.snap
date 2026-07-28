@@ -1,6 +1,5 @@
 ---
-source: tests/generate_pom_test.rs
-assertion_line: 52
+source: tests/suite/generate_pom_test.rs
 expression: pom_content
 ---
 <project>

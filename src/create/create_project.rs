@@ -20,7 +20,8 @@ use crate::{
 };
 
 impl LazyJava {
-    pub fn create(args: &CreateArgs) -> Result<(), LazyJavaError> {
+    pub fn create(args: &CreateArgs, all_args: &crate::args::LazyJavaArgs) -> Result<(), LazyJavaError> {
+        let dry_run = all_args.global_args.dry_run;
         log::info!("Starting create operation");
         let name = match &args.name {
             Some(name) => name.clone(),
@@ -37,66 +38,70 @@ impl LazyJava {
         project_dir.push(&name);
 
         log::debug!("Project directory: {:?}", project_dir);
-        fs::create_dir(&project_dir).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
 
-        let target = project_dir.join("target");
-        let build = target.join(BUILD_FOLDER);
+        if !dry_run {
+            fs::create_dir(&project_dir).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
 
-        let lib = target.join(LIB_FOLDER);
+            let target = project_dir.join("target");
+            let build = target.join(BUILD_FOLDER);
+            let lib = target.join(LIB_FOLDER);
+            let mut src = project_dir.clone();
+            src.push(SRC_FOLDER);
 
-        let mut src = project_dir.clone();
-        src.push(SRC_FOLDER);
+            log::debug!("Creating subdirectories: bin, lib, src, target");
+            fs::create_dir(&target).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
+            fs::create_dir(&build).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
+            fs::create_dir(&src).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
+            fs::create_dir(&lib).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
 
-        log::debug!("Creating subdirectories: bin, lib, src, target");
-        fs::create_dir(&target).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
+            fs::write(
+                &project_dir.join("pom.xml"),
+                "This file is to make sure root finders find this project (do not remove)",
+            )?;
 
-        fs::create_dir(&build).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
+            if !args.bare {
+                log::debug!("Creating example Main class");
+                let mut example = project_dir.clone();
+                example.push(format!("src/{}.java", "Main"));
 
-        fs::create_dir(&src).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
-        fs::create_dir(&lib).map_err(|_e| CreateProjectError::CreateDirectoryError)?;
+                fs::write(&example, example_class("Main"))
+                    .map_err(CreateProjectError::CreateFileError)?;
 
-        fs::write(
-            &project_dir.join("pom.xml"),
-            "This file is to make sure root finders find this project (do not remove)",
-        )?;
-
-        if !args.bare {
-            log::debug!("Creating example Main class");
-            let mut example = project_dir.clone();
-            example.push(format!("src/{}.java", "Main"));
-
-            fs::write(&example, example_class("Main"))
+                filetime::set_file_mtime(
+                    &example,
+                    FileTime::from(SystemTime::now() + Duration::from_mins(1)),
+                )
                 .map_err(CreateProjectError::CreateFileError)?;
-
-            filetime::set_file_mtime(
-                &example,
-                FileTime::from(SystemTime::now() + Duration::from_mins(1)),
-            )
-            .map_err(CreateProjectError::CreateFileError)?;
-        }
-
-        if git {
-            log::debug!("Initializing git repository");
-            let status = git_init(&project_dir).map_err(CreateProjectError::NoInit)?;
-
-            if !status.success() {
-                log::error!("Git initialization failed");
-                return Err(CreateProjectError::NoGit)?;
             }
-            log::debug!("Git repository initialized");
+
+            if git {
+                log::debug!("Initializing git repository");
+                let status = git_init(&project_dir).map_err(CreateProjectError::NoInit)?;
+
+                if !status.success() {
+                    log::error!("Git initialization failed");
+                    return Err(CreateProjectError::NoGit)?;
+                }
+                log::debug!("Git repository initialized");
+            }
         }
 
         let mut config = ConfigTomlEdit::parse("")?;
         let mut p = config.project_mut().get_or_insert_empty();
         p.name_mut().set(name.clone());
 
-        config.write(&project_dir)?;
+        if !dry_run {
+            config.write(&project_dir)?;
+        }
 
-        env::set_current_dir(&project_dir)?;
+        if !dry_run {
+            env::set_current_dir(&project_dir)?;
+        }
 
-        let ctx = Context::new_options(None, Some(config))?;
-
-        sync_lsp_config(&ctx)?;
+        if !dry_run {
+            let ctx = Context::new_options(None, Some(config))?;
+            sync_lsp_config(&ctx)?;
+        }
 
         println!();
         println!("  now run");

@@ -95,6 +95,14 @@ impl Context {
             None => false,
         };
 
+        if dry_run {
+            println!(
+                "{} ({} will be made)",
+                "--dry-run".green().bold(),
+                "No persistent changes".red().bold(),
+            )
+        }
+
         let ctx = Context {
             relative_target,
             target,
@@ -235,7 +243,7 @@ impl Context {
         {
             return src.to_string();
         } else if let Some(setup) = &config.setup()
-            && let Some(src) = setup.target()
+            && let Some(src) = setup.src()
         {
             return src;
         } else {

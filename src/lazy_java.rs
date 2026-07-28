@@ -12,7 +12,7 @@ pub struct LazyJava;
 impl LazyJava {
     pub fn execute(cli_args: LazyJavaArgs) -> Result<(), LazyJavaError> {
         match &cli_args.command {
-            LazyJavaCommand::Create { args } => Self::create(args),
+            LazyJavaCommand::Create { args } => Self::create(args, &cli_args),
             LazyJavaCommand::Build { args } => Self::build_internal(&cli_args, args),
             LazyJavaCommand::Clean {} => Self::clean_internal(&cli_args),
             LazyJavaCommand::Find { args } => Self::find_internal(&cli_args, args),
@@ -24,8 +24,8 @@ impl LazyJava {
             LazyJavaCommand::Import { args } => Self::import_internal(&cli_args, args),
         }
     }
-    fn import_internal(_all_args: &LazyJavaArgs, args: &ImportArgs) -> Result<(), LazyJavaError> {
-        Self::import(args)
+    fn import_internal(all_args: &LazyJavaArgs, args: &ImportArgs) -> Result<(), LazyJavaError> {
+        Self::import(args, all_args)
     }
     fn generate_internal(
         all_args: &LazyJavaArgs,

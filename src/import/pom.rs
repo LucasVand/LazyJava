@@ -25,7 +25,7 @@ fn dep_mgmt_map(pom: &MavenPom) -> HashMap<u64, String> {
     map
 }
 
-pub fn import_pom(root: &Path, args: &ImportPomArgs) -> Result<(), ImportError> {
+pub fn import_pom(root: &Path, args: &ImportPomArgs, dry_run: bool) -> Result<(), ImportError> {
     let toml_path = root.join("lazy-java.toml");
     if toml_path.exists() && !args.overwrite {
         eprintln!(
@@ -78,7 +78,9 @@ pub fn import_pom(root: &Path, args: &ImportPomArgs) -> Result<(), ImportError> 
 
     let toml_str = config.to_toml_string();
 
-    fs::write(root.join("lazy-java.toml"), toml_str)?;
+    if !dry_run {
+        fs::write(root.join("lazy-java.toml"), toml_str)?;
+    }
     println!("{} lazy-java.toml from pom.xml", "Imported".green().bold());
 
     Ok(())

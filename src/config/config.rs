@@ -65,10 +65,13 @@ impl ConfigTomlEdit {
             value.group_mut().replace(id.group.clone());
 
             lockfile.add_package(id)?;
-            self.write(&ctx.root)?;
         }
 
         self.sync_lock_file(&mut lockfile, ctx)?;
+
+        if !ctx.dry_run {
+            self.write(&ctx.root)?;
+        }
         Ok(())
     }
     pub fn remove_package(
@@ -109,11 +112,13 @@ impl ConfigTomlEdit {
             if let Some(mut deps) = self.dependancies_mut().get_mut() {
                 deps.remove(&partial_id.artifact);
             }
-            self.write(&ctx.root)?;
         }
 
         self.sync_lock_file(&mut lockfile, ctx)?;
 
+        if !ctx.dry_run {
+            self.write(&ctx.root)?;
+        }
         Ok(())
     }
     pub fn sync_lock_file(
