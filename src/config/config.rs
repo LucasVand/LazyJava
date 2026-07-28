@@ -1,18 +1,18 @@
-use std::{fs, io::ErrorKind, path::Path};
+use std::{collections::HashMap, fs, io::ErrorKind, path::Path};
 
 use colored::Colorize;
-use toml_edit::{DocumentMut, Item};
+use log::debug;
 
 use crate::{
     CONFIG_FILE_NAME,
     args::{AddArgs, RemoveArgs},
-    config::{config_error::ConfigError, config_structs::Config},
+    config::{ConfigDependancy, ConfigTomlEdit, config_error::ConfigError},
     context::ContextNoConfig,
     lock_file::LockFile,
     maven_central::{MavenError, MavenIdBuf, PartialMavenIdBuf, fetch_artifact_metadata},
 };
 
-impl Config {
+impl ConfigTomlEdit {
     pub fn assert_config_file_exists(root: &Path) -> Result<(), ConfigError> {
         let config_path = root.join(CONFIG_FILE_NAME);
         if !config_path.exists() {
@@ -20,10 +20,10 @@ impl Config {
         }
         Ok(())
     }
-    pub fn fetch(root: &Path) -> Result<Config, ConfigError> {
+    pub fn fetch(root: &Path) -> Result<ConfigTomlEdit, ConfigError> {
         Self::fetch_from_fs(root)
     }
-    fn fetch_from_fs(root: &Path) -> Result<Config, ConfigError> {
+    fn fetch_from_fs(root: &Path) -> Result<ConfigTomlEdit, ConfigError> {
         let file = fs::read_to_string(root.join(CONFIG_FILE_NAME)).map_err(|e| match e.kind() {
             ErrorKind::NotFound => ConfigError::NoConfig(root.join(CONFIG_FILE_NAME)),
             ErrorKind::PermissionDenied => {
@@ -32,37 +32,11 @@ impl Config {
             _ => ConfigError::NoConfig(root.join(CONFIG_FILE_NAME)),
         })?;
 
-        let config: Config = toml::from_str(&file)?;
+        let config: ConfigTomlEdit = ConfigTomlEdit::parse(&file)?;
 
         Ok(config)
     }
-    pub fn write(&self, root: &Path) -> Result<(), ConfigError> {
-        let str = toml::to_string_pretty(self)?;
 
-        let mut doc: DocumentMut = str.parse().unwrap();
-
-        if let Some(Item::Table(table)) = doc.get_mut("dependancies") {
-            for (_key, item) in table.iter_mut() {
-                if let Item::Table(sub_table) = item {
-                    let inline_version = std::mem::take(sub_table).into_inline_table();
-
-                    *item = toml_edit::value(inline_version);
-                }
-            }
-        }
-
-        let res = fs::write(root.join(CONFIG_FILE_NAME), doc.to_string());
-        if let Err(err) = res {
-            return match err.kind() {
-                ErrorKind::PermissionDenied => {
-                    Err(ConfigError::PermissionDenied(root.to_string_lossy().into()))
-                }
-                _ => Err(ConfigError::IoError(err)),
-            };
-        }
-
-        Ok(())
-    }
     pub fn add_package(
         &mut self,
         add_args: &AddArgs,
@@ -84,9 +58,14 @@ impl Config {
         println!("{} {} to dependency list", "Adding".green().bold(), id);
 
         if !ctx.dry_run {
-            self.dependancies
-                .insert(id.clone().into(), id.clone().into());
+            let mut deps = self.dependancies_mut().get_or_insert(HashMap::new());
+            let mut value = deps.insert_empty(&id.artifact);
+
+            value.version_mut().replace(id.version.clone());
+            value.group_mut().replace(id.group.clone());
+
             lockfile.add_package(id)?;
+            self.write(&ctx.root)?;
         }
 
         self.sync_lock_file(&mut lockfile, ctx)?;
@@ -102,21 +81,35 @@ impl Config {
         let partial_id =
             PartialMavenIdBuf::new(remove_args.group.clone(), remove_args.artifact.clone());
 
-        let package = self.dependancies.get(&partial_id);
-        if package.is_none() {
+        let mut version: Option<String> = None;
+        if let Some(deps) = self.dependancies() {
+            if let Some(d) = deps.get(&partial_id.artifact) {
+                if d.group().as_ref() == Some(&partial_id.group) {
+                    version = Some(d.version().unwrap().to_string());
+                }
+            }
+        }
+
+        if version.is_none() {
+            debug!("Could not find version");
             return Err(ConfigError::PackageNotFound);
         }
 
-        let package = package.unwrap();
+        let version = version.unwrap();
 
         println!(
-            "{} {} from dependency list",
+            "{} {}:{}:{} from dependency list",
             "Removing".green().bold(),
-            package.id,
+            partial_id.group,
+            partial_id.artifact,
+            version
         );
 
         if !ctx.dry_run {
-            self.dependancies.remove(&partial_id);
+            if let Some(mut deps) = self.dependancies_mut().get_mut() {
+                deps.remove(&partial_id.artifact);
+            }
+            self.write(&ctx.root)?;
         }
 
         self.sync_lock_file(&mut lockfile, ctx)?;
@@ -128,13 +121,48 @@ impl Config {
         lockfile: &mut LockFile,
         ctx: &ContextNoConfig,
     ) -> Result<(), ConfigError> {
-        lockfile.sync_with_root_packages(&self.dependancies)?;
+        let dep_list = self.dependancy_list()?;
+        lockfile.sync_with_root_packages(&dep_list)?;
 
         lockfile.validate_current_packages(ctx)?;
 
         if !ctx.dry_run {
             lockfile.write(&ctx.root)?;
         }
+        Ok(())
+    }
+    pub fn dependancy_list(
+        &self,
+    ) -> Result<HashMap<PartialMavenIdBuf, ConfigDependancy>, ConfigError> {
+        if let Some(deps) = self.dependancies() {
+            let mut map = HashMap::new();
+            for (k, dep) in deps {
+                let de: Result<ConfigDependancy, ConfigError> = dep.to_config_dependancy();
+                let de = de?;
+
+                let id = PartialMavenIdBuf::new(&de.group, k);
+
+                map.insert(id, de);
+            }
+
+            Ok(map)
+        } else {
+            Ok(HashMap::new())
+        }
+    }
+
+    pub fn write(&self, root: &Path) -> Result<(), ConfigError> {
+        let doc = self.to_toml_string();
+        let res = fs::write(root.join(CONFIG_FILE_NAME), doc);
+        if let Err(err) = res {
+            return match err.kind() {
+                ErrorKind::PermissionDenied => {
+                    Err(ConfigError::PermissionDenied(root.to_string_lossy().into()))
+                }
+                _ => Err(ConfigError::IoError(err)),
+            };
+        }
+
         Ok(())
     }
 }

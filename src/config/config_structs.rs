@@ -1,17 +1,10 @@
-use crate::config::processor_list_serde::deserialize_processors;
-use crate::config::processor_list_serde::serialize_processors;
+use crate::config::ConfigError;
 use std::{collections::HashMap, path::PathBuf};
 
-use crate::{
-    config::config_custom_serde::{deserialize_dependencies, serialize_dependencies},
-    maven_central::PartialMavenIdBuf,
-};
-use decompose::decompose;
 use serde::{Deserialize, Serialize};
+use toml_edit_derive::TomlEdit;
 
-use crate::maven_central::MavenIdBuf;
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, TomlEdit)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
     #[serde(default)]
@@ -28,45 +21,48 @@ pub struct Config {
 
     #[serde(default)]
     #[serde(skip_serializing_if = "is_default")]
-    #[serde(
-        serialize_with = "serialize_processors",
-        deserialize_with = "deserialize_processors"
-    )]
-    pub processors: Vec<ConfigProcesserDefinition>,
+    pub processors: HashMap<String, ConfigProcesserDefinition>,
 
     #[serde(default)]
     #[serde(skip_serializing_if = "HashMap::is_empty")]
-    #[serde(
-        serialize_with = "serialize_dependencies",
-        deserialize_with = "deserialize_dependencies"
-    )]
-    pub dependancies: HashMap<PartialMavenIdBuf, ConfigDependancy>,
+    pub dependancies: HashMap<String, ConfigDependancy>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, TomlEdit)]
 #[serde(deny_unknown_fields)]
-#[decompose(
-    ConfigProcesserDefinitionEntry,
-    exclude(class_name),
-    derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq),
-    refs,
-    ref_derive(Debug, Clone, Serialize, PartialEq, Eq)
-)]
 pub struct ConfigProcesserDefinition {
-    pub class_name: String,
     pub kind: ProcesserType,
     pub path: PathBuf,
     pub package: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, TomlEdit)]
 #[serde(rename_all = "lowercase")]
 pub enum ProcesserType {
     Annotation,
     Processor,
 }
+impl<'a> ConfigProcesserDefinitionTomlEditView<'a> {
+    pub fn to_processer_definition(&self) -> Result<ConfigProcesserDefinition, ConfigError> {
+        let kind = assert(self.kind(), "kind")?;
+        let path = assert(self.path(), "path")?;
+        let package = assert(self.package(), "package")?;
+        Ok(ConfigProcesserDefinition {
+            kind,
+            path,
+            package,
+        })
+    }
+}
+fn assert<T>(value: Option<T>, name: &'static str) -> Result<T, ConfigError> {
+    if let Some(v) = value {
+        return Ok(v);
+    } else {
+        Err(ConfigError::MissingValue(name))
+    }
+}
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, TomlEdit)]
 #[serde(deny_unknown_fields)]
 pub struct ConfigProject {
     pub name: String,
@@ -81,34 +77,35 @@ pub struct ConfigProject {
     pub version: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, TomlEdit)]
 #[serde(deny_unknown_fields)]
 pub struct ConfigSetup {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub lib: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub src: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub bin: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub target: Option<String>,
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, PartialOrd, Ord, Eq)]
+#[derive(Debug, Clone, Hash, PartialEq, PartialOrd, Ord, Eq, TomlEdit, Serialize, Deserialize)]
+#[toml_edit(inline)]
 pub struct ConfigDependancy {
-    pub id: MavenIdBuf,
+    pub group: String,
+    pub version: String,
 }
 
-impl From<MavenIdBuf> for ConfigDependancy {
-    fn from(value: MavenIdBuf) -> Self {
-        ConfigDependancy { id: value }
+impl<'a> ConfigDependancyTomlEditView<'a> {
+    pub fn to_config_dependancy(&self) -> Result<ConfigDependancy, ConfigError> {
+        let group = assert(self.group(), "group_id")?;
+        let version = assert(self.version(), "version")?;
+        Ok(ConfigDependancy {
+            group: group,
+            version: version,
+        })
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, TomlEdit)]
 #[serde(deny_unknown_fields)]
 pub struct ConfigResources {
     #[serde(skip_serializing_if = "Vec::is_empty")]

@@ -1,6 +1,7 @@
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
+use toml_edit_derive::TomlEdit;
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct MavenId<'a> {
@@ -57,7 +58,7 @@ impl From<(String, String, String)> for MavenIdBuf {
     }
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, TomlEdit)]
 pub struct MavenIdBuf {
     pub group: String,
     pub artifact: String,
@@ -111,7 +112,74 @@ impl fmt::Display for MavenIdBuf {
     }
 }
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct PartialMavenId<'a> {
+    pub group: &'a str,
+    pub artifact: &'a str,
+}
+
+impl<'a> PartialMavenId<'a> {
+    pub fn new(group: &'a str, artifact: &'a str) -> Self {
+        PartialMavenId { group, artifact }
+    }
+
+    pub fn to_buf(&self) -> PartialMavenIdBuf {
+        PartialMavenIdBuf {
+            group: self.group.to_string(),
+            artifact: self.artifact.to_string(),
+        }
+    }
+}
+
+impl fmt::Display for PartialMavenId<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.group, self.artifact)
+    }
+}
+
+impl From<PartialMavenId<'_>> for PartialMavenIdBuf {
+    fn from(value: PartialMavenId<'_>) -> Self {
+        value.to_buf()
+    }
+}
+
+impl<'a> From<&'a PartialMavenId<'_>> for PartialMavenIdBuf {
+    fn from(value: &'a PartialMavenId<'_>) -> Self {
+        value.to_buf()
+    }
+}
+
+impl<'a> From<(&'a str, &'a str)> for PartialMavenIdBuf {
+    fn from((group, artifact): (&'a str, &'a str)) -> Self {
+        PartialMavenIdBuf::new(group, artifact)
+    }
+}
+
+impl From<(String, String)> for PartialMavenIdBuf {
+    fn from((group, artifact): (String, String)) -> Self {
+        PartialMavenIdBuf::new(group, artifact)
+    }
+}
+
+impl<'a> From<&'a PartialMavenIdBuf> for PartialMavenId<'a> {
+    fn from(value: &'a PartialMavenIdBuf) -> Self {
+        PartialMavenId::new(&value.group, &value.artifact)
+    }
+}
+
+impl PartialEq<PartialMavenIdBuf> for PartialMavenId<'_> {
+    fn eq(&self, other: &PartialMavenIdBuf) -> bool {
+        self.group == other.group && self.artifact == other.artifact
+    }
+}
+
+impl PartialEq<PartialMavenId<'_>> for PartialMavenIdBuf {
+    fn eq(&self, other: &PartialMavenId<'_>) -> bool {
+        other.eq(self)
+    }
+}
+
+#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, TomlEdit)]
 pub struct PartialMavenIdBuf {
     pub group: String,
     pub artifact: String,

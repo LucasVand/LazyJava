@@ -9,7 +9,7 @@ use thiserror::Error;
 use crate::{
     BUILD_FOLDER, Context, LIB_FOLDER, SRC_FOLDER,
     args::CreateArgs,
-    config::Config,
+    config::ConfigTomlEdit,
     create::{
         init_git::git_init,
         interactive::{interactive_git_init_name, interactive_project_name},
@@ -86,8 +86,9 @@ impl LazyJava {
             log::debug!("Git repository initialized");
         }
 
-        let mut config = Config::default();
-        config.project.name = name.clone();
+        let mut config = ConfigTomlEdit::parse("")?;
+        let mut p = config.project_mut().get_or_insert_empty();
+        p.name_mut().set(name.clone());
 
         config.write(&project_dir)?;
 

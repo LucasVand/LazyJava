@@ -1,21 +1,27 @@
-use std::{fs, io, path::PathBuf};
+use std::{collections::HashMap, fs, path::PathBuf};
 
 use crate::{
-    Context, args::BuildArgs, build::compile::compile_java, config::ProcesserType,
+    Context,
+    args::BuildArgs,
+    build::compile::compile_java,
+    config::{ConfigProcesserDefinition, ProcesserType},
     lazy_java_error::LazyJavaError,
 };
 
 pub fn build_processors(build_args: &BuildArgs, ctx: &Context) -> Result<bool, LazyJavaError> {
     // TODO: add errors for this this is very lazy
-    let processor_count = ctx.config.processors.len();
-    log::info!("Building {} annotation processor(s)", processor_count);
+    let mut processors = HashMap::new();
+    if let Some(l) = ctx.config.processors() {
+        for (class_name, processor) in l {
+            processors.insert(class_name, processor.to_processer_definition()?);
+        }
+    }
+    if processors.is_empty() {
+        return Ok(true);
+    }
+    log::info!("Building {} annotation processor(s)", processors.len());
 
-    let full_paths: Vec<PathBuf> = ctx
-        .config
-        .processors
-        .iter()
-        .map(|p| p.path.clone())
-        .collect();
+    let full_paths: Vec<PathBuf> = processors.iter().map(|(_k, p)| p.path.clone()).collect();
 
     if full_paths.is_empty() {
         return Ok(true);
@@ -27,7 +33,7 @@ pub fn build_processors(build_args: &BuildArgs, ctx: &Context) -> Result<bool, L
 
     log::info!(
         "Compiling {} processor source(s) to {:?}",
-        processor_count,
+        processors.len(),
         ctx.bin_processors
     );
     let result = compile_java(
@@ -41,26 +47,27 @@ pub fn build_processors(build_args: &BuildArgs, ctx: &Context) -> Result<bool, L
         "Annotation processor compilation completed with status: {}",
         result
     );
-    create_meta_folder(ctx)?;
+    create_meta_folder(ctx, processors)?;
 
     Ok(true)
 }
 
-fn create_meta_folder(ctx: &Context) -> Result<(), io::Error> {
+fn create_meta_folder(
+    ctx: &Context,
+    processors: HashMap<String, ConfigProcesserDefinition>,
+) -> Result<(), LazyJavaError> {
     let dir = ctx.bin_processors.join("META-INF").join("services");
 
     let mut file_contents: String = String::new();
     let mut first = true;
-    for p in ctx
-        .config
-        .processors
+    for (class_name, p) in processors
         .iter()
-        .filter(|p| p.kind == ProcesserType::Processor)
+        .filter(|(_k, p)| p.kind == ProcesserType::Processor)
     {
         if !first {
             file_contents.push('\n');
         }
-        file_contents.push_str(&format!("{}.{}", p.package, p.class_name));
+        file_contents.push_str(&format!("{}.{}", p.package, class_name));
         first = false;
     }
 
@@ -68,11 +75,9 @@ fn create_meta_folder(ctx: &Context) -> Result<(), io::Error> {
     fs::create_dir_all(&dir)?;
 
     let service_file = dir.join("javax.annotation.processing.Processor");
-    let processor_count = ctx
-        .config
-        .processors
+    let processor_count = processors
         .iter()
-        .filter(|p| p.kind == ProcesserType::Processor)
+        .filter(|(_k, p)| p.kind == ProcesserType::Processor)
         .count();
     log::info!(
         "Writing processor service file to {:?} with {} entr{}",

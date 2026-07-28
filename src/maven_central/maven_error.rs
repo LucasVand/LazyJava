@@ -19,4 +19,7 @@ pub enum MavenError {
 
     #[error("Circular dependancies found")]
     CircularDependancy,
+
+    #[error("Async task failed: {0}")]
+    JoinError(#[from] tokio::task::JoinError),
 }

@@ -1,0 +1,5 @@
+---
+source: tests/remove_dependency_test.rs
+expression: lock_after_remove
+---
+package = []

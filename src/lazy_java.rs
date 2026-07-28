@@ -4,7 +4,7 @@ use crate::{
         AddArgs, BuildCommand, FindArgs, GenerateArgs, ImportArgs, LazyJavaArgs, LazyJavaCommand,
         RemoveArgs, RunArgs, SyncArgs,
     },
-    config::Config,
+    config::ConfigTomlEdit,
     lazy_java_error::LazyJavaError,
 };
 pub struct LazyJava;
@@ -46,7 +46,7 @@ impl LazyJava {
 
     fn clean_internal(all_args: &LazyJavaArgs) -> Result<(), LazyJavaError> {
         let ctx = Context::new(all_args)?;
-        Config::assert_config_file_exists(&ctx.root)?;
+        ConfigTomlEdit::assert_config_file_exists(&ctx.root)?;
         Self::clean(&ctx)
     }
 

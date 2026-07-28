@@ -7,11 +7,7 @@ use std::{
 
 use colored::Colorize;
 
-use crate::{
-    args::ImportPomArgs,
-    config::{Config, ConfigDependancy, ConfigProject},
-    maven_central::{MavenIdBuf, PartialMavenIdBuf, pom::MavenPom},
-};
+use crate::{args::ImportPomArgs, config::ConfigTomlEdit, maven_central::pom::MavenPom};
 
 use super::ImportError;
 
@@ -44,9 +40,17 @@ pub fn import_pom(root: &Path, args: &ImportPomArgs) -> Result<(), ImportError> 
 
     let mgmt_map = dep_mgmt_map(&pom);
 
-    let mut dependancies: Vec<(PartialMavenIdBuf, ConfigDependancy)> = Vec::new();
-    if let Some(deps) = &pom.dependencies {
-        for dep in &deps.dependency {
+    let mut config = ConfigTomlEdit::parse("")?;
+    {
+        let mut p = config.project_mut().get_or_insert_empty();
+        p.name_mut().set(pom.artifact_id.clone());
+        p.group_mut().set(pom.group_id.clone());
+        p.artifact_mut().set(pom.artifact_id.clone());
+        p.version_mut().set(pom.version.clone());
+    }
+    if let Some(deps) = pom.dependencies {
+        let mut tomldeps = config.dependancies_mut().get_or_insert(HashMap::new());
+        for dep in deps.dependency {
             let version = match &dep.version {
                 Some(v) => v.clone(),
                 None => {
@@ -66,27 +70,14 @@ pub fn import_pom(root: &Path, args: &ImportPomArgs) -> Result<(), ImportError> 
                     }
                 }
             };
-            let key = PartialMavenIdBuf::new(&dep.group_id, &dep.artifact_id);
-            dependancies.push((
-                key,
-                MavenIdBuf::new(&dep.group_id, &dep.artifact_id, version).into(),
-            ));
+            let mut entry = tomldeps.insert_empty(&dep.artifact_id);
+            entry.group_mut().set(dep.group_id.clone());
+            entry.version_mut().set(version);
         }
     }
-    let dependancies: HashMap<_, _> = dependancies.into_iter().collect();
 
-    let config = Config {
-        project: ConfigProject {
-            name: pom.artifact_id.clone(),
-            group: Some(pom.group_id.clone()),
-            artifact: Some(pom.artifact_id.clone()),
-            version: Some(pom.version.clone()),
-        },
-        dependancies,
-        ..Default::default()
-    };
+    let toml_str = config.to_toml_string();
 
-    let toml_str = toml::to_string_pretty(&config)?;
     fs::write(root.join("lazy-java.toml"), toml_str)?;
     println!("{} lazy-java.toml from pom.xml", "Imported".green().bold());
 

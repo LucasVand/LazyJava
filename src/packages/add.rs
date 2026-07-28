@@ -19,8 +19,6 @@ impl LazyJava {
         exc.config.add_package(&add_args, &inc)?;
         let ctx = Context::compose(inc, exc);
 
-        ctx.config.write(&ctx.root)?;
-
         if !ctx.dry_run {
             sync_lsp_config(&ctx)?;
         }

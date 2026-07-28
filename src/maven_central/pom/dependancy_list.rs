@@ -12,6 +12,7 @@ use regex::{Regex, RegexBuilder};
 use tokio::{
     runtime::Runtime,
     spawn,
+    sync::Notify,
     task::{JoinHandle, JoinSet},
 };
 
@@ -46,7 +47,7 @@ impl MavenDependancyList {
             list: dep_list.clone(),
             client: client,
         };
-        Self::resolve_related_poms(id.clone(), ctx).await?;
+        Self::resolve_pom(id.clone(), ctx).await?;
 
         let mut map: HashMap<u64, MavenDependancy> = HashMap::new();
 
@@ -83,21 +84,34 @@ impl MavenDependancyList {
 
         return rt.block_on(Self::runtime_entry(id));
     }
-    async fn resolve_related_poms(
-        id: MavenIdBuf,
-        ctx: ResolveContext,
-    ) -> Result<Option<Arc<MavenPom>>, MavenError> {
+    async fn resolve_pom(id: MavenIdBuf, ctx: ResolveContext) -> Result<Arc<MavenPom>, MavenError> {
         log::debug!("Resolving POM for {}", id);
         let hash = Self::hash_maven_id(&id.as_maven_id());
 
+        // ISSUE: Its not send if i do it this way, idk, it has to be done this kind of ugly
+        // way to make the compiler happy
+        let mut waiting: Option<Arc<Notify>> = None;
         {
             let read_cache = ctx.cache.read();
+
             if let Some(pom) = read_cache.get(&hash) {
                 log::debug!("Cache hit POM with hash: {} -> {}", hash, id);
-                return match pom {
-                    PomState::Resolving => Ok(None),
-                    PomState::Resolved(pom) => Ok(Some(Arc::clone(pom))),
-                };
+                // ISSUE: i would have a match here and just wait in here but compiler does not like that
+                if let PomState::Resolving(n) = pom {
+                    waiting = Some(n.clone());
+                }
+                if let PomState::Resolved(pom) = pom {
+                    return Ok(Arc::clone(pom));
+                }
+            }
+        }
+
+        if let Some(wait) = waiting {
+            wait.notified().await;
+            let cache = ctx.cache.read();
+            match cache.get(&hash).unwrap() {
+                PomState::Resolved(pom) => return Ok(Arc::clone(pom)),
+                _ => unreachable!("Notified but cache not updated, bug"),
             }
         }
 
@@ -112,11 +126,12 @@ impl MavenDependancyList {
                 pom.version
             );
         }
+        let notify = Arc::new(Notify::new());
 
         log::debug!("(Cache Miss) Fetched POM with hash: {} -> {}", hash, id);
         {
             let mut write_cache = ctx.cache.write();
-            write_cache.insert(hash, PomState::Resolving);
+            write_cache.insert(hash, PomState::Resolving(notify.clone()));
         }
 
         Self::resolve_properties_inital(&mut pom);
@@ -124,44 +139,39 @@ impl MavenDependancyList {
         let parent_handle = Self::parent_handle(&pom, &ctx);
 
         if let Some(parent_handle) = parent_handle {
-            if let Ok(parent_result) = parent_handle.await {
-                let parent_option = parent_result?;
-                if let Some(parent_pom) = parent_option {
-                    let mut parent_props = parent_pom.properties.map.clone();
-                    parent_props.extend(pom.properties.map);
+            let parent_result = parent_handle.await?;
+            let parent_pom = parent_result?;
+            let mut parent_props = parent_pom.properties.map.clone();
+            parent_props.extend(pom.properties.map);
 
-                    pom.properties.map = parent_props;
+            pom.properties.map = parent_props;
 
-                    // backwords for right now
-                    pom.dependency_management_map
-                        .extend(parent_pom.dependency_management_map.clone());
+            // backwords for right now
+            pom.dependency_management_map
+                .extend(parent_pom.dependency_management_map.clone());
 
-                    Self::resolve_properties_inital(&mut pom);
-                }
-            }
+            Self::resolve_properties_inital(&mut pom);
         }
 
         let bom_handles = Self::bom_handles(&pom, &ctx);
         if let Some(mut bom_handles) = bom_handles {
-            while let Some(Ok(bom_pom)) = bom_handles.join_next().await {
-                let bom_pom = bom_pom?;
-                if let Some(bom_pom) = bom_pom {
-                    log::debug!(
-                        "Found BOM import: {}:{}:{} for {}",
-                        bom_pom.group_id,
-                        bom_pom.artifact_id,
-                        bom_pom.version,
-                        id
-                    );
-                    // extend properties
-                    let mut bom_props = bom_pom.properties.map.clone();
-                    bom_props.extend(pom.properties.map);
-                    pom.properties.map = bom_props;
+            while let Some(result) = bom_handles.join_next().await {
+                let bom_pom = result??;
+                log::debug!(
+                    "Found BOM import: {}:{}:{} for {}",
+                    bom_pom.group_id,
+                    bom_pom.artifact_id,
+                    bom_pom.version,
+                    id
+                );
+                // extend properties
+                let mut bom_props = bom_pom.properties.map.clone();
+                bom_props.extend(pom.properties.map);
+                pom.properties.map = bom_props;
 
-                    // backwords
-                    pom.dependency_management_map
-                        .extend(bom_pom.dependency_management_map.clone());
-                }
+                // backwords
+                pom.dependency_management_map
+                    .extend(bom_pom.dependency_management_map.clone());
             }
         }
 
@@ -172,16 +182,14 @@ impl MavenDependancyList {
 
         let dependacy_handles = Self::dependancy_handles(&pom, &ctx);
         if let Some(mut dependacy_handles) = dependacy_handles {
-            while let Some(Ok(ret_value)) = dependacy_handles.join_next().await {
-                let dep_pom = ret_value.0?;
-                let id = ret_value.1;
-                if let Some(dep_pom) = dep_pom {
-                    let mut dep_props = dep_pom.properties.map.clone();
-                    dep_props.extend(pom.properties.map);
-                    pom.properties.map = dep_props;
+            while let Some(result) = dependacy_handles.join_next().await {
+                let (dep_result, id) = result?;
+                let dep_pom = dep_result?;
+                let mut dep_props = dep_pom.properties.map.clone();
+                dep_props.extend(pom.properties.map);
+                pom.properties.map = dep_props;
 
-                    dependancy_list.push(Dependancy { id: id });
-                }
+                dependancy_list.push(Dependancy { id: id });
             }
         }
 
@@ -205,9 +213,11 @@ impl MavenDependancyList {
         {
             let mut write_cache = ctx.cache.write();
             write_cache.insert(hash, PomState::Resolved(arc_pom));
+
+            notify.notify_waiters();
         }
 
-        Ok(Some(arc_pom_clone))
+        Ok(arc_pom_clone)
     }
     pub fn hash_maven_id(id: &MavenId) -> u64 {
         let mut hasher = DefaultHasher::new();
@@ -272,7 +282,7 @@ impl MavenDependancyList {
     fn parent_handle(
         pom: &MavenPom,
         ctx: &ResolveContext,
-    ) -> Option<JoinHandle<Result<Option<Arc<MavenPom>>, MavenError>>> {
+    ) -> Option<JoinHandle<Result<Arc<MavenPom>, MavenError>>> {
         if let Some(parent) = &pom.parent {
             log::debug!(
                 "Found parent POM: {}:{}:{}",
@@ -284,8 +294,7 @@ impl MavenDependancyList {
             let owned_id: MavenIdBuf =
                 MavenIdBuf::new(&parent.group_id, &parent.artifact_id, &parent.version);
 
-            let handle =
-                spawn(async move { Self::resolve_related_poms(owned_id, ctx_clone).await });
+            let handle = spawn(async move { Self::resolve_pom(owned_id, ctx_clone).await });
             return Some(handle);
         }
         return None;
@@ -293,9 +302,9 @@ impl MavenDependancyList {
     fn bom_handles(
         pom: &MavenPom,
         ctx: &ResolveContext,
-    ) -> Option<JoinSet<Result<Option<Arc<MavenPom>>, MavenError>>> {
+    ) -> Option<JoinSet<Result<Arc<MavenPom>, MavenError>>> {
         if let Some(dep_management) = &pom.dependency_management {
-            let mut set: JoinSet<Result<Option<Arc<MavenPom>>, MavenError>> = JoinSet::new();
+            let mut set: JoinSet<Result<Arc<MavenPom>, MavenError>> = JoinSet::new();
             for dep in &dep_management.dependencies.dependency {
                 let scope = &dep.scope;
                 if *scope == Scope::Import && !dep.optional {
@@ -304,7 +313,7 @@ impl MavenDependancyList {
 
                     let ctx_clone = ctx.clone();
                     let owned_id: MavenIdBuf = id.into();
-                    set.spawn(async move { Self::resolve_related_poms(owned_id, ctx_clone).await });
+                    set.spawn(async move { Self::resolve_pom(owned_id, ctx_clone).await });
                 }
             }
             return Some(set);
@@ -314,7 +323,7 @@ impl MavenDependancyList {
     fn dependancy_handles(
         pom: &MavenPom,
         ctx: &ResolveContext,
-    ) -> Option<JoinSet<(Result<Option<Arc<MavenPom>>, MavenError>, MavenIdBuf)>> {
+    ) -> Option<JoinSet<(Result<Arc<MavenPom>, MavenError>, MavenIdBuf)>> {
         if let Some(deps) = &pom.dependencies {
             let mut set = JoinSet::new();
             for dep in &deps.dependency {
@@ -345,7 +354,7 @@ impl MavenDependancyList {
 
                 set.spawn(async move {
                     (
-                        Self::resolve_related_poms(owned_id.clone(), ctx_clone).await,
+                        Self::resolve_pom(owned_id.clone(), ctx_clone).await,
                         owned_id,
                     )
                 });
