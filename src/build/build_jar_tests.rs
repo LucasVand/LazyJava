@@ -59,7 +59,12 @@ fn build_manifest_with_jars_includes_classpath() -> Result<(), Box<dyn std::erro
     let manifest = build_manifest("Main", &ctx)?;
 
     assert!(manifest.contains("Class-Path:"));
-    assert!(manifest.contains("lib/example-1.0.jar"));
+    let con = if cfg!(target_os = "windows") {
+        r"lib\example-1.0.jar"
+    } else {
+        "lib/example-1.0.jar"
+    };
+    assert!(manifest.contains(con));
     Ok(())
 }
 
