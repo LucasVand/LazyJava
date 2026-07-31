@@ -2,7 +2,7 @@ use colored::Colorize;
 use std::{
     fs, io,
     path::{Path, absolute},
-    process::{Command, ExitStatus, Stdio},
+    process::{Command, Stdio},
 };
 
 use log::debug;
@@ -54,8 +54,7 @@ fn entry_point(args: &JarArgs, ctx: &Context) -> Result<String, BuildError> {
 
 fn build_plain_jar(output: &Path, args: &JarArgs, ctx: &Context) -> Result<(), BuildError> {
     let bin = absolute(&ctx.bin)?;
-    let bin_p = format!("-C {} .", bin.to_str().unwrap());
-    let class_files = [bin_p.as_str()];
+    let class_files = [bin.as_path()];
 
     let entry = entry_point(args, ctx)?;
 
@@ -64,8 +63,7 @@ fn build_plain_jar(output: &Path, args: &JarArgs, ctx: &Context) -> Result<(), B
     fs::write(&manifest_path, &manifest_str)?;
     let result = run_jar_command(output, &manifest_path, &class_files);
     let _ = fs::remove_file(&manifest_path);
-    result?;
-    Ok(())
+    result
 }
 
 fn build_fat_jar(output: &Path, args: &JarArgs, ctx: &Context) -> Result<(), BuildError> {
@@ -107,11 +105,9 @@ fn build_fat_jar_inner(
     let manifest_path = ctx.target.join(".build-manifest.tmp");
     fs::write(&manifest_path, &manifest_str)?;
 
-    let entry = format!("-C {} .", temp.to_string_lossy());
-    let result = run_jar_command(output, &manifest_path, &[entry.as_str()]);
+    let result = run_jar_command(output, &manifest_path, &[temp]);
     let _ = fs::remove_file(&manifest_path);
-    result?;
-    Ok(())
+    result
 }
 
 fn extract_jar(jar: &Path, dest: &Path) -> Result<(), BuildError> {
@@ -131,14 +127,21 @@ fn extract_jar(jar: &Path, dest: &Path) -> Result<(), BuildError> {
 
 fn copy_bin(src: &Path, dest: &Path) -> Result<(), BuildError> {
     let src = absolute(src)?;
-    let cmd = format!(
-        r#"cp -r "{}"/* "{}""#,
-        src.to_string_lossy(),
-        dest.to_string_lossy()
-    );
-    let status = sh(&cmd)?;
-    if !status.success() {
-        return Err(BuildError::CompilationErrors);
+    copy_dir_recursively(&src, dest)?;
+    Ok(())
+}
+
+fn copy_dir_recursively(src: &Path, dest: &Path) -> io::Result<()> {
+    fs::create_dir_all(dest)?;
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let from = entry.path();
+        let to = dest.join(entry.file_name());
+        if entry.file_type()?.is_dir() {
+            copy_dir_recursively(&from, &to)?;
+        } else {
+            fs::copy(&from, &to)?;
+        }
     }
     Ok(())
 }
@@ -210,34 +213,20 @@ pub(crate) fn build_manifest(entry_point: &str, ctx: &Context) -> Result<String,
 fn run_jar_command(
     output: &Path,
     manifest: &Path,
-    entries: &[&str],
-) -> Result<ExitStatus, BuildError> {
-    let entries_str = entries.join(" ");
-    let command = format!(
-        r#"jar -cfm "{}" "{}" {}"#,
-        output.to_string_lossy(),
-        manifest.to_string_lossy(),
-        entries_str
-    );
-    debug!("Jar Command {}", command);
-    let status = sh(&command)?;
-    Ok(status)
-}
-
-fn sh(command: &str) -> Result<ExitStatus, io::Error> {
-    let status = if cfg!(target_os = "windows") {
-        Command::new("powershell")
-            .args(["-Command", command])
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .status()
-    } else {
-        Command::new("sh")
-            .arg("-c")
-            .arg(command)
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .status()
-    }?;
-    Ok(status)
+    dirs: &[&Path],
+) -> Result<(), BuildError> {
+    let mut cmd = Command::new("jar");
+    cmd.arg("-cfm").arg(output).arg(manifest);
+    for dir in dirs {
+        cmd.arg("-C").arg(dir).arg(".");
+    }
+    debug!("Jar Command {:?}", cmd);
+    let status = cmd
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .status()?;
+    if !status.success() {
+        return Err(BuildError::CompilationErrors);
+    }
+    Ok(())
 }
