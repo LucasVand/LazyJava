@@ -21,35 +21,31 @@ pub(crate) fn compile_command(
     build_processor_dir: &str,
     javac_args: &Vec<String>,
 ) -> Result<Output, io::Error> {
-    let args = javac_args.join(" ");
-    let sep = if cfg!(target_os = "windows") {
-        ";"
-    } else {
-        ":"
-    };
+    let sep = JAVAC_SEPERATOR;
+    let classpath =
+        format!("{build_processor_dir}{sep}{bin_dir}{sep}{annotation_lib}/*{sep}{lib_dir}/*");
+    let processorpath = format!("{annotation_lib_list}{sep}{build_processor_dir}");
 
-    let command = format!(
-        r#"javac -s "{src_generated_dir}" -processorpath "{annotation_lib_list}{sep}{build_processor_dir}" -classpath "{bin_dir}/*{sep}{annotation_lib}/*{sep}{lib_dir}/*" -d "{output_dir}" {args} {src_list}"#
-    );
+    let mut cmd = Command::new("javac");
+    cmd.arg("-s")
+        .arg(src_generated_dir)
+        .arg("-processorpath")
+        .arg(&processorpath)
+        .arg("-classpath")
+        .arg(&classpath)
+        .arg("-d")
+        .arg(output_dir);
+    cmd.args(javac_args);
+    for src in src_list.split_whitespace() {
+        cmd.arg(src);
+    }
 
-    log::info!("Compile Command: {}", command);
+    log::debug!("Compile Command: {:?}", &cmd);
 
-    let command = if cfg!(target_os = "windows") {
-        Command::new("powershell")
-            .args(["-Command", &command])
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .output()
-    } else {
-        Command::new("sh")
-            .arg("-c")
-            .arg(command)
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .output()
-    };
-
-    return command;
+    cmd.stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .output()
 }
 
 pub fn compile_java(

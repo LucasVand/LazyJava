@@ -22,6 +22,7 @@ public class Web {
     @GetMapping("/")
     public String get() {
         return "This is from spring";
+
     }
 
     @PostMapping("/")

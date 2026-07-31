@@ -4,11 +4,11 @@ use crate::{
     Context,
     args::BuildArgs,
     build::compile::compile_java,
+    build::BuildError,
     config::{ConfigProcesserDefinition, ProcesserType},
-    lazy_java_error::LazyJavaError,
 };
 
-pub fn build_processors(build_args: &BuildArgs, ctx: &Context) -> Result<bool, LazyJavaError> {
+pub fn build_processors(build_args: &BuildArgs, ctx: &Context) -> Result<bool, BuildError> {
     // TODO: add errors for this this is very lazy
     let mut processors = HashMap::new();
     if let Some(l) = ctx.config.processors() {
@@ -55,7 +55,7 @@ pub fn build_processors(build_args: &BuildArgs, ctx: &Context) -> Result<bool, L
 fn create_meta_folder(
     ctx: &Context,
     processors: HashMap<String, ConfigProcesserDefinition>,
-) -> Result<(), LazyJavaError> {
+) -> Result<(), BuildError> {
     let dir = ctx.bin_processors.join("META-INF").join("services");
 
     let mut file_contents: String = String::new();

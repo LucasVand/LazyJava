@@ -85,6 +85,9 @@ pub struct ConfigSetup {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub target: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub main_class: Option<String>,
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd, Ord, Eq, TomlEdit, Serialize, Deserialize)]

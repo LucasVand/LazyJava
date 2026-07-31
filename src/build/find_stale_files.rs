@@ -6,7 +6,7 @@ use std::{
 
 use crate::{
     build::dependancy_graph::DependancyGraph, build::metadata::BuildMetadata,
-    lazy_java_error::LazyJavaError, utils::find_main::find_java_files,
+    build::BuildError, utils::find_main::find_java_files,
 };
 
 pub fn find_modified_files(build: &BuildMetadata, src: &Path) -> Result<Vec<PathBuf>, io::Error> {
@@ -36,7 +36,7 @@ pub fn find_modified_files(build: &BuildMetadata, src: &Path) -> Result<Vec<Path
 pub fn files_to_recompile(
     graph: DependancyGraph,
     stale_files: Vec<PathBuf>,
-) -> Result<Vec<PathBuf>, LazyJavaError> {
+) -> Result<Vec<PathBuf>, BuildError> {
     log::debug!(
         "Calculating files to recompile from {} stale files",
         stale_files.len()

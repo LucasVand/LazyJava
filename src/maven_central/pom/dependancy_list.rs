@@ -211,9 +211,10 @@ impl MavenDependancyList {
         let arc_pom = Arc::new(pom);
         let arc_pom_clone = arc_pom.clone();
         {
-            let mut write_cache = ctx.cache.write();
-            write_cache.insert(hash, PomState::Resolved(arc_pom));
-
+            {
+                let mut write_cache = ctx.cache.write();
+                write_cache.insert(hash, PomState::Resolved(arc_pom));
+            }
             notify.notify_waiters();
         }
 

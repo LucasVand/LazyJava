@@ -50,7 +50,8 @@ impl LazyJava {
         let ctx = Context::new(all_args)?;
         ctx.assert_all()?;
         let ctx = ctx.assert_packages()?;
-        Self::build(args, &ctx)
+        Self::build(args, &ctx)?;
+        Ok(())
     }
 
     fn clean_internal(all_args: &LazyJavaArgs) -> Result<(), LazyJavaError> {
