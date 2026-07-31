@@ -1,23 +1,23 @@
 use std::{fs, path::Path};
 use tempfile::tempdir;
 
+use crate::Context;
 use crate::build::build_jar::{build_manifest, merge_services};
 use crate::config::ConfigTomlEdit;
-use crate::Context;
 
 fn test_ctx(target: &Path) -> Context {
     Context::new_options(
         None,
-        Some(ConfigTomlEdit::parse(
-            &format!(
+        Some(
+            ConfigTomlEdit::parse(&format!(
                 r#"[setup]
 src = "src"
 target = "{}"
 "#,
                 target.display()
-            ),
-        )
-        .unwrap()),
+            ))
+            .unwrap(),
+        ),
     )
     .unwrap()
 }
@@ -31,7 +31,7 @@ fn build_manifest_empty_lib_no_classpath() -> Result<(), Box<dyn std::error::Err
     fs::create_dir_all(&lib)?;
     fs::create_dir_all(&lib_a)?;
     // Create a dummy lazy-java.toml so the context's root is valid
-    fs::write(tmp.path().join("lazy-java.toml"), b"")?;
+    fs::write(tmp.path().join("lazy-java.toml"), "")?;
 
     let ctx = test_ctx(&target);
     let manifest = build_manifest("com.example.Main", &ctx)?;
@@ -50,7 +50,7 @@ fn build_manifest_with_jars_includes_classpath() -> Result<(), Box<dyn std::erro
     let lib_a = target.join("lib-annotations");
     fs::create_dir_all(&lib)?;
     fs::create_dir_all(&lib_a)?;
-    fs::write(tmp.path().join("lazy-java.toml"), b"")?;
+    fs::write(tmp.path().join("lazy-java.toml"), "")?;
 
     let jar_path = lib.join("example-1.0.jar");
     fs::write(&jar_path, b"dummy jar content")?;
