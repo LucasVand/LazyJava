@@ -102,7 +102,7 @@ pub fn hash_directory(path: &Path) -> u64 {
             if let Ok(modified) = meta.modified() {
                 modified.hash(&mut hasher);
                 let dur = modified.duration_since(UNIX_EPOCH).unwrap_or_default();
-                log::trace!(
+                log::debug!(
                     "hash_dir {:?} size={} mod={}.{:09}",
                     dir.path(),
                     meta.len(),
