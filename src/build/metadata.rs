@@ -4,7 +4,6 @@ use std::{
     path::Path,
     process::ExitStatus,
     time::SystemTime,
-    time::UNIX_EPOCH,
 };
 
 use serde::{Deserialize, Serialize};
