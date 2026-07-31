@@ -116,12 +116,13 @@ fn build_fat_jar_inner(
 
 fn extract_jar(jar: &Path, dest: &Path) -> Result<(), BuildError> {
     let jar = absolute(jar)?;
-    let cmd = format!(
-        r#"cd "{}" && jar xf "{}""#,
-        dest.to_string_lossy(),
-        jar.to_string_lossy()
-    );
-    let status = sh(&cmd)?;
+    let status = Command::new("jar")
+        .current_dir(dest)
+        .arg("xf")
+        .arg(&jar)
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .status()?;
     if !status.success() {
         return Err(BuildError::CompilationErrors);
     }
