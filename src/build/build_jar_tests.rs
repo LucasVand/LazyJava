@@ -14,7 +14,7 @@ fn test_ctx(target: &Path) -> Context {
 src = "src"
 target = "{}"
 "#,
-                target.display()
+                target.to_string_lossy()
             ))
             .unwrap(),
         ),
