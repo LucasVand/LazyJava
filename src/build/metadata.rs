@@ -4,7 +4,6 @@ use std::{
     path::Path,
     process::ExitStatus,
     time::SystemTime,
-    time::UNIX_EPOCH,
 };
 
 use serde::{Deserialize, Serialize};
@@ -99,19 +98,6 @@ pub fn hash_directory(path: &Path) -> u64 {
         let meta = dir.metadata();
         if let Ok(meta) = meta {
             meta.len().hash(&mut hasher);
-            if let Ok(modified) = meta.modified() {
-                let dur = modified.duration_since(UNIX_EPOCH).unwrap_or_default();
-                dur.hash(&mut hasher);
-                log::trace!(
-                    "hash_dir {:?} size={} mod={}.{:09}",
-                    dir.path(),
-                    meta.len(),
-                    dur.as_secs(),
-                    dur.subsec_nanos()
-                );
-            } else {
-                log::trace!("no metadata");
-            }
         }
         let file_path = dir.path().strip_prefix(path);
         if let Ok(relative_path) = file_path {
