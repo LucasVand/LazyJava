@@ -9,7 +9,8 @@ fn main() -> Result<()> {
     let log_level = match args.global_args.verbose {
         0 => LevelFilter::Error,
         1 => LevelFilter::Info,
-        _ => LevelFilter::Debug,
+        3 => LevelFilter::Debug,
+        _ => LevelFilter::Trace,
     };
 
     env_logger::builder()

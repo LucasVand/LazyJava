@@ -73,6 +73,10 @@ pub struct RunArgs {
     #[arg(long = "no-build", short = 'n')]
     pub no_build: bool,
 
+    /// Run using the pre-built jar instead of classpath
+    #[arg(long = "jar", short = 'j')]
+    pub jar: bool,
+
     // #[arg(long = "args", short = 'a', num_args = 1.., allow_hyphen_values = true)]
     // pub args: Vec<String>,
     #[command(flatten)]
@@ -109,6 +113,25 @@ pub enum BuildSubCommand {
     Stale {},
     /// Rebuilds the .classfile which is used for jdtls
     Classpath {},
+    /// Create a jar file
+    Jar {
+        #[command(flatten)]
+        args: JarArgs,
+    },
+}
+
+#[derive(Debug, Parser, Clone)]
+pub struct JarArgs {
+    /// The main entry point of the jar as a package path
+    #[arg(long)]
+    pub entry_point: Option<String>,
+
+    /// Should create a fat jar with all dependancies bundled
+    #[arg(short, long)]
+    pub fat: bool,
+
+    #[command(flatten)]
+    pub build_args: BuildArgs,
 }
 #[derive(Debug, Parser, Clone)]
 pub struct FindArgs {}

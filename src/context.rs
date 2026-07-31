@@ -107,7 +107,7 @@ impl Context {
             root,
             current,
             config,
-            dry_run: dry_run,
+            dry_run,
             lib_annotations,
             relative_lib_annotations,
             src_generated,

@@ -6,9 +6,9 @@ use std::{
 
 use globset::{Glob, GlobSet, GlobSetBuilder};
 
-use crate::{Context, lazy_java_error::LazyJavaError};
+use crate::{Context, build::BuildError};
 
-pub fn copy_resources(ctx: &Context) -> Result<(), LazyJavaError> {
+pub fn copy_resources(ctx: &Context) -> Result<(), BuildError> {
     let glob_set = build_globset(ctx);
     let resource_paths = add_resources(&ctx.src, Path::new(""), &glob_set, ctx)?;
     log::info!("Found {} resources", resource_paths.len());
@@ -21,7 +21,7 @@ fn remove_unknown_resources(
     resources: &HashSet<PathBuf>,
     current: &Path,
     ctx: &Context,
-) -> Result<isize, LazyJavaError> {
+) -> Result<isize, BuildError> {
     let mut change = 0;
     for dir in fs::read_dir(current)? {
         if let Ok(dir) = dir {
@@ -41,7 +41,7 @@ fn remove_unknown_resources(
 
     Ok(change)
 }
-fn remove_file(resources: &HashSet<PathBuf>, dir: &DirEntry) -> Result<isize, LazyJavaError> {
+fn remove_file(resources: &HashSet<PathBuf>, dir: &DirEntry) -> Result<isize, BuildError> {
     let path = dir.path();
 
     if !resources.contains(&path) {
@@ -74,7 +74,7 @@ fn add_resources(
     relative: &Path,
     glob_set: &GlobSet,
     ctx: &Context,
-) -> Result<HashSet<PathBuf>, LazyJavaError> {
+) -> Result<HashSet<PathBuf>, BuildError> {
     let mut resources = HashSet::new();
     for dir in fs::read_dir(path)? {
         if let Ok(dir) = dir {
@@ -103,7 +103,7 @@ fn add_resources(
 
     Ok(resources)
 }
-fn copy_file(file: &DirEntry, relative: &Path, ctx: &Context) -> Result<PathBuf, LazyJavaError> {
+fn copy_file(file: &DirEntry, relative: &Path, ctx: &Context) -> Result<PathBuf, BuildError> {
     let dest_path = ctx.bin.join(relative).join(file.file_name());
 
     let src = file.path();

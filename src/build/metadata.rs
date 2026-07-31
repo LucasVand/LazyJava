@@ -4,12 +4,13 @@ use std::{
     path::Path,
     process::ExitStatus,
     time::SystemTime,
+    time::UNIX_EPOCH,
 };
 
 use serde::{Deserialize, Serialize};
 use walkdir::DirEntry;
 
-use crate::{BUILD_METADATA_NAME, Context, lazy_java_error::LazyJavaError};
+use crate::{BUILD_METADATA_NAME, Context, build::BuildError};
 
 #[derive(Clone, Serialize, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
 pub struct BuildMetadata {
@@ -45,7 +46,7 @@ impl BuildMetadata {
 
         return Some(metadata.unwrap());
     }
-    pub fn write(&self, target: &Path) -> Result<(), LazyJavaError> {
+    pub fn write(&self, target: &Path) -> Result<(), BuildError> {
         let ser = toml::to_string_pretty(self)?;
 
         write(target.join(BUILD_METADATA_NAME), ser)?;
@@ -64,7 +65,7 @@ pub fn save_metadata(
     ctx: &Context,
     status: ExitStatus,
     meta: Option<BuildMetadata>,
-) -> Result<(), LazyJavaError> {
+) -> Result<(), BuildError> {
     let time = if !status.success() {
         if meta.is_some() {
             meta.unwrap().time_stamp
@@ -94,12 +95,22 @@ pub fn hash_directory(path: &Path) -> u64 {
         .collect();
 
     let mut hasher = DefaultHasher::new();
-    for dir in dirs {
+    for dir in &dirs {
         let meta = dir.metadata();
         if let Ok(meta) = meta {
             meta.len().hash(&mut hasher);
             if let Ok(modified) = meta.modified() {
                 modified.hash(&mut hasher);
+                let dur = modified.duration_since(UNIX_EPOCH).unwrap_or_default();
+                log::trace!(
+                    "hash_dir {:?} size={} mod={}.{:09}",
+                    dir.path(),
+                    meta.len(),
+                    dur.as_secs(),
+                    dur.subsec_nanos()
+                );
+            } else {
+                log::trace!("no metadata");
             }
         }
         let file_path = dir.path().strip_prefix(path);
@@ -108,5 +119,7 @@ pub fn hash_directory(path: &Path) -> u64 {
         }
     }
 
-    hasher.finish()
+    let hash = hasher.finish();
+    log::debug!("hash_directory({:?}) = {}", path, hash);
+    hash
 }

@@ -4,37 +4,31 @@ use std::{
     process::{Command, ExitStatus, Output, Stdio},
 };
 
+use log::debug;
+
+use crate::JAVAC_SEPERATOR;
+
 fn run_command(
     build: &str,
     lib: &str,
     class: &str,
     args: &Vec<String>,
 ) -> Result<Output, io::Error> {
-    let args_str = args.join(" ");
-    if cfg!(target_os = "windows") {
-        let command = format!(
-            r#"java -classpath "{};{}/*" {} {}"#,
-            build, lib, class, args_str
-        );
-        log::debug!("Windows java run command: {}", command);
-        Command::new("powershell")
-            .args(["-Command", &command])
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .output()
-    } else {
-        let command = format!(
-            r#"java -classpath "{}:{}/*" {} {}"#,
-            build, lib, class, args_str
-        );
-        log::debug!("Unix java run command: {}", command);
-        Command::new("sh")
-            .arg("-c")
-            .arg(command)
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .output()
-    }
+    let sep = JAVAC_SEPERATOR;
+
+    let mut c = Command::new("java");
+    let command = c
+        .args(["-classpath", &format!("{}{sep}{}/*", build, lib)])
+        .arg(class)
+        .args(args)
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit());
+
+    debug!("Run Command {:?}", &command);
+
+    let output = command.output()?;
+    Ok(output)
 }
 
 pub fn execute_java(
