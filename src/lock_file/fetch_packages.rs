@@ -10,8 +10,9 @@ use tokio::task::JoinSet;
 use zip::{ZipArchive, result::ZipError};
 
 use crate::{
-    context::ContextNoConfig,
+    ContextNoConfig,
     lock_file::{LockFile, LockFileError, LockFilePackage},
+    utils::IOError,
 };
 
 impl LockFile {
@@ -55,7 +56,7 @@ impl LockFile {
                                     id,
                                     code,
                                 );
-                                Err(LockFileError::NoFound)
+                                Err(LockFileError::DownloadFailed(code))
                             }
                             FetchError::ReqwestError(err) => Err(LockFileError::RequestError(err)),
                         },
@@ -96,7 +97,8 @@ impl LockFile {
                     } else {
                         &ctx.lib
                     };
-                    fs::write(path.join(package_file_name), bin)?;
+                    let p = path.join(&package_file_name);
+                    fs::write(&p, bin).map_err(|s| IOError::new("writing", p, s))?;
                 }
             }
 

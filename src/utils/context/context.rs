@@ -7,10 +7,16 @@ use colored::Colorize;
 use decompose::decompose;
 
 use crate::{
-    SRC_FOLDER, TARGET_FOLDER, args::LazyJavaArgs, config::ConfigTomlEdit,
-    lazy_java_error::LazyJavaError, lock_file::LockFile, lsp::sync_lsp_config,
-    utils::find_root::find_root,
+    SRC_FOLDER, TARGET_FOLDER,
+    args::LazyJavaArgs,
+    config::ConfigTomlEdit,
+    lazy_java_error::LazyJavaError,
+    lock_file::LockFile,
+    lsp::sync_lsp_config,
+    utils::{IOError, find_root::find_root},
 };
+
+use super::ContextError;
 
 #[decompose(ContextNoConfig, exclude(config))]
 pub struct Context {
@@ -38,28 +44,28 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn new(args: &LazyJavaArgs) -> Result<Context, LazyJavaError> {
+    pub fn new(args: &LazyJavaArgs) -> Result<Context, ContextError> {
         Self::new_internal(Some(args), None)
     }
     pub fn new_options(
         args: Option<&LazyJavaArgs>,
         config: Option<ConfigTomlEdit>,
-    ) -> Result<Context, LazyJavaError> {
+    ) -> Result<Context, ContextError> {
         Self::new_internal(args, config)
     }
     fn new_internal(
         args: Option<&LazyJavaArgs>,
         config: Option<ConfigTomlEdit>,
-    ) -> Result<Context, LazyJavaError> {
-        let current = env::current_dir().map_err(LazyJavaError::NoCurrentDir)?;
+    ) -> Result<Context, ContextError> {
+        let current = env::current_dir().map_err(ContextError::NoCurrentDir)?;
         log::debug!("Current directory: {:?}", current);
 
         let root = find_root(&current).map_err(|e| {
             log::error!("Could not locate project root");
-            LazyJavaError::NoRoot(e)
+            ContextError::NoRoot(e)
         })?;
 
-        let root = root.unwrap_or(env::current_dir().map_err(|e| LazyJavaError::NoRoot(e))?);
+        let root = root.unwrap_or(env::current_dir().map_err(ContextError::NoRoot)?);
 
         let config = match config {
             Some(config) => Ok(config),
@@ -119,22 +125,23 @@ impl Context {
         Ok(ctx)
     }
 
-    pub fn assert_src_exists(&self) -> Result<(), LazyJavaError> {
+    pub fn assert_src_exists(&self) -> Result<(), ContextError> {
         if !self.src.exists() {
             let path = path::absolute(self.src.clone()).unwrap();
-            return Err(LazyJavaError::NoSource(path.to_string_lossy().into()));
+            return Err(ContextError::NoSource(path.to_string_lossy().into()));
         }
         Ok(())
     }
 
-    pub fn ensure_bin_exists(&self) -> Result<(), LazyJavaError> {
+    pub fn ensure_bin_exists(&self) -> Result<(), ContextError> {
         if !self.bin.exists() {
             println!(
                 "{} {}",
                 "Creating".green().bold(),
                 format!("build directory: {}", self.bin.display())
             );
-            fs::create_dir_all(&self.bin)?;
+            fs::create_dir_all(&self.bin)
+                .map_err(|e| IOError::new("creating build directory", &self.bin, e))?;
         }
         if !self.bin_processors.exists() {
             println!(
@@ -145,19 +152,26 @@ impl Context {
                     self.bin_processors.display()
                 )
             );
-            fs::create_dir_all(&self.bin_processors)?;
+            fs::create_dir_all(&self.bin_processors).map_err(|e| {
+                IOError::new(
+                    "creating build processor directory",
+                    &self.bin_processors,
+                    e,
+                )
+            })?;
         }
         Ok(())
     }
 
-    pub fn ensure_lib_exists(&self) -> Result<(), LazyJavaError> {
+    pub fn ensure_lib_exists(&self) -> Result<(), ContextError> {
         if !self.lib.exists() {
             println!(
                 "{} {}",
                 "Creating".green().bold(),
                 format!("library directory: {}", self.lib.display())
             );
-            fs::create_dir_all(&self.lib)?;
+            fs::create_dir_all(&self.lib)
+                .map_err(|e| IOError::new("creating library directory", &self.lib, e))?;
         }
         if !self.lib_annotations.exists() {
             println!(
@@ -168,7 +182,13 @@ impl Context {
                     self.lib_annotations.display()
                 )
             );
-            fs::create_dir_all(&self.lib_annotations)?;
+            fs::create_dir_all(&self.lib_annotations).map_err(|e| {
+                IOError::new(
+                    "creating annotation library directory",
+                    &self.lib_annotations,
+                    e,
+                )
+            })?;
         }
         if !self.src_generated.exists() {
             println!(
@@ -176,24 +196,27 @@ impl Context {
                 "Creating".green().bold(),
                 format!("generated src directory: {}", self.src_generated.display())
             );
-            fs::create_dir_all(&self.src_generated)?;
+            fs::create_dir_all(&self.src_generated).map_err(|e| {
+                IOError::new("creating generated src directory", &self.src_generated, e)
+            })?;
         }
         Ok(())
     }
 
-    pub fn ensure_target_exists(&self) -> Result<(), LazyJavaError> {
+    pub fn ensure_target_exists(&self) -> Result<(), ContextError> {
         if !self.target.exists() {
             println!(
                 "{} {}",
                 "Creating".green().bold(),
                 format!("target directory: {}", self.target.display())
             );
-            fs::create_dir_all(&self.target)?;
+            fs::create_dir_all(&self.target)
+                .map_err(|e| IOError::new("creating target directory", &self.target, e))?;
         }
         Ok(())
     }
 
-    pub fn assert_all(&self) -> Result<(), LazyJavaError> {
+    pub fn assert_all(&self) -> Result<(), ContextError> {
         self.assert_src_exists()?;
         self.ensure_bin_exists()?;
         self.ensure_lib_exists()?;

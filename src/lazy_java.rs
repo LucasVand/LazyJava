@@ -21,7 +21,7 @@ impl LazyJava {
             )
         }
         match &cli_args.command {
-            LazyJavaCommand::Create { args } => Self::create(args, &cli_args),
+            LazyJavaCommand::Create { args } => Ok(Self::create(args, &cli_args)?),
             LazyJavaCommand::Build { args } => Self::build_internal(&cli_args, args),
             LazyJavaCommand::Clean {} => Self::clean_internal(&cli_args),
             LazyJavaCommand::Find { args } => Self::find_internal(&cli_args, args),
@@ -70,7 +70,7 @@ impl LazyJava {
         let ctx = Context::new(all_args)?;
         ctx.assert_all()?;
         let ctx = ctx.assert_packages()?;
-        Self::run(args, &ctx)
+        Ok(Self::run(args, &ctx)?)
     }
 
     fn add_internal(all_args: &LazyJavaArgs, args: &AddArgs) -> Result<(), LazyJavaError> {

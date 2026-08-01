@@ -12,6 +12,7 @@ use crate::{
         AnnotationProcessorPaths, Build, Configuration, DependancyType, Dependencies, Dependency,
         MavenPom, Plugin, Plugins, ProcessorPath, Properties, Scope,
     },
+    utils::{IOError, XmlSerializeError},
 };
 
 pub fn generate_pom(ctx: &Context) -> Result<(), GenerateError> {
@@ -20,11 +21,13 @@ pub fn generate_pom(ctx: &Context) -> Result<(), GenerateError> {
 
     let mut serializer = Serializer::new(&mut buffer);
     serializer.indent(' ', 4);
+    let pom_path = ctx.root.join("pom.xml");
 
-    pom.serialize(serializer)?;
+    pom.serialize(serializer)
+        .map_err(|source| XmlSerializeError::new("serializing pom.xml", &pom_path, source))?;
 
     if !ctx.dry_run {
-        fs::write(ctx.root.join("pom.xml"), buffer)?;
+        fs::write(&pom_path, buffer).map_err(|source| IOError::new("writing", pom_path, source))?;
     }
     println!("{} pom.xml", "Generated".green().bold());
 

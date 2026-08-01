@@ -11,14 +11,14 @@ use maven_version::Maven3ArtifactVersion;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    LOCK_FILE_NAME,
+    ContextNoConfig, LOCK_FILE_NAME,
     config::ConfigDependancy,
-    context::ContextNoConfig,
     lock_file::LockFileError,
     maven_central::{
         MavenId, MavenIdBuf, PartialMavenIdBuf,
         pom::{DependancyType, MavenDependancyList, Scope},
     },
+    utils::{IOError, TomlDeserializeError, TomlSerializeError},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -54,29 +54,28 @@ impl LockFile {
         }
     }
     pub fn fetch(root: &Path) -> Result<LockFile, LockFileError> {
-        let fs_file = Self::fetch_from_fs(root);
-
-        if let Ok(lockfile) = fs_file {
-            Ok(lockfile)
-        } else {
-            match fs_file.err().unwrap() {
-                LockFileError::NoFound => Ok(LockFile::new()),
-                err => Err(err),
-            }
-        }
+        let fs_file = Self::fetch_from_fs(root)?;
+        let lock = match fs_file {
+            None => LockFile::new(),
+            Some(l) => l,
+        };
+        return Ok(lock);
     }
-    fn fetch_from_fs(root: &Path) -> Result<LockFile, LockFileError> {
-        let file = fs::read_to_string(root.join(LOCK_FILE_NAME)).map_err(|e| match e.kind() {
-            ErrorKind::NotFound => LockFileError::NoFound,
-            ErrorKind::PermissionDenied => {
-                LockFileError::PermissionDenied(root.to_string_lossy().into())
+    fn fetch_from_fs(root: &Path) -> Result<Option<LockFile>, LockFileError> {
+        let p = root.join(LOCK_FILE_NAME);
+        let file = fs::read_to_string(&p);
+        if let Err(e) = file {
+            if e.kind() == ErrorKind::NotFound {
+                return Ok(None);
             }
-            _ => LockFileError::NoFound,
-        })?;
+            return Err(IOError::new("reading", &p, e))?;
+        }
+        let file = file.unwrap();
 
-        let lockfile: LockFile = toml::from_str(&file)?;
+        let lockfile: LockFile = toml::from_str(&file)
+            .map_err(|s| TomlDeserializeError::new("reading lazy-java.lock", &p, s))?;
 
-        Ok(lockfile)
+        Ok(Some(lockfile))
     }
     pub fn write(&mut self, root: &Path) -> Result<(), LockFileError> {
         self.packages.sort();
@@ -85,17 +84,11 @@ impl LockFile {
             pkg.annotations.sort();
         }
 
-        let str = toml::to_string_pretty(self)?;
+        let p = root.join(LOCK_FILE_NAME);
+        let str = toml::to_string_pretty(self)
+            .map_err(|s| TomlSerializeError::new("writing lazy-java.lock", &p, s))?;
 
-        let res = fs::write(root.join(LOCK_FILE_NAME), str);
-        if let Err(err) = res {
-            return match err.kind() {
-                ErrorKind::PermissionDenied => Err(LockFileError::PermissionDenied(
-                    root.to_string_lossy().into(),
-                )),
-                _ => Err(LockFileError::IoError(err)),
-            };
-        }
+        fs::write(&p, str).map_err(|s| IOError::new("writing", p, s))?;
 
         Ok(())
     }
@@ -166,10 +159,11 @@ impl LockFile {
                             .file_name()
                             .map(|s| s.to_string_lossy())
                             .unwrap_or_default();
-                        println!("        {} {}", "Removed".green().bold(), stem);
                         if !dry_run {
-                            fs::remove_file(path)?;
+                            fs::remove_file(&path)
+                                .map_err(|s| IOError::new("removing", &path, s))?;
                         }
+                        println!("        {} {}", "Removed".green().bold(), stem);
                         removed += 1;
                     }
                 }

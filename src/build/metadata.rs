@@ -9,7 +9,11 @@ use std::{
 use serde::{Deserialize, Serialize};
 use walkdir::DirEntry;
 
-use crate::{BUILD_METADATA_NAME, Context, build::BuildError};
+use crate::{
+    BUILD_METADATA_NAME, Context,
+    build::BuildError,
+    utils::{IOError, TomlSerializeError},
+};
 
 #[derive(Clone, Serialize, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
 pub struct BuildMetadata {
@@ -46,9 +50,11 @@ impl BuildMetadata {
         return Some(metadata.unwrap());
     }
     pub fn write(&self, target: &Path) -> Result<(), BuildError> {
-        let ser = toml::to_string_pretty(self)?;
+        let path = target.join(BUILD_METADATA_NAME);
+        let ser = toml::to_string_pretty(self)
+            .map_err(|e| TomlSerializeError::new("serializing build metadata", &path, e))?;
 
-        write(target.join(BUILD_METADATA_NAME), ser)?;
+        write(&path, ser).map_err(|e| IOError::new("writing build metadata", &path, e))?;
 
         Ok(())
     }

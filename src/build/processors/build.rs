@@ -3,13 +3,13 @@ use std::{collections::HashMap, fs, path::PathBuf};
 use crate::{
     Context,
     args::BuildArgs,
-    build::compile::compile_java,
     build::BuildError,
+    build::compile::compile_java,
     config::{ConfigProcesserDefinition, ProcesserType},
+    utils::IOError,
 };
 
-pub fn build_processors(build_args: &BuildArgs, ctx: &Context) -> Result<bool, BuildError> {
-    // TODO: add errors for this this is very lazy
+pub fn build_processors(build_args: &BuildArgs, ctx: &Context) -> Result<(), BuildError> {
     let mut processors = HashMap::new();
     if let Some(l) = ctx.config.processors() {
         for (class_name, processor) in l {
@@ -17,14 +17,14 @@ pub fn build_processors(build_args: &BuildArgs, ctx: &Context) -> Result<bool, B
         }
     }
     if processors.is_empty() {
-        return Ok(true);
+        return Ok(());
     }
     log::info!("Building {} annotation processor(s)", processors.len());
 
     let full_paths: Vec<PathBuf> = processors.iter().map(|(_k, p)| p.path.clone()).collect();
 
     if full_paths.is_empty() {
-        return Ok(true);
+        return Ok(());
     }
 
     log::debug!("Processor source paths: {:?}", full_paths);
@@ -42,14 +42,18 @@ pub fn build_processors(build_args: &BuildArgs, ctx: &Context) -> Result<bool, B
         ctx,
         &build_args.javac_args,
         false,
-    )?;
+    )
+    .map_err(|e| IOError::new("compiling annotation processors", &ctx.bin_processors, e))?;
     log::info!(
         "Annotation processor compilation completed with status: {}",
         result
     );
+    if !result.success() {
+        return Err(BuildError::ProcessorCompilationErrors);
+    }
     create_meta_folder(ctx, processors)?;
 
-    Ok(true)
+    Ok(())
 }
 
 fn create_meta_folder(
@@ -72,7 +76,7 @@ fn create_meta_folder(
     }
 
     log::debug!("Creating META-INF/services directory at {:?}", dir);
-    fs::create_dir_all(&dir)?;
+    fs::create_dir_all(&dir).map_err(|e| IOError::new("creating services directory", &dir, e))?;
 
     let service_file = dir.join("javax.annotation.processing.Processor");
     let processor_count = processors
@@ -86,7 +90,8 @@ fn create_meta_folder(
         if processor_count == 1 { "y" } else { "ies" }
     );
     log::debug!("Processor service file contents:\n{}", file_contents);
-    fs::write(&service_file, file_contents)?;
+    fs::write(&service_file, file_contents)
+        .map_err(|e| IOError::new("writing processor service file", &service_file, e))?;
 
     Ok(())
 }

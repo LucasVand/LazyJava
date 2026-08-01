@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use lazy_java::{LazyJava, args::LazyJavaArgs};
+use lazy_java::{LazyJava, args::LazyJavaArgs, utils::DiagnosticProvider};
 use log::LevelFilter;
 
 fn main() -> Result<()> {
@@ -19,7 +19,11 @@ fn main() -> Result<()> {
         .format_timestamp(None)
         .init();
 
-    LazyJava::execute(args)?;
+    let res = LazyJava::execute(args);
+    match res {
+        Err(e) => println!("{}", e.diagnostic()),
+        Ok(_) => {}
+    }
 
     Ok(())
 }

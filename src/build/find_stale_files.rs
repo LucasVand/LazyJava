@@ -5,8 +5,8 @@ use std::{
 };
 
 use crate::{
-    build::dependancy_graph::DependancyGraph, build::metadata::BuildMetadata,
-    build::BuildError, utils::find_main::find_java_files,
+    build::BuildError, build::dependancy_graph::DependancyGraph, build::metadata::BuildMetadata,
+    utils::find_main::find_java_files,
 };
 
 pub fn find_modified_files(build: &BuildMetadata, src: &Path) -> Result<Vec<PathBuf>, io::Error> {

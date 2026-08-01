@@ -7,7 +7,12 @@ use std::{
 
 use colored::Colorize;
 
-use crate::{args::ImportPomArgs, config::ConfigTomlEdit, maven_central::pom::MavenPom};
+use crate::{
+    args::ImportPomArgs,
+    config::ConfigTomlEdit,
+    maven_central::pom::MavenPom,
+    utils::{IOError, XmlDeserializeError},
+};
 
 use super::ImportError;
 
@@ -35,8 +40,11 @@ pub fn import_pom(root: &Path, args: &ImportPomArgs, dry_run: bool) -> Result<()
         return Ok(());
     }
 
-    let content = fs::read_to_string(&root.join(&args.pom_path))?;
-    let pom: MavenPom = quick_xml::de::from_str(&content)?;
+    let pom_path = &root.join(&args.pom_path);
+    let content =
+        fs::read_to_string(pom_path).map_err(|e| IOError::new("reading pom.xml", pom_path, e))?;
+    let pom: MavenPom = quick_xml::de::from_str(&content)
+        .map_err(|e| XmlDeserializeError::new("parsing pom.xml", pom_path, e))?;
 
     let mgmt_map = dep_mgmt_map(&pom);
 
@@ -79,7 +87,8 @@ pub fn import_pom(root: &Path, args: &ImportPomArgs, dry_run: bool) -> Result<()
     let toml_str = config.to_toml_string();
 
     if !dry_run {
-        fs::write(root.join("lazy-java.toml"), toml_str)?;
+        let toml_path = root.join("lazy-java.toml");
+        fs::write(&toml_path, toml_str).map_err(|e| IOError::new("writing", toml_path, e))?;
     }
     println!("{} lazy-java.toml from pom.xml", "Imported".green().bold());
 

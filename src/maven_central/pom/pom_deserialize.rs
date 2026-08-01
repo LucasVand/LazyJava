@@ -1,13 +1,17 @@
 use std::collections::HashMap;
 
-use crate::maven_central::{
-    MavenError, MavenId,
-    pom::{dependancy_list_structs::MavenDependancyList, pom::MavenPom},
+use crate::{
+    maven_central::{
+        MavenError, MavenId,
+        pom::{dependancy_list_structs::MavenDependancyList, pom::MavenPom},
+    },
+    utils::XmlDeserializeError,
 };
 
 impl MavenPom {
     pub fn deserialize(id: &MavenId, content: &str) -> Result<MavenPom, MavenError> {
-        let mut pom: MavenPom = quick_xml::de::from_str(content)?;
+        let mut pom: MavenPom = quick_xml::de::from_str(content)
+            .map_err(|e| XmlDeserializeError::new("parsing pom", id.to_string(), e))?;
         log::info!("Successfully parsed POM {}", id);
 
         pom.group_id = id.group.to_string();

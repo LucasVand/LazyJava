@@ -1,9 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use std::{
-        fs,
-        time::SystemTime,
-    };
+    use std::{fs, time::SystemTime};
 
     use tempfile::tempdir;
 
@@ -82,4 +79,3 @@ mod tests {
         assert_ne!(before, after);
     }
 }
-

@@ -1,15 +1,20 @@
 use inquire::Select;
 
-use crate::{Context, lazy_java_error::LazyJavaError, utils::find_main::find_main_classes};
+use crate::{
+    Context,
+    run::RunError,
+    utils::{IOError, find_main::find_main_classes},
+};
 
-pub fn interactive_find_main(ctx: &Context) -> Result<String, LazyJavaError> {
+pub fn interactive_find_main(ctx: &Context) -> Result<String, RunError> {
     log::debug!("Finding main classes interactively");
-    let options = find_main_classes(&ctx.src).map_err(LazyJavaError::CouldntFindMains)?;
+    let options = find_main_classes(&ctx.src)
+        .map_err(|e| IOError::new("finding main classes", &ctx.src, e))?;
     log::debug!("Found {} main classes", options.len());
 
     if options.is_empty() {
         log::error!("No main classes found");
-        return Err(LazyJavaError::NoMainClasses);
+        return Err(RunError::NoMainClasses);
     }
 
     if options.len() == 1 {
@@ -27,7 +32,7 @@ pub fn interactive_find_main(ctx: &Context) -> Result<String, LazyJavaError> {
         .without_help_message()
         .without_filtering()
         .prompt()
-        .map_err(|_e| LazyJavaError::PromptError)?;
+        .map_err(|_e| RunError::PromptError)?;
     log::debug!("User selected main class: {}", res);
 
     Ok(res)

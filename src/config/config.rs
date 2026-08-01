@@ -4,12 +4,12 @@ use colored::Colorize;
 use log::debug;
 
 use crate::{
-    CONFIG_FILE_NAME,
+    CONFIG_FILE_NAME, ContextNoConfig,
     args::{AddArgs, RemoveArgs},
     config::{ConfigDependancy, ConfigTomlEdit, config_error::ConfigError},
-    context::ContextNoConfig,
     lock_file::LockFile,
     maven_central::{MavenError, MavenIdBuf, PartialMavenIdBuf, fetch_artifact_metadata},
+    utils::IOError,
 };
 
 impl ConfigTomlEdit {
@@ -26,10 +26,11 @@ impl ConfigTomlEdit {
     fn fetch_from_fs(root: &Path) -> Result<ConfigTomlEdit, ConfigError> {
         let file = fs::read_to_string(root.join(CONFIG_FILE_NAME)).map_err(|e| match e.kind() {
             ErrorKind::NotFound => ConfigError::NoConfig(root.join(CONFIG_FILE_NAME)),
-            ErrorKind::PermissionDenied => {
-                ConfigError::PermissionDenied(root.to_string_lossy().into())
-            }
-            _ => ConfigError::NoConfig(root.join(CONFIG_FILE_NAME)),
+            _ => ConfigError::IoError(IOError::new(
+                "reading config file",
+                root.join(CONFIG_FILE_NAME),
+                e,
+            )),
         })?;
 
         let config: ConfigTomlEdit = ConfigTomlEdit::parse(&file)?;
@@ -158,15 +159,13 @@ impl ConfigTomlEdit {
 
     pub fn write(&self, root: &Path) -> Result<(), ConfigError> {
         let doc = self.to_toml_string();
-        let res = fs::write(root.join(CONFIG_FILE_NAME), doc);
-        if let Err(err) = res {
-            return match err.kind() {
-                ErrorKind::PermissionDenied => {
-                    Err(ConfigError::PermissionDenied(root.to_string_lossy().into()))
-                }
-                _ => Err(ConfigError::IoError(err)),
-            };
-        }
+        fs::write(root.join(CONFIG_FILE_NAME), doc).map_err(|err| {
+            ConfigError::IoError(IOError::new(
+                "writing config file",
+                root.join(CONFIG_FILE_NAME),
+                err,
+            ))
+        })?;
 
         Ok(())
     }
