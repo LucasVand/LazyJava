@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs};
+use std::collections::HashMap;
 
 use colored::Colorize;
 use quick_xml::se::Serializer;
@@ -12,6 +12,7 @@ use crate::{
         AnnotationProcessorPaths, Build, Configuration, DependancyType, Dependencies, Dependency,
         MavenPom, Plugin, Plugins, ProcessorPath, Properties, Scope,
     },
+    utils::{IOError, XmlSerializeError, fs},
 };
 
 pub fn generate_pom(ctx: &Context) -> Result<(), GenerateError> {
@@ -20,15 +21,16 @@ pub fn generate_pom(ctx: &Context) -> Result<(), GenerateError> {
 
     let mut serializer = Serializer::new(&mut buffer);
     serializer.indent(' ', 4);
+    let pom_path = ctx.root.join("pom.xml");
 
-    pom.serialize(serializer)?;
+    pom.serialize(serializer)
+        .map_err(|source| XmlSerializeError::new("serializing pom.xml", &pom_path, source))?;
 
-    if !ctx.dry_run {
-        fs::write(ctx.root.join("pom.xml"), buffer)?;
-    }
+    fs::write(&pom_path, buffer)
+        .map_err(|source| IOError::new("writing pom.xml", pom_path, source))?;
     println!("{} pom.xml", "Generated".green().bold());
 
-    return Ok(());
+    Ok(())
 }
 
 fn create_pom(ctx: &Context) -> Result<MavenPom, GenerateError> {
@@ -124,7 +126,7 @@ fn assert<T>(value: Option<T>, value_name: &'static str) -> Result<T, GenerateEr
     match value {
         Some(v) => Ok(v),
         None => Err(GenerateError::MissingValue {
-            value_name: value_name,
+            value_name,
             generated_value: "pom.xml",
         }),
     }

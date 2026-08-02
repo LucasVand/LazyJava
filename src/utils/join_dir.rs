@@ -11,8 +11,7 @@ pub fn join_directory(path: &Path, seperator: char) -> String {
     for entry in WalkDir::new(path).into_iter() {
         if let Ok(f) = entry
             && f.file_type().is_file()
-        {
-            if let Ok(ab) = path::absolute(f.path()) {
+            && let Ok(ab) = path::absolute(f.path()) {
                 if let Some(valid_str) = ab.to_str() {
                     if !first {
                         des.push(seperator);
@@ -23,8 +22,7 @@ pub fn join_directory(path: &Path, seperator: char) -> String {
                     warn!("Directory is not valid UTF-8 skipping, {}", ab.display())
                 }
             }
-        }
     }
     debug!("Des Result: {:#?}", des);
-    return des;
+    des
 }

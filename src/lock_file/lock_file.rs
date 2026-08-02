@@ -1,6 +1,5 @@
 use std::{
     collections::{HashMap, HashSet},
-    fs,
     io::ErrorKind,
     mem,
     path::Path,
@@ -11,14 +10,14 @@ use maven_version::Maven3ArtifactVersion;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    LOCK_FILE_NAME,
+    ContextNoConfig, LOCK_FILE_NAME,
     config::ConfigDependancy,
-    context::ContextNoConfig,
     lock_file::LockFileError,
     maven_central::{
         MavenId, MavenIdBuf, PartialMavenIdBuf,
         pom::{DependancyType, MavenDependancyList, Scope},
     },
+    utils::{fs, IOError, TomlDeserializeError, TomlSerializeError},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -54,29 +53,28 @@ impl LockFile {
         }
     }
     pub fn fetch(root: &Path) -> Result<LockFile, LockFileError> {
-        let fs_file = Self::fetch_from_fs(root);
-
-        if let Ok(lockfile) = fs_file {
-            Ok(lockfile)
-        } else {
-            match fs_file.err().unwrap() {
-                LockFileError::NoFound => Ok(LockFile::new()),
-                err => Err(err),
-            }
-        }
+        let fs_file = Self::fetch_from_fs(root)?;
+        let lock = match fs_file {
+            None => LockFile::new(),
+            Some(l) => l,
+        };
+        Ok(lock)
     }
-    fn fetch_from_fs(root: &Path) -> Result<LockFile, LockFileError> {
-        let file = fs::read_to_string(root.join(LOCK_FILE_NAME)).map_err(|e| match e.kind() {
-            ErrorKind::NotFound => LockFileError::NoFound,
-            ErrorKind::PermissionDenied => {
-                LockFileError::PermissionDenied(root.to_string_lossy().into())
+    fn fetch_from_fs(root: &Path) -> Result<Option<LockFile>, LockFileError> {
+        let p = root.join(LOCK_FILE_NAME);
+        let file = fs::read_to_string(&p);
+        if let Err(e) = file {
+            if e.kind() == ErrorKind::NotFound {
+                return Ok(None);
             }
-            _ => LockFileError::NoFound,
-        })?;
+            return Err(IOError::new("reading lazy-java.lock", &p, e))?;
+        }
+        let file = file.unwrap();
 
-        let lockfile: LockFile = toml::from_str(&file)?;
+        let lockfile: LockFile = toml::from_str(&file)
+            .map_err(|s| TomlDeserializeError::new("reading lazy-java.lock", &p, s))?;
 
-        Ok(lockfile)
+        Ok(Some(lockfile))
     }
     pub fn write(&mut self, root: &Path) -> Result<(), LockFileError> {
         self.packages.sort();
@@ -85,17 +83,11 @@ impl LockFile {
             pkg.annotations.sort();
         }
 
-        let str = toml::to_string_pretty(self)?;
+        let p = root.join(LOCK_FILE_NAME);
+        let str = toml::to_string_pretty(self)
+            .map_err(|s| TomlSerializeError::new("writing lazy-java.lock", &p, s))?;
 
-        let res = fs::write(root.join(LOCK_FILE_NAME), str);
-        if let Err(err) = res {
-            return match err.kind() {
-                ErrorKind::PermissionDenied => Err(LockFileError::PermissionDenied(
-                    root.to_string_lossy().into(),
-                )),
-                _ => Err(LockFileError::IoError(err)),
-            };
-        }
+        fs::write(&p, str).map_err(|s| IOError::new("writing lazy-java.lock", p, s))?;
 
         Ok(())
     }
@@ -139,7 +131,6 @@ impl LockFile {
     fn validate_dir(
         path: &Path,
         map: &mut HashMap<String, &mut LockFilePackage>,
-        dry_run: bool,
     ) -> Result<isize, LockFileError> {
         println!(
             "    {} {}",
@@ -149,8 +140,7 @@ impl LockFile {
         let mut removed = 0;
         for file in walkdir::WalkDir::new(path)
             .into_iter()
-            .filter(|p| p.is_ok())
-            .map(|p| p.unwrap())
+            .flatten()
             .filter(|p| !p.file_type().is_dir())
         {
             if let Some(name) = file.path().file_name() {
@@ -166,17 +156,16 @@ impl LockFile {
                             .file_name()
                             .map(|s| s.to_string_lossy())
                             .unwrap_or_default();
+                        fs::remove_file(path)
+                            .map_err(|s| IOError::new("removing stale package", path, s))?;
                         println!("        {} {}", "Removed".green().bold(), stem);
-                        if !dry_run {
-                            fs::remove_file(path)?;
-                        }
                         removed += 1;
                     }
                 }
             }
         }
 
-        return Ok(removed);
+        Ok(removed)
     }
     pub fn validate_current_packages(
         &mut self,
@@ -191,11 +180,11 @@ impl LockFile {
             .map(|p| (p.file_name.as_str().to_string(), p))
             .collect();
 
-        removed += Self::validate_dir(&ctx.lib, &mut map, ctx.dry_run)?;
-        removed += Self::validate_dir(&ctx.lib_annotations, &mut map, ctx.dry_run)?;
+        removed += Self::validate_dir(&ctx.lib, &mut map)?;
+        removed += Self::validate_dir(&ctx.lib_annotations, &mut map)?;
 
         let download_change =
-            Self::fetch_packages(ctx, map.into_iter().map(|(_k, v)| v).collect())?;
+            Self::fetch_packages(ctx, map.into_values().collect())?;
         added += download_change;
 
         let plural = |change: isize| {
@@ -219,7 +208,7 @@ impl LockFile {
         Ok(added - removed)
     }
     pub fn contains_package(&self, id: &MavenId) -> bool {
-        return self.packages.iter().any(|p| p.id == *id);
+        self.packages.iter().any(|p| p.id == *id)
     }
     pub fn sync_with_root_packages(
         &mut self,
@@ -239,7 +228,7 @@ impl LockFile {
             }
         }
 
-        for (key, _root_package) in root_packages {
+        for key in root_packages.keys() {
             map.remove(key);
         }
 

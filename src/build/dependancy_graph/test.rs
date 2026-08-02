@@ -21,7 +21,7 @@ mod tests {
         current.push("test_filesystem");
         current.push("dep_graph_test");
 
-        let graph = DependancyGraph::create(&current)?;
+        let graph = DependancyGraph::create(&current, &[])?;
         dbg!(&graph);
 
         let mut dep_list = graph.dependancy_list("dir1.Dep1");
@@ -51,7 +51,7 @@ mod tests {
         current.push("test_filesystem");
         current.push("dep_graph_test");
 
-        let graph = DependancyGraph::create(&current)?;
+        let graph = DependancyGraph::create(&current, &[])?;
 
         let mut dep_list = graph.dependancy_list("dir2.Dep2");
         dep_list.sort();
@@ -92,7 +92,7 @@ mod tests {
         let mut current = env::current_dir()?;
         current.push("test_filesystem/inc_build_test");
 
-        let graph = DependancyGraph::create(&current)?;
+        let graph = DependancyGraph::create(&current, &[])?;
 
         for (_key, entry) in graph.nodes.iter() {
             println!(" {}", entry.file_name,);
@@ -102,7 +102,7 @@ mod tests {
             println!("");
         }
 
-        let stale = find_modified_files(&build_data, &current)?;
+        let stale = find_modified_files(&build_data, &current, &[])?;
 
         let mut test1 = current.clone();
         test1.push("dir1/Dep2.java");

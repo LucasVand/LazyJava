@@ -1,6 +1,9 @@
+use reqwest::StatusCode;
+
 use crate::{
     create_maven_url,
-    maven_central::{MavenError, MavenId, metadata::MavenMetadata},
+    maven_central::{MavenError, MavenId, PartialMavenIdBuf, metadata::MavenMetadata},
+    utils::XmlDeserializeError,
 };
 
 pub fn fetch_artifact_metadata(group: &str, artifact: &str) -> Result<MavenMetadata, MavenError> {
@@ -9,10 +12,16 @@ pub fn fetch_artifact_metadata(group: &str, artifact: &str) -> Result<MavenMetad
     let full_url = format!("{}{}", url, "maven-metadata.xml");
     log::debug!("Metadata URL: {}", full_url);
 
-    let request = reqwest::blocking::get(full_url)?;
+    let request = reqwest::blocking::get(&full_url)?;
 
     match request.error_for_status() {
         Err(err) => {
+            if let Some(status) = err.status()
+                && status == StatusCode::from_u16(404).unwrap() {
+                    return Err(MavenError::NotFound(PartialMavenIdBuf::new(
+                        group, artifact,
+                    )));
+                }
             log::warn!("Failed to fetch metadata: {}", err);
             Err(MavenError::ErrorResponse(err))
         }
@@ -20,7 +29,9 @@ pub fn fetch_artifact_metadata(group: &str, artifact: &str) -> Result<MavenMetad
             let meta_str = req.text()?;
             log::debug!("Parsing metadata XML");
 
-            let metadata = quick_xml::de::from_str(&meta_str)?;
+            let metadata = quick_xml::de::from_str(&meta_str)
+                .map_err(|e| XmlDeserializeError::new("parsing maven metadata", &full_url, e))?;
+
             log::info!(
                 "Successfully parsed metadata, found releases: {:?}",
                 if let Ok(m) = quick_xml::de::from_str::<MavenMetadata>(&meta_str) {

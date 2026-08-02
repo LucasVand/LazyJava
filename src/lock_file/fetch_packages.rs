@@ -1,5 +1,4 @@
 use std::{
-    fs,
     io::{Cursor, Read},
 };
 
@@ -10,8 +9,9 @@ use tokio::task::JoinSet;
 use zip::{ZipArchive, result::ZipError};
 
 use crate::{
-    context::ContextNoConfig,
+    ContextNoConfig,
     lock_file::{LockFile, LockFileError, LockFilePackage},
+    utils::{IOError, fs},
 };
 
 impl LockFile {
@@ -45,7 +45,7 @@ impl LockFile {
                     match bin {
                         Ok(bin) => {
                             println!("        {} {}", "Downloading".green().bold(), id);
-                            return Ok((file_name, bin));
+                            Ok((file_name, bin))
                         }
                         Err(err) => match err {
                             FetchError::StatusCode(code) => {
@@ -55,7 +55,7 @@ impl LockFile {
                                     id,
                                     code,
                                 );
-                                Err(LockFileError::NoFound)
+                                Err(LockFileError::DownloadFailed(code))
                             }
                             FetchError::ReqwestError(err) => Err(LockFileError::RequestError(err)),
                         },
@@ -90,17 +90,16 @@ impl LockFile {
                     list[index].annotations = annotations;
                 }
                 changes += 1;
-                if !ctx.dry_run {
-                    let path = if has_annotations {
-                        &ctx.lib_annotations
-                    } else {
-                        &ctx.lib
-                    };
-                    fs::write(path.join(package_file_name), bin)?;
-                }
+                let path = if has_annotations {
+                    &ctx.lib_annotations
+                } else {
+                    &ctx.lib
+                };
+                let p = path.join(&package_file_name);
+                fs::write(&p, bin).map_err(|s| IOError::new("writing package jar", p, s))?;
             }
 
-            return Ok(changes);
+            Ok(changes)
         })
     }
 }

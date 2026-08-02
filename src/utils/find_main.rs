@@ -1,13 +1,14 @@
 use std::{
     ffi::OsStr,
-    fs, io,
+    io,
     path::{Path, PathBuf},
 };
 
+use globset::{Glob, GlobSet, GlobSetBuilder};
 use regex::Captures;
-use walkdir::WalkDir;
+use walkdir::{DirEntry, WalkDir};
 
-use crate::{CLASS_REGEX, MAIN_REGEX, PACKAGE_REGEX};
+use crate::{CLASS_REGEX, MAIN_REGEX, PACKAGE_REGEX, utils::fs};
 
 #[derive(Debug)]
 pub struct MainClass {
@@ -16,10 +17,11 @@ pub struct MainClass {
     pub full_package_name: String,
 }
 
-pub fn find_main_classes(src: &PathBuf) -> Result<Vec<MainClass>, io::Error> {
+pub fn find_main_classes(src: &Path, excluded: &[String]) -> Result<Vec<MainClass>, io::Error> {
     log::debug!("Scanning for main classes in {:?}", src);
     let mut main_classes: Vec<MainClass> = Vec::new();
-    let java_files = find_java_files(src);
+
+    let java_files = find_java_files(src, excluded);
     log::debug!("Found {} Java files to scan", java_files.len());
 
     for file in java_files {
@@ -87,19 +89,40 @@ fn find_main_class(
     Ok(main_vec)
 }
 
-pub fn find_java_files(root: &Path) -> Vec<PathBuf> {
+pub fn find_java_files(root: &Path, excluded: &[String]) -> Vec<PathBuf> {
     log::debug!("Recursively searching for Java files in {:?}", root);
     let mut java_files: Vec<PathBuf> = Vec::new();
 
+    let set = build_globset(excluded);
+
     for entry in WalkDir::new(root) {
-        if let Ok(file) = entry {
-            if file.file_type().is_file() && file.path().extension() == Some(OsStr::new("java")) {
+        if let Ok(file) = entry
+            && file.file_type().is_file()
+                && file.path().extension() == Some(OsStr::new("java"))
+                && !is_excluded(&file, &set)
+            {
                 java_files.push(file.into_path());
             }
-        }
     }
 
     java_files
+}
+
+fn is_excluded(file: &DirEntry, glob: &GlobSet) -> bool {
+    glob.is_match(file.path()) || glob.is_match(file.file_name())
+}
+
+fn build_globset(excluded: &[String]) -> GlobSet {
+    let mut builder = GlobSetBuilder::new();
+    for rule in excluded {
+        if let Ok(glob_rule) = Glob::new(rule) {
+            builder.add(glob_rule);
+        } else {
+            log::warn!("Invalid glob rule, \"{}\" is not a valid rule", rule);
+        }
+    }
+
+    builder.build().unwrap()
 }
 
 #[cfg(test)]
@@ -114,7 +137,7 @@ mod tests {
         current.push("test_filesystem");
         current.push("find_main_classes_test");
 
-        let classes = find_main_classes(&current)?;
+        let classes = find_main_classes(&current, &vec![])?;
 
         let expect1 = MainClass {
             path: PathBuf::from("./test_filesystem/find_main_classes_test/Test1.java"),

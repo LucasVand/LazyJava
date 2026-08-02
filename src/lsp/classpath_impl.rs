@@ -1,7 +1,6 @@
 use std::{
     collections::HashSet,
     ffi::OsStr,
-    fs::{self},
     io::{self, Write},
     path::{self, Path, PathBuf},
 };
@@ -17,6 +16,7 @@ use crate::{
         classpath::{Attribute, Attributes, Classpath, ClasspathEntry},
         classpath_error::ClasspathError,
     },
+    utils::fs,
 };
 
 const JAVA_CONTAINER: &str = "org.eclipse.jdt.launching.JRE_CONTAINER";
@@ -105,7 +105,7 @@ impl Classpath {
             output: None,
             attributes: None,
         });
-        return entries;
+        entries
     }
 
     fn create(ctx: &Context) -> Result<Classpath, ClasspathError> {
@@ -144,15 +144,13 @@ impl Classpath {
     }
     fn find_jars(root: &Path) -> Result<Vec<PathBuf>, ClasspathError> {
         let mut java_files: Vec<PathBuf> = Vec::new();
-        for file in walkdir::WalkDir::new(root) {
-            if let Ok(file) = file {
-                let path = file.path();
-                if path.extension() == Some(OsStr::new("jar")) {
-                    java_files.push(path.to_path_buf());
-                }
+        for file in walkdir::WalkDir::new(root).into_iter().flatten() {
+            let path = file.path();
+            if path.extension() == Some(OsStr::new("jar")) {
+                java_files.push(path.to_path_buf());
             }
         }
-        return Ok(java_files);
+        Ok(java_files)
     }
     fn validate(ctx: &Context) -> Result<bool, ClasspathError> {
         log::debug!("Validating classpath file");
@@ -202,7 +200,7 @@ impl Classpath {
                 return Ok(false);
             }
         }
-        return Ok(true);
+        Ok(true)
     }
     pub fn generate_if_stale(ctx: &Context) -> Result<(), ClasspathError> {
         log::debug!("Checking if classpath needs regeneration");

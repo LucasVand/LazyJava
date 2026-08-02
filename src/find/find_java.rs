@@ -7,7 +7,15 @@ impl LazyJava {
     pub fn find(_args: &FindArgs, ctx: &Context) -> Result<(), LazyJavaError> {
         log::info!("Starting find operation");
 
-        let mains = find_main_classes(&ctx.src).map_err(LazyJavaError::CouldntFindMains)?;
+        let exclude = if let Some(s) = ctx.config.setup()
+            && let Some(list) = s.exclude()
+        {
+            list
+        } else {
+            Vec::new()
+        };
+        let mains =
+            find_main_classes(&ctx.src, &exclude).map_err(LazyJavaError::CouldntFindMains)?;
         log::debug!("Found {} main classes", mains.len());
 
         for main in mains {

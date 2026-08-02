@@ -9,7 +9,9 @@ use syn::{
 #[proc_macro_derive(TomlEdit, attributes(toml_edit, serde))]
 pub fn derive_toml_edit(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    expand(input).unwrap_or_else(|e| e.to_compile_error()).into()
+    expand(input)
+        .unwrap_or_else(|e| e.to_compile_error())
+        .into()
 }
 
 fn expand(input: DeriveInput) -> syn::Result<TokenStream2> {
@@ -116,18 +118,17 @@ fn expand_struct(input: DeriveInput) -> syn::Result<TokenStream2> {
                     &fname_mut,
                     ty,
                 ));
-                proxy_writes.push(flatten_mut(
-                    &quote!(Some(&mut *self.table)),
-                    &fname_mut,
-                    ty,
-                ));
+                proxy_writes.push(flatten_mut(&quote!(Some(&mut *self.table)), &fname_mut, ty));
                 into_item_stmts.push(flatten_into(&quote!(self.#fname), ty));
             }
             continue;
         }
 
-        let fkey =
-            resolve_key(&fname.to_string(), &field_attrs, struct_attrs.rename_all.as_deref());
+        let fkey = resolve_key(
+            &fname.to_string(),
+            &field_attrs,
+            struct_attrs.rename_all.as_deref(),
+        );
 
         if !field_attrs.skip_deserializing {
             edit_methods.push(field_read(&doc, &fkey, fname, ty));
@@ -239,8 +240,7 @@ fn expand_unit_enum(
         if vattrs.skip {
             continue;
         }
-        let key =
-            resolve_variant_key(&vname.to_string(), &vattrs, attrs.rename_all.as_deref());
+        let key = resolve_variant_key(&vname.to_string(), &vattrs, attrs.rename_all.as_deref());
         from_arms.push(quote! { #key => Some(#enum_name::#vname), });
         to_arms.push(quote! { #enum_name::#vname => #key, });
     }
@@ -294,8 +294,7 @@ fn expand_struct_enum(
         if vattrs.skip {
             continue;
         }
-        let vkey =
-            resolve_variant_key(&vname.to_string(), &vattrs, attrs.rename_all.as_deref());
+        let vkey = resolve_variant_key(&vname.to_string(), &vattrs, attrs.rename_all.as_deref());
         if !tag_keys.insert(vkey.clone()) {
             return Err(syn::Error::new_spanned(
                 vname,
@@ -326,8 +325,7 @@ fn expand_struct_enum(
                 if fattrs.skip {
                     continue;
                 }
-                let fkey =
-                    resolve_key(&fname.to_string(), &fattrs, attrs.rename_all.as_deref());
+                let fkey = resolve_key(&fname.to_string(), &fattrs, attrs.rename_all.as_deref());
                 if fkey == tag_key {
                     return Err(syn::Error::new_spanned(
                         fname,

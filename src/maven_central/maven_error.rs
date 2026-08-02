@@ -1,25 +1,49 @@
-use std::io;
-
-use quick_xml::DeError;
 use thiserror::Error;
+
+use crate::{
+    maven_central::PartialMavenIdBuf,
+    utils::{Diagnostic, DiagnosticProvider, IOError, XmlDeserializeError},
+};
 
 #[derive(Error, Debug)]
 pub enum MavenError {
     #[error("Unable to fetch from maven, {0}")]
     UnableToFetch(#[from] reqwest::Error),
 
-    #[error("Unable to deserialze metadata error: {0}")]
-    UnableToDeserialize(#[from] DeError),
+    #[error(transparent)]
+    UnableToDeserialize(#[from] XmlDeserializeError),
 
     #[error("Server responded with error: {0}")]
     ErrorResponse(reqwest::Error),
 
-    #[error("Unable to write .jar to lib folder, error: {0}")]
-    UnableToWrite(io::Error),
-
-    #[error("Circular dependancies found")]
-    CircularDependancy,
+    #[error(transparent)]
+    UnableToWrite(#[from] IOError),
 
     #[error("Async task failed: {0}")]
     JoinError(#[from] tokio::task::JoinError),
+
+    #[error("Not found")]
+    NotFound(PartialMavenIdBuf),
+}
+
+impl DiagnosticProvider for MavenError {
+    fn diagnostic(&self) -> Diagnostic {
+        match self {
+            MavenError::NotFound(id) => Diagnostic::new("Resource not found on maven")
+                .message(format!("The resource {} was not found", id))
+                .help("Ensure that the artifact and group are correct"),
+            MavenError::UnableToFetch(err) => Diagnostic::new("Unable to fetch from Maven")
+                .message("An error occurred while fetching from Maven.")
+                .help("Check your network connection and try again.")
+                .note(err.to_string()),
+            MavenError::UnableToDeserialize(err) => err.diagnostic(),
+            MavenError::ErrorResponse(err) => Diagnostic::new("Maven server error")
+                .message("The Maven server responded with an error.")
+                .note(err.to_string()),
+            MavenError::UnableToWrite(err) => err.diagnostic(),
+            MavenError::JoinError(err) => Diagnostic::new("Async task failed")
+                .message("An async task failed while fetching dependencies.")
+                .note(err.to_string()),
+        }
+    }
 }

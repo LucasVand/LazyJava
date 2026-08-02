@@ -9,7 +9,8 @@ fn fixture_path() -> std::path::PathBuf {
 }
 
 #[test]
-fn generate_pom_includes_deps_and_annotation_processors() -> Result<(), Box<dyn std::error::Error>> {
+fn generate_pom_includes_deps_and_annotation_processors() -> Result<(), Box<dyn std::error::Error>>
+{
     let tmp = tempfile::tempdir()?;
     let dest = tmp.path().join("project");
 

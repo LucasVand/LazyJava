@@ -16,6 +16,7 @@ use crate::lazy_java::LazyJava;
 
 use crate::build::BuildError;
 use crate::lsp::classpath::Classpath;
+use crate::utils::{GlobalContext, IOError};
 use crate::utils::find_main::find_java_files;
 
 impl LazyJava {
@@ -31,63 +32,51 @@ impl LazyJava {
             }
         } else {
             Self::build_java(&args.args, ctx)?;
-            return Ok(());
+            Ok(())
         }
     }
     pub fn build_jar(args: &JarArgs, ctx: &Context) -> Result<(), BuildError> {
         Self::build_java(&args.build_args, ctx)?;
         build_jar(args, ctx)?;
-        return Ok(());
+        Ok(())
     }
 
-    pub fn build_java(args: &BuildArgs, ctx: &Context) -> Result<ExitStatus, BuildError> {
-        if ctx.dry_run {
+    pub fn build_java(args: &BuildArgs, ctx: &Context) -> Result<(), BuildError> {
+        if GlobalContext::is_dry_run() {
             println!("{} java sources", "Compiling".bold().green());
-            return Ok(ExitStatus::default());
+            return Ok(());
         }
 
         let build_data = BuildMetadata::fetch(&ctx.target);
         if build_data.is_none() {
             debug!("Could not find build data, full rebuild");
-            if !build_processors(args, ctx)? {
-                return Err(BuildError::CompilationErrors);
-            }
+            build_processors(args, ctx)?;
 
             let status = Self::rebuild(args, ctx)?;
+            if !status.success() {
+                return Err(BuildError::MainCompilationErrors);
+            }
             copy_resources(ctx)?;
             save_metadata(ctx, status, None)?;
 
-            return Ok(status);
+            return Ok(());
         }
         let build_data = build_data.unwrap();
         debug!("Found build data ");
 
-        // before the processors that modify the build dir
-        let current_bin_hash = hash_directory(&ctx.bin);
-
         let current_lib_hash = hash_directory(&ctx.lib);
-        log::debug!(
-            "bin_hash: stored={}, current={}, match={}",
-            build_data.bin_hash,
-            current_bin_hash,
-            current_bin_hash == build_data.bin_hash
-        );
+
         log::debug!(
             "lib_hash: stored={}, current={}, match={}",
             build_data.lib_hash,
             current_lib_hash,
             current_lib_hash == build_data.lib_hash
         );
-        let bin_hash_match = current_bin_hash == build_data.bin_hash;
         let lib_hash_match = current_lib_hash == build_data.lib_hash;
         debug!("Lib Hash Match: {}", lib_hash_match);
-        debug!("Bin Hash Match: {}", bin_hash_match);
 
-        if !build_processors(args, ctx)? {
-            return Err(BuildError::CompilationErrors);
-        }
+        build_processors(args, ctx)?;
 
-        // Cannot hash bin because lsp will overwrite it and change the hash
         let status = if args.build_all || !lib_hash_match {
             Self::rebuild(args, ctx)
         } else {
@@ -96,7 +85,10 @@ impl LazyJava {
         copy_resources(ctx)?;
         save_metadata(ctx, status, Some(build_data))?;
 
-        Ok(status)
+        if !status.success() {
+            return Err(BuildError::MainCompilationErrors);
+        }
+        Ok(())
     }
     fn incrimental_build(
         args: &BuildArgs,
@@ -104,13 +96,19 @@ impl LazyJava {
         build_data: &BuildMetadata,
     ) -> Result<ExitStatus, BuildError> {
         log::info!("Starting incremental build");
-        Classpath::generate_if_stale(ctx)?;
+        let exclude = if let Some(s) = ctx.config.setup()
+            && let Some(list) = s.exclude()
+        {
+            list
+        } else {
+            Vec::new()
+        };
 
-        let graph = DependancyGraph::create(&ctx.src)?;
+        let graph = DependancyGraph::create(&ctx.src, &exclude)?;
         log::debug!("Created dependency graph");
 
-        let modified_files =
-            find_modified_files(build_data, &ctx.src).map_err(BuildError::NoStaleFilesError)?;
+        let modified_files = find_modified_files(build_data, &ctx.src, &exclude)
+            .map_err(|e| IOError::new("finding modified files", &ctx.src, e))?;
         println!(
             "{} using incrimental build ({} stale file{})",
             "Compiling".bold().green(),
@@ -135,28 +133,43 @@ impl LazyJava {
         log::debug!("Need to recompile {} files", recompile.len());
 
         let status = compile_java(recompile, &ctx.bin, ctx, &args.javac_args, true)
-            .map_err(BuildError::UnableToCompile)?;
+            .map_err(|e| IOError::new("compiling java files", &ctx.bin, e))?;
 
         log::debug!("Java compilation completed status {}", status);
-        return Ok(status);
+
+        Ok(status)
     }
 
     fn rebuild(args: &BuildArgs, ctx: &Context) -> Result<ExitStatus, BuildError> {
         println!("{} using full rebuild", "Compiling".bold().green());
         log::info!("Starting full rebuild");
         Classpath::generate(ctx)?;
+        let exclude = if let Some(s) = ctx.config.setup()
+            && let Some(list) = s.exclude()
+        {
+            list
+        } else {
+            Vec::new()
+        };
 
-        let files = find_java_files(&ctx.src);
+        let files = find_java_files(&ctx.src, &exclude);
 
         let status = compile_java(files, &ctx.bin, ctx, &args.javac_args, true)
-            .map_err(BuildError::UnableToCompile)?;
+            .map_err(|e| IOError::new("compiling java files", &ctx.bin, e))?;
         log::debug!("Java compilation completed status {}", status);
 
         Ok(status)
     }
     fn show_dependancy_graph(ctx: &Context) -> Result<(), BuildError> {
         log::info!("Displaying dependency graph");
-        let graph = DependancyGraph::create(&ctx.src)?;
+        let exclude = if let Some(s) = ctx.config.setup()
+            && let Some(list) = s.exclude()
+        {
+            list
+        } else {
+            Vec::new()
+        };
+        let graph = DependancyGraph::create(&ctx.src, &exclude)?;
 
         for (_key, entry) in graph.nodes.iter() {
             println!(" {}", entry.file_name,);
@@ -168,11 +181,18 @@ impl LazyJava {
         Ok(())
     }
     fn show_modified_files(ctx: &Context) -> Result<(), BuildError> {
-        let build_data = BuildMetadata::fetch(&ctx.target).unwrap_or(BuildMetadata::new());
+        let build_data = BuildMetadata::fetch(&ctx.target).unwrap_or_default();
 
+        let exclude = if let Some(s) = ctx.config.setup()
+            && let Some(list) = s.exclude()
+        {
+            list
+        } else {
+            Vec::new()
+        };
         log::info!("Displaying modified files");
-        let stale_files =
-            find_modified_files(&build_data, &ctx.src).map_err(BuildError::NoStaleFilesError)?;
+        let stale_files = find_modified_files(&build_data, &ctx.src, &exclude)
+            .map_err(|e| IOError::new("finding modified files", &ctx.src, e))?;
 
         for file in stale_files {
             println!("{}", file.to_string_lossy());
@@ -181,13 +201,21 @@ impl LazyJava {
         Ok(())
     }
     fn show_rebuild_files(ctx: &Context) -> Result<(), BuildError> {
-        let build_data = BuildMetadata::fetch(&ctx.target).unwrap_or(BuildMetadata::new());
+        let build_data = BuildMetadata::fetch(&ctx.target).unwrap_or_default();
 
         log::info!("Displaying files to rebuild");
-        let graph = DependancyGraph::create(&ctx.src)?;
 
-        let stale_files =
-            find_modified_files(&build_data, &ctx.src).map_err(BuildError::NoStaleFilesError)?;
+        let exclude = if let Some(s) = ctx.config.setup()
+            && let Some(list) = s.exclude()
+        {
+            list
+        } else {
+            Vec::new()
+        };
+        let graph = DependancyGraph::create(&ctx.src, &exclude)?;
+
+        let stale_files = find_modified_files(&build_data, &ctx.src, &exclude)
+            .map_err(|e| IOError::new("finding modified files", &ctx.src, e))?;
 
         let recompile = files_to_recompile(graph, stale_files)?;
 
@@ -199,7 +227,14 @@ impl LazyJava {
     }
     fn show_depentants_graph(ctx: &Context) -> Result<(), BuildError> {
         log::info!("Displaying dependants graph");
-        let graph = DependancyGraph::create(&ctx.src)?;
+        let exclude = if let Some(s) = ctx.config.setup()
+            && let Some(list) = s.exclude()
+        {
+            list
+        } else {
+            Vec::new()
+        };
+        let graph = DependancyGraph::create(&ctx.src, &exclude)?;
         for (_key, entry) in graph.nodes.iter() {
             println!(" {}", entry.file_name,);
             for dep in &entry.dependants {

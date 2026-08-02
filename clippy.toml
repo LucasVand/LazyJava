@@ -1,0 +1,22 @@
+# Disallow all of `std::fs` (every public function it exposes). Use the
+# dry-run-aware wrapper `crate::utils::fs` instead so `--dry-run` actually
+# prevents persistent changes.
+disallowed-methods = [
+  { path = "std::fs::write", reason = "use crate::utils::fs instead (dry-run aware)" },
+  { path = "std::fs::create_dir", reason = "use crate::utils::fs instead (dry-run aware)" },
+  { path = "std::fs::create_dir_all", reason = "use crate::utils::fs instead (dry-run aware)" },
+  { path = "std::fs::remove_file", reason = "use crate::utils::fs instead (dry-run aware)" },
+  { path = "std::fs::remove_dir", reason = "use crate::utils::fs instead (dry-run aware)" },
+  { path = "std::fs::remove_dir_all", reason = "use crate::utils::fs instead (dry-run aware)" },
+  { path = "std::fs::copy", reason = "use crate::utils::fs instead (dry-run aware)" },
+  { path = "std::fs::rename", reason = "use crate::utils::fs instead (dry-run aware)" },
+  { path = "std::fs::hard_link", reason = "use crate::utils::fs instead (dry-run aware)" },
+  { path = "std::fs::set_permissions", reason = "use crate::utils::fs instead (dry-run aware)" },
+  { path = "std::fs::read", reason = "use crate::utils::fs instead" },
+  { path = "std::fs::read_to_string", reason = "use crate::utils::fs instead" },
+  { path = "std::fs::read_dir", reason = "use crate::utils::fs instead" },
+  { path = "std::fs::metadata", reason = "use crate::utils::fs instead" },
+  { path = "std::fs::symlink_metadata", reason = "use crate::utils::fs instead" },
+  { path = "std::fs::canonicalize", reason = "use crate::utils::fs instead" },
+  { path = "std::fs::exists", reason = "use crate::utils::fs instead" },
+]

@@ -1,12 +1,14 @@
+use crate::utils::ContextError;
 use std::io;
 
 use thiserror::Error;
 use toml_edit_derive::TomlError;
 
+use crate::utils::{Diagnostic, DiagnosticProvider};
 use crate::{
-    build::BuildError, config::ConfigError, create::create_project::CreateProjectError,
-    generate::GenerateError, import::ImportError, lock_file::LockFileError,
-    lsp::classpath_error::ClasspathError, maven_central::MavenError,
+    build::BuildError, config::ConfigError, create::CreateError, generate::GenerateError,
+    import::ImportError, lock_file::LockFileError, lsp::classpath_error::ClasspathError,
+    maven_central::MavenError, run::RunError,
 };
 
 #[derive(Error, Debug)]
@@ -21,27 +23,13 @@ pub enum LazyJavaError {
     ImportError(#[from] ImportError),
 
     #[error("Could not create project")]
-    CreateError(#[from] CreateProjectError),
+    CreateError(#[from] CreateError),
 
     #[error("Build error occured")]
     BuildError(#[from] BuildError),
 
-    #[error(r#"Could not find source directory {0}, try changing the source location, or add the directory"#)]
-    NoSource(String),
-
-    #[error(r#"Could not find main class {0}, try changing the specified main class, or create a new one with name {0}"#)]
-    InvalidMainClass(String),
-
-    #[error(r#"No main classes to run, try creating some"#)]
-    NoMainClasses,
-
-    #[error("Could not read current directory, {0}")]
-    NoCurrentDir(io::Error),
-
-    #[error(
-        "Could not locate root, no root markers were found, try adding in a root marker or manually specify a root"
-    )]
-    NoRoot(io::Error),
+    #[error("Context error occured")]
+    ContextError(#[from] ContextError),
 
     #[error("Unable to find main classes, {0}")]
     CouldntFindMains(io::Error),
@@ -49,11 +37,11 @@ pub enum LazyJavaError {
     #[error("Unable to remove build directory when cleaning, {0}")]
     NoRemoveBuild(io::Error),
 
-    #[error("Unable to prompt user to select main class")]
-    PromptError,
-
     #[error("IO error: {0}")]
     IoError(#[from] io::Error),
+
+    #[error("Run error occured")]
+    RunError(#[from] RunError),
 
     #[error("Classpath error occured")]
     ClasspathError(#[from] ClasspathError),
@@ -66,13 +54,37 @@ pub enum LazyJavaError {
 
     #[error("Error when operating on config file")]
     ConfigFileError(#[from] ConfigError),
+}
 
-    #[error("Error serializing")]
-    SeError(#[from] toml::ser::Error),
-
-    #[error("Jar not found at {0}, build the jar first with `lazy-java build jar`")]
-    JarNotFound(std::path::PathBuf),
-
-    #[error("Failed to execute jar: {0}")]
-    JarExecutionFailed(io::Error),
+impl DiagnosticProvider for LazyJavaError {
+    fn diagnostic(&self) -> Diagnostic {
+        match self {
+            LazyJavaError::TomlEditError(err) => {
+                Diagnostic::new("Toml edit error").note(err.to_string())
+            }
+            LazyJavaError::GenerateError(err) => err.diagnostic(),
+            LazyJavaError::ImportError(err) => err.diagnostic(),
+            LazyJavaError::CreateError(err) => err.diagnostic(),
+            LazyJavaError::BuildError(err) => err.diagnostic(),
+            LazyJavaError::ContextError(err) => err.diagnostic(),
+            LazyJavaError::CouldntFindMains(err) => Diagnostic::new("Unable to find main classes")
+                .message("Could not locate any main classes in the project.")
+                .help("Create a main class, then try running again.")
+                .note(err.to_string()),
+            LazyJavaError::NoRemoveBuild(err) => {
+                Diagnostic::new("Unable to remove build directory")
+                    .message("Could not remove the build directory while cleaning.")
+                    .help("Check that the build directory is not in use.")
+                    .note(err.to_string())
+            }
+            LazyJavaError::IoError(err) => Diagnostic::new("IO error").note(err.to_string()),
+            LazyJavaError::RunError(err) => err.diagnostic(),
+            LazyJavaError::ClasspathError(err) => {
+                Diagnostic::new("Classpath error").note(err.to_string())
+            }
+            LazyJavaError::MavenError(err) => err.diagnostic(),
+            LazyJavaError::LockFileError(err) => err.diagnostic(),
+            LazyJavaError::ConfigFileError(err) => err.diagnostic(),
+        }
+    }
 }

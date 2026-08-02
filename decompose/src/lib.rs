@@ -82,13 +82,22 @@ impl Parse for DecomposeArgs {
                 other => {
                     return Err(syn::Error::new(
                         kw.span(),
-                        format!("expected `derive`, `ref_derive`, or `refs`, got `{}`", other),
+                        format!(
+                            "expected `derive`, `ref_derive`, or `refs`, got `{}`",
+                            other
+                        ),
                     ));
                 }
             }
         }
 
-        Ok(DecomposeArgs { new_name, mode, derives, ref_derives, gen_refs })
+        Ok(DecomposeArgs {
+            new_name,
+            mode,
+            derives,
+            ref_derives,
+            gen_refs,
+        })
     }
 }
 
@@ -244,29 +253,47 @@ pub fn decompose(attr: TokenStream, item: TokenStream) -> TokenStream {
         quote! { impl<#inlined_generics> #original_name #orig_angled }
     };
 
-    let decompose_new_fields: Vec<_> = include_names.iter().map(|name| {
-        quote! { #name: self.#name }
-    }).collect();
-    let decompose_excluded_fields: Vec<_> = exclude_names.iter().map(|name| {
-        quote! { #name: self.#name }
-    }).collect();
-    let compose_inc_fields: Vec<_> = include_names.iter().map(|name| {
-        quote! { #name: inc.#name }
-    }).collect();
-    let compose_exc_fields: Vec<_> = exclude_names.iter().map(|name| {
-        quote! { #name: exc.#name }
-    }).collect();
+    let decompose_new_fields: Vec<_> = include_names
+        .iter()
+        .map(|name| {
+            quote! { #name: self.#name }
+        })
+        .collect();
+    let decompose_excluded_fields: Vec<_> = exclude_names
+        .iter()
+        .map(|name| {
+            quote! { #name: self.#name }
+        })
+        .collect();
+    let compose_inc_fields: Vec<_> = include_names
+        .iter()
+        .map(|name| {
+            quote! { #name: inc.#name }
+        })
+        .collect();
+    let compose_exc_fields: Vec<_> = exclude_names
+        .iter()
+        .map(|name| {
+            quote! { #name: exc.#name }
+        })
+        .collect();
 
     let ref_output = if args.gen_refs {
         let new_name_ref = Ident::new(&format!("{}Ref", new_name), new_name.span());
         let excluded_name_ref = Ident::new(&format!("{}ExcludedRef", new_name), new_name.span());
 
-        let include_ref_tys: Vec<_> = include_tys.iter().map(|ty| {
-            quote! { &'a #ty }
-        }).collect();
-        let exclude_ref_tys: Vec<_> = exclude_tys.iter().map(|ty| {
-            quote! { &'a #ty }
-        }).collect();
+        let include_ref_tys: Vec<_> = include_tys
+            .iter()
+            .map(|ty| {
+                quote! { &'a #ty }
+            })
+            .collect();
+        let exclude_ref_tys: Vec<_> = exclude_tys
+            .iter()
+            .map(|ty| {
+                quote! { &'a #ty }
+            })
+            .collect();
 
         let ref_include_angled = if include_generics_params.is_empty() {
             quote! { <'a> }
@@ -284,12 +311,18 @@ pub fn decompose(attr: TokenStream, item: TokenStream) -> TokenStream {
             quote! { <'a, #inlined_generics> }
         };
 
-        let decompose_ref_new_fields: Vec<_> = include_names.iter().map(|name| {
-            quote! { #name: &self.#name }
-        }).collect();
-        let decompose_ref_excluded_fields: Vec<_> = exclude_names.iter().map(|name| {
-            quote! { #name: &self.#name }
-        }).collect();
+        let decompose_ref_new_fields: Vec<_> = include_names
+            .iter()
+            .map(|name| {
+                quote! { #name: &self.#name }
+            })
+            .collect();
+        let decompose_ref_excluded_fields: Vec<_> = exclude_names
+            .iter()
+            .map(|name| {
+                quote! { #name: &self.#name }
+            })
+            .collect();
 
         quote! {
             #ref_derive_attr

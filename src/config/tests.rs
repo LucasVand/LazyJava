@@ -27,8 +27,8 @@ junit = { group_id = "junit", version = "4.13.2" }
         assert_eq!(loaded.project().unwrap().artifact().unwrap(), "my-app");
         assert_eq!(loaded.project().unwrap().version().unwrap(), "1.0.0");
         assert!(loaded.dependancies().is_some());
-        assert!(loaded.dependancies().unwrap().get("spring-core").is_some());
-        assert!(loaded.dependancies().unwrap().get("junit").is_some());
+        assert!(loaded.dependancies().unwrap().contains_key("spring-core"));
+        assert!(loaded.dependancies().unwrap().contains_key("junit"));
     }
 
     #[test]
@@ -128,11 +128,20 @@ junit = { group = "junit", version = "4.13.2" } # junit inline
 
         assert!(output.contains("# Top-level comment"), "top comment");
         assert!(output.contains("# name comment"), "inline name comment");
-        assert!(output.contains("# group comment"), "standalone group comment");
-        assert!(output.contains("# Dependencies section comment"), "section comment");
+        assert!(
+            output.contains("# group comment"),
+            "standalone group comment"
+        );
+        assert!(
+            output.contains("# Dependencies section comment"),
+            "section comment"
+        );
         assert!(output.contains("# spring-core comment"), "dep comment");
         assert!(output.contains("# junit inline"), "dep inline comment");
-        assert!(output.contains("# project comment"), "section inline comment");
+        assert!(
+            output.contains("# project comment"),
+            "section inline comment"
+        );
     }
 
     #[test]
@@ -172,9 +181,18 @@ existing = { group = "com.existing", version = "1.0.0" }
         value.version_mut().replace("2.0.0".to_string());
         let output = config.to_toml_string();
 
-        assert!(output.contains("# Existing deps"), "existing comment preserved");
-        assert!(output.contains("existing = { group = \"com.existing\", version = \"1.0.0\" }"), "existing dep preserved");
-        assert!(output.contains("new-dep = { group = \"com.new\", version = \"2.0.0\" }"), "new dep present");
+        assert!(
+            output.contains("# Existing deps"),
+            "existing comment preserved"
+        );
+        assert!(
+            output.contains("existing = { group = \"com.existing\", version = \"1.0.0\" }"),
+            "existing dep preserved"
+        );
+        assert!(
+            output.contains("new-dep = { group = \"com.new\", version = \"2.0.0\" }"),
+            "new dep present"
+        );
     }
 
     #[test]
@@ -198,7 +216,10 @@ older = { group = "r.org", version = "2.0.0" }
         let newest_pos = output.find("newest").unwrap();
 
         assert!(oldest_pos < older_pos, "oldest before older");
-        assert!(older_pos < newest_pos, "older before newest (inserted at end)");
+        assert!(
+            older_pos < newest_pos,
+            "older before newest (inserted at end)"
+        );
     }
 
     #[test]
@@ -221,8 +242,14 @@ ccc = { group = "c.org", version = "3.0.0" }
         let output = config.to_toml_string();
 
         assert!(output.contains("# Header"), "header comment preserved");
-        assert!(output.contains("# Deps header"), "section comment preserved");
-        assert!(output.contains("# a comment"), "inline comment on aaa preserved");
+        assert!(
+            output.contains("# Deps header"),
+            "section comment preserved"
+        );
+        assert!(
+            output.contains("# a comment"),
+            "inline comment on aaa preserved"
+        );
         assert!(!output.contains("bbb"), "bbb removed");
         let aaa_pos = output.find("aaa").unwrap();
         let ccc_pos = output.find("ccc").unwrap();

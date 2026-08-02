@@ -3,8 +3,12 @@ use std::process::{Command, Stdio};
 use colored::Colorize;
 
 use crate::{
-    Context, args::RunArgs, lazy_java::LazyJava, lazy_java_error::LazyJavaError,
-    run::interactive_run::interactive_find_main, utils::processes::execute_java,
+    Context,
+    args::RunArgs,
+    lazy_java::LazyJava,
+    lazy_java_error::LazyJavaError,
+    run::{RunError, interactive_run::interactive_find_main},
+    utils::{GlobalContext, IOError, processes::execute_java},
 };
 
 impl LazyJava {
@@ -15,31 +19,19 @@ impl LazyJava {
             return Self::run_jar(args, ctx);
         }
 
-        if ctx.dry_run {
-            let class = match &args.class {
-                Some(class) => class.clone(),
-                None => "<interactive selection>".into(),
-            };
-            println!("{} {}", "Running".bold().green(), class);
-            return Ok(());
-        }
-
         if !args.no_build {
             log::debug!("Building before run");
-            let status = Self::build_java(&args.build_args, ctx)?;
-            if !status.success() {
-                return Ok(());
-            }
+            Self::build_java(&args.build_args, ctx)?;
         }
 
         let class = match &args.class {
             Some(class) => class,
             None => &interactive_find_main(ctx)?,
         };
-        log::debug!("Running class: {}", class);
+        println!("{} {}", "Running".bold().green(), class);
 
         execute_java(class, &ctx.bin, &ctx.lib, &args.args)
-            .map_err(|_e| LazyJavaError::InvalidMainClass(class.to_string()))?;
+            .map_err(|_e| RunError::InvalidMainClass(class.to_string()))?;
 
         log::info!("Java execution completed successfully");
         Ok(())
@@ -49,16 +41,15 @@ impl LazyJava {
         let jar_path = ctx.target.join("build.jar");
 
         if !jar_path.exists() {
-            return Err(LazyJavaError::JarNotFound(jar_path));
-        }
-
-        if ctx.dry_run {
-            println!("{} {:?}", "Running".bold().green(), jar_path);
-            return Ok(());
+            return Err(RunError::JarNotFound(jar_path))?;
         }
 
         println!("{} {}", "Running".bold().green(), jar_path.display());
         log::info!("Running jar: {:?}", jar_path);
+
+        if GlobalContext::is_dry_run() {
+            return Ok(());
+        }
 
         let status = Command::new("java")
             .arg("-jar")
@@ -68,7 +59,7 @@ impl LazyJava {
             .stderr(Stdio::inherit())
             .stdin(Stdio::inherit())
             .status()
-            .map_err(LazyJavaError::JarExecutionFailed)?;
+            .map_err(|e| RunError::IoError(IOError::new("executing jar", &jar_path, e)))?;
 
         if !status.success() {
             log::warn!("jar exited with code: {:?}", status.code());

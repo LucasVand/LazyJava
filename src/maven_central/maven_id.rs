@@ -142,6 +142,11 @@ impl From<PartialMavenId<'_>> for PartialMavenIdBuf {
         value.to_buf()
     }
 }
+impl fmt::Display for PartialMavenIdBuf {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.group, self.artifact)
+    }
+}
 
 impl<'a> From<&'a PartialMavenId<'_>> for PartialMavenIdBuf {
     fn from(value: &'a PartialMavenId<'_>) -> Self {

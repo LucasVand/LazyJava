@@ -1,3 +1,6 @@
+#![deny(clippy::disallowed_methods)]
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
+
 use std::sync::LazyLock;
 
 use regex::{Regex, RegexBuilder};
@@ -6,7 +9,6 @@ pub mod args;
 pub mod build;
 pub mod clean;
 pub mod config;
-mod context;
 pub mod create;
 pub mod find;
 pub mod generate;
@@ -20,8 +22,8 @@ pub mod packages;
 pub mod run;
 pub mod utils;
 
-pub use context::Context;
 pub use lazy_java::LazyJava;
+pub use utils::{Context, ContextNoConfig, ContextNoConfigExcluded};
 
 pub const BUILD_FOLDER: &str = "bin";
 pub const SRC_FOLDER: &str = "src";

@@ -56,7 +56,7 @@ impl<'a> ConfigProcesserDefinitionTomlEditView<'a> {
 }
 fn assert<T>(value: Option<T>, name: &'static str) -> Result<T, ConfigError> {
     if let Some(v) = value {
-        return Ok(v);
+        Ok(v)
     } else {
         Err(ConfigError::MissingValue(name))
     }
@@ -88,6 +88,9 @@ pub struct ConfigSetup {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub main_class: Option<String>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub exclude: Vec<String>,
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd, Ord, Eq, TomlEdit, Serialize, Deserialize)]
@@ -102,8 +105,8 @@ impl<'a> ConfigDependancyTomlEditView<'a> {
         let group = assert(self.group(), "group_id")?;
         let version = assert(self.version(), "version")?;
         Ok(ConfigDependancy {
-            group: group,
-            version: version,
+            group,
+            version,
         })
     }
 }

@@ -8,15 +8,21 @@ fn existing_toml_without_overwrite_is_preserved() {
     let dir = tempfile::tempdir().unwrap();
     let root = dir.path();
 
-    fs::write(root.join("pom.xml"), r#"<project>
+    fs::write(
+        root.join("pom.xml"),
+        r#"<project>
         <groupId>com.example</groupId>
         <artifactId>test</artifactId>
         <version>1.0</version>
-    </project>"#)
+    </project>"#,
+    )
     .unwrap();
 
-    fs::write(root.join("lazy-java.toml"), r#"[project]
-name = "original""#)
+    fs::write(
+        root.join("lazy-java.toml"),
+        r#"[project]
+name = "original""#,
+    )
     .unwrap();
 
     import_pom(
@@ -25,7 +31,6 @@ name = "original""#)
             pom_path: "pom.xml".into(),
             overwrite: false,
         },
-        false,
     )
     .unwrap();
 
@@ -38,15 +43,21 @@ fn existing_toml_with_overwrite_flag_is_replaced() {
     let dir = tempfile::tempdir().unwrap();
     let root = dir.path();
 
-    fs::write(root.join("pom.xml"), r#"<project>
+    fs::write(
+        root.join("pom.xml"),
+        r#"<project>
         <groupId>com.example</groupId>
         <artifactId>test</artifactId>
         <version>1.0</version>
-    </project>"#)
+    </project>"#,
+    )
     .unwrap();
 
-    fs::write(root.join("lazy-java.toml"), r#"[project]
-name = "original""#)
+    fs::write(
+        root.join("lazy-java.toml"),
+        r#"[project]
+name = "original""#,
+    )
     .unwrap();
 
     import_pom(
@@ -55,7 +66,6 @@ name = "original""#)
             pom_path: "pom.xml".into(),
             overwrite: true,
         },
-        false,
     )
     .unwrap();
 

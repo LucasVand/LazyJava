@@ -65,12 +65,12 @@ pub fn compile_java(
             if con.is_err() {
                 warn!("Unable to absolute path")
             };
-            return con.ok();
+            con.ok()
         })
         .map(|c_path| c_path.to_string_lossy().to_string())
         .collect();
 
-    let ab_dest = path::absolute(&dest)?;
+    let ab_dest = path::absolute(dest)?;
     let ab_lib = path::absolute(&ctx.lib)?;
     let ab_bin = path::absolute(&ctx.bin)?;
     let ab_annotation_lib = path::absolute(&ctx.lib_annotations)?;

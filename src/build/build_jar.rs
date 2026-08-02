@@ -1,17 +1,18 @@
 use colored::Colorize;
 use std::{
-    fs, io,
+    io,
     path::{Path, absolute},
     process::{Command, Stdio},
 };
+use walkdir::WalkDir;
 
 use log::debug;
 
-use crate::{Context, args::JarArgs, build::BuildError};
+use crate::{Context, args::JarArgs, build::BuildError, utils::{IOError, fs, GlobalContext}};
 
 pub fn build_jar(args: &JarArgs, ctx: &Context) -> Result<(), BuildError> {
     // ISSUE: cheap dry run this is not good and should be improved
-    if ctx.dry_run {
+    if GlobalContext::is_dry_run() {
         let entry = entry_point(args, ctx).unwrap_or_default();
         println!(
             "{} jar with entry point: {}",
@@ -49,18 +50,21 @@ fn entry_point(args: &JarArgs, ctx: &Context) -> Result<String, BuildError> {
         return Ok(point);
     }
 
-    return Err(BuildError::NoMainClass);
+    Err(BuildError::NoMainClass)
 }
 
 fn build_plain_jar(output: &Path, args: &JarArgs, ctx: &Context) -> Result<(), BuildError> {
-    let bin = absolute(&ctx.bin)?;
+    let bin = absolute(&ctx.bin).map_err(|e| IOError::new("resolving bin path", &ctx.bin, e))?;
     let class_files = [bin.as_path()];
 
     let entry = entry_point(args, ctx)?;
 
     let manifest_str = build_manifest(&entry, ctx)?;
     let manifest_path = ctx.target.join(".build-manifest.tmp");
-    fs::write(&manifest_path, &manifest_str)?;
+
+    fs::write(&manifest_path, &manifest_str)
+        .map_err(|e| IOError::new("writing build manifest", &manifest_path, e))?;
+
     let result = run_jar_command(output, &manifest_path, &class_files);
     let _ = fs::remove_file(&manifest_path);
     result
@@ -69,7 +73,7 @@ fn build_plain_jar(output: &Path, args: &JarArgs, ctx: &Context) -> Result<(), B
 fn build_fat_jar(output: &Path, args: &JarArgs, ctx: &Context) -> Result<(), BuildError> {
     let temp = ctx.target.join(".fat-jar-tmp");
     let _ = fs::remove_dir_all(&temp);
-    fs::create_dir_all(&temp)?;
+    fs::create_dir_all(&temp).map_err(|e| IOError::new("creating fat jar directory", &temp, e))?;
 
     let r = build_fat_jar_inner(output, args, ctx, &temp);
 
@@ -85,11 +89,12 @@ fn build_fat_jar_inner(
 ) -> Result<(), BuildError> {
     let lib_dirs = [&ctx.lib, &ctx.lib_annotations];
     for lib_dir in &lib_dirs {
-        for entry in fs::read_dir(lib_dir)? {
-            let entry = entry?;
+        for entry in WalkDir::new(lib_dir) {
+            let entry =
+                entry.map_err(|e| IOError::new("reading library entry", lib_dir, e.into()))?;
             let path = entry.path();
-            if path.extension().map_or(false, |e| e == "jar") {
-                extract_jar(&path, temp)?;
+            if path.extension().is_some_and(|e| e == "jar") {
+                extract_jar(path, temp)?;
             }
         }
     }
@@ -103,7 +108,8 @@ fn build_fat_jar_inner(
     let manifest_str = format!("Manifest-Version: 1.0\nMain-Class: {}\n\n", entry);
 
     let manifest_path = ctx.target.join(".build-manifest.tmp");
-    fs::write(&manifest_path, &manifest_str)?;
+    fs::write(&manifest_path, &manifest_str)
+        .map_err(|e| IOError::new("writing build manifest", &manifest_path, e))?;
 
     let result = run_jar_command(output, &manifest_path, &[temp]);
     let _ = fs::remove_file(&manifest_path);
@@ -111,23 +117,25 @@ fn build_fat_jar_inner(
 }
 
 fn extract_jar(jar: &Path, dest: &Path) -> Result<(), BuildError> {
-    let jar = absolute(jar)?;
+    let jar = absolute(jar).map_err(|e| IOError::new("resolving jar path", jar, e))?;
+
     let status = Command::new("jar")
         .current_dir(dest)
         .arg("xf")
         .arg(&jar)
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
-        .status()?;
+        .status()
+        .map_err(|e| IOError::new("extracting jar", &jar, e))?;
     if !status.success() {
-        return Err(BuildError::CompilationErrors);
+        return Err(BuildError::JarCreationError);
     }
     Ok(())
 }
 
 fn copy_bin(src: &Path, dest: &Path) -> Result<(), BuildError> {
-    let src = absolute(src)?;
-    copy_dir_recursively(&src, dest)?;
+    let src = absolute(src).map_err(|e| IOError::new("resolving bin path", src, e))?;
+    copy_dir_recursively(&src, dest).map_err(|e| IOError::new("copying bin directory", dest, e))?;
     Ok(())
 }
 
@@ -151,14 +159,22 @@ pub(crate) fn merge_services(dir: &Path) -> Result<(), BuildError> {
     if !services_dir.exists() {
         return Ok(());
     }
-    for entry in fs::read_dir(&services_dir)? {
-        let entry = entry?;
-        if entry.file_type()?.is_file() {
-            let content = fs::read_to_string(entry.path())?;
+    for entry in WalkDir::new(&services_dir) {
+        let entry = entry.map_err(|e| {
+            BuildError::IoError(IOError::new(
+                "reading services entry",
+                &services_dir,
+                e.into(),
+            ))
+        })?;
+        if entry.file_type().is_file() {
+            let content = fs::read_to_string(entry.path())
+                .map_err(|e| IOError::new("reading services file", entry.path(), e))?;
             let mut lines: Vec<&str> = content.lines().collect();
             lines.sort();
             lines.dedup();
-            fs::write(entry.path(), lines.join("\n"))?;
+            fs::write(entry.path(), lines.join("\n"))
+                .map_err(|e| IOError::new("writing services file", entry.path(), e))?;
         }
     }
     Ok(())
@@ -167,22 +183,16 @@ pub(crate) fn merge_services(dir: &Path) -> Result<(), BuildError> {
 pub(crate) fn build_manifest(entry_point: &str, ctx: &Context) -> Result<String, BuildError> {
     let mut class_path = Vec::new();
 
-    for entry in fs::read_dir(&ctx.lib)? {
-        let entry = entry?;
-        let path = entry.path();
-        if path.extension().map_or(false, |e| e == "jar") {
-            if let Ok(relative) = path.strip_prefix(&ctx.target) {
-                class_path.push(relative.to_string_lossy().to_string());
-            }
-        }
-    }
-    for entry in fs::read_dir(&ctx.lib_annotations)? {
-        let entry = entry?;
-        let path = entry.path();
-        if path.extension().map_or(false, |e| e == "jar") {
-            if let Ok(relative) = path.strip_prefix(&ctx.target) {
-                class_path.push(relative.to_string_lossy().to_string());
-            }
+    for lib_dir in [&ctx.lib, &ctx.lib_annotations] {
+        for entry in WalkDir::new(lib_dir) {
+            let entry = entry.map_err(|e| {
+                BuildError::IoError(IOError::new("reading library entry", lib_dir, e.into()))
+            })?;
+            let path = entry.path();
+            if path.extension().is_some_and(|e| e == "jar")
+                && let Ok(relative) = path.strip_prefix(&ctx.target) {
+                    class_path.push(relative.to_string_lossy().to_string());
+                }
         }
     }
 
@@ -210,11 +220,7 @@ pub(crate) fn build_manifest(entry_point: &str, ctx: &Context) -> Result<String,
     Ok(manifest)
 }
 
-fn run_jar_command(
-    output: &Path,
-    manifest: &Path,
-    dirs: &[&Path],
-) -> Result<(), BuildError> {
+fn run_jar_command(output: &Path, manifest: &Path, dirs: &[&Path]) -> Result<(), BuildError> {
     let mut cmd = Command::new("jar");
     cmd.arg("-cfm").arg(output).arg(manifest);
     for dir in dirs {
@@ -224,9 +230,10 @@ fn run_jar_command(
     let status = cmd
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
-        .status()?;
+        .status()
+        .map_err(|e| IOError::new("running jar command", output, e))?;
     if !status.success() {
-        return Err(BuildError::CompilationErrors);
+        return Err(BuildError::JarCreationError);
     }
     Ok(())
 }

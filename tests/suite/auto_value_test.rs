@@ -55,13 +55,21 @@ fn auto_value_generates_code_and_runs() -> Result<(), Box<dyn std::error::Error>
 
     // Person class was compiled
     assert!(
-        dest.join("target").join("bin").join("app").join("Person.class").exists(),
+        dest.join("target")
+            .join("bin")
+            .join("app")
+            .join("Person.class")
+            .exists(),
         "Person.class should exist"
     );
 
     // Main class was compiled
     assert!(
-        dest.join("target").join("bin").join("app").join("Main.class").exists(),
+        dest.join("target")
+            .join("bin")
+            .join("app")
+            .join("Main.class")
+            .exists(),
         "Main.class should exist"
     );
 

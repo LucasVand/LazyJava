@@ -1,6 +1,6 @@
 use crate::{
     Context, args::SyncArgs, lazy_java::LazyJava, lazy_java_error::LazyJavaError,
-    lock_file::LockFile, lsp::sync_lsp_config,
+    lock_file::LockFile, lsp::sync_lsp_config, utils::GlobalContext,
 };
 
 impl LazyJava {
@@ -13,7 +13,7 @@ impl LazyJava {
 
         let ctx = Context::compose(inc, exc);
 
-        if !ctx.dry_run {
+        if !GlobalContext::is_dry_run() {
             sync_lsp_config(&ctx)?;
         }
 
