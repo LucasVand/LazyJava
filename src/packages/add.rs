@@ -7,7 +7,7 @@ impl LazyJava {
     pub fn add(add_args: &AddArgs, ctx: Context) -> Result<(), LazyJavaError> {
         let (inc, mut exc) = ctx.decompose();
 
-        exc.config.add_package(&add_args, &inc)?;
+        exc.config.add_package(add_args, &inc)?;
         let ctx = Context::compose(inc, exc);
 
         if !GlobalContext::is_dry_run() {

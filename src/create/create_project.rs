@@ -60,7 +60,7 @@ impl LazyJava {
             fs::create_dir(&lib).map_err(|_e| CreateError::CreateDirectoryError)?;
 
             fs::write(
-                &project_dir.join("pom.xml"),
+                project_dir.join("pom.xml"),
                 "This file is to make sure root finders find this project (do not remove)",
             )
             .map_err(|e| {

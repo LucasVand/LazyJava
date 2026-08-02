@@ -43,9 +43,9 @@ impl MavenDependancyList {
         let client = Client::new();
 
         let ctx: ResolveContext = ResolveContext {
-            cache: cache,
+            cache,
             list: dep_list.clone(),
-            client: client,
+            client,
         };
         Self::resolve_pom(id.clone(), ctx).await?;
 
@@ -82,7 +82,7 @@ impl MavenDependancyList {
     pub fn new(id: MavenIdBuf) -> Result<Vec<MavenDependancy>, MavenError> {
         let rt = Runtime::new().unwrap();
 
-        return rt.block_on(Self::runtime_entry(id));
+        rt.block_on(Self::runtime_entry(id))
     }
     async fn resolve_pom(id: MavenIdBuf, ctx: ResolveContext) -> Result<Arc<MavenPom>, MavenError> {
         log::debug!("Resolving POM for {}", id);
@@ -189,7 +189,7 @@ impl MavenDependancyList {
                 dep_props.extend(pom.properties.map);
                 pom.properties.map = dep_props;
 
-                dependancy_list.push(Dependancy { id: id });
+                dependancy_list.push(Dependancy { id });
             }
         }
 
@@ -298,7 +298,7 @@ impl MavenDependancyList {
             let handle = spawn(async move { Self::resolve_pom(owned_id, ctx_clone).await });
             return Some(handle);
         }
-        return None;
+        None
     }
     fn bom_handles(
         pom: &MavenPom,
@@ -319,7 +319,7 @@ impl MavenDependancyList {
             }
             return Some(set);
         }
-        return None;
+        None
     }
     fn dependancy_handles(
         pom: &MavenPom,
@@ -362,7 +362,7 @@ impl MavenDependancyList {
             }
             return Some(set);
         }
-        return None;
+        None
     }
 }
 static PROPERTY_REGEX: LazyLock<Regex> = LazyLock::new(|| {

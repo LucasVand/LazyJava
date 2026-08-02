@@ -69,7 +69,7 @@ impl LazyJava {
         let ctx = Context::new(all_args)?;
         ctx.assert_all()?;
         let ctx = ctx.assert_packages()?;
-        Ok(Self::run(args, &ctx)?)
+        Self::run(args, &ctx)
     }
 
     fn add_internal(all_args: &LazyJavaArgs, args: &AddArgs) -> Result<(), LazyJavaError> {

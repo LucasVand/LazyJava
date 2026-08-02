@@ -46,7 +46,7 @@ impl BuildMetadata {
             return None;
         }
 
-        return Some(metadata.unwrap());
+        Some(metadata.unwrap())
     }
     pub fn write(&self, target: &Path) -> Result<(), BuildError> {
         let path = target.join(BUILD_METADATA_NAME);

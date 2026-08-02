@@ -96,34 +96,33 @@ pub fn find_java_files(root: &Path, excluded: &[String]) -> Vec<PathBuf> {
     let set = build_globset(excluded);
 
     for entry in WalkDir::new(root) {
-        if let Ok(file) = entry {
-            if file.file_type().is_file()
+        if let Ok(file) = entry
+            && file.file_type().is_file()
                 && file.path().extension() == Some(OsStr::new("java"))
                 && !is_excluded(&file, &set)
             {
                 java_files.push(file.into_path());
             }
-        }
     }
 
     java_files
 }
 
 fn is_excluded(file: &DirEntry, glob: &GlobSet) -> bool {
-    return glob.is_match(file.path()) || glob.is_match(file.file_name());
+    glob.is_match(file.path()) || glob.is_match(file.file_name())
 }
 
 fn build_globset(excluded: &[String]) -> GlobSet {
     let mut builder = GlobSetBuilder::new();
     for rule in excluded {
-        if let Ok(glob_rule) = Glob::new(&rule) {
+        if let Ok(glob_rule) = Glob::new(rule) {
             builder.add(glob_rule);
         } else {
             log::warn!("Invalid glob rule, \"{}\" is not a valid rule", rule);
         }
     }
 
-    return builder.build().unwrap();
+    builder.build().unwrap()
 }
 
 #[cfg(test)]

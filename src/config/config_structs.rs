@@ -56,7 +56,7 @@ impl<'a> ConfigProcesserDefinitionTomlEditView<'a> {
 }
 fn assert<T>(value: Option<T>, name: &'static str) -> Result<T, ConfigError> {
     if let Some(v) = value {
-        return Ok(v);
+        Ok(v)
     } else {
         Err(ConfigError::MissingValue(name))
     }
@@ -105,8 +105,8 @@ impl<'a> ConfigDependancyTomlEditView<'a> {
         let group = assert(self.group(), "group_id")?;
         let version = assert(self.version(), "version")?;
         Ok(ConfigDependancy {
-            group: group,
-            version: version,
+            group,
+            version,
         })
     }
 }

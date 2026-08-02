@@ -15,13 +15,11 @@ impl DotSettings {
         }
         fs::write(
             root.join(".settings/org.eclipse.core.prefs"),
-            format!(
-                r#"eclipse.preferences.version=1
+            r#"eclipse.preferences.version=1
 org.eclipse.jdt.core.compiler.source=25
 org.eclipse.jdt.core.compiler.compliance=25
 org.eclipse.jdt.core.compiler.codegen.targetPlatform=25
-"#
-            ),
+"#,
         )
     }
 }

@@ -23,19 +23,17 @@ fn remove_unknown_resources(
 ) -> Result<isize, BuildError> {
     let mut change = 0;
     for dir in fs::read_dir(current)
-        .map_err(|s| IOError::new("reading build directory", current, s))?
+        .map_err(|s| IOError::new("reading build directory", current, s))?.flatten()
     {
-        if let Ok(dir) = dir {
-            if dir.file_type().unwrap().is_dir() {
-                change += remove_unknown_resources(resources, &dir.path(), ctx)?;
-            } else {
-                if let Some(ext) = dir.path().extension() {
-                    if ext != "class" {
-                        change += remove_file(resources, &dir)?;
-                    }
-                } else {
+        if dir.file_type().unwrap().is_dir() {
+            change += remove_unknown_resources(resources, &dir.path(), ctx)?;
+        } else {
+            if let Some(ext) = dir.path().extension() {
+                if ext != "class" {
                     change += remove_file(resources, &dir)?;
                 }
+            } else {
+                change += remove_file(resources, &dir)?;
             }
         }
     }
@@ -67,7 +65,7 @@ fn build_globset(ctx: &Context) -> GlobSet {
         }
     }
 
-    return builder.build().unwrap();
+    builder.build().unwrap()
 }
 
 fn add_resources(
@@ -77,31 +75,29 @@ fn add_resources(
     ctx: &Context,
 ) -> Result<HashSet<PathBuf>, BuildError> {
     let mut resources = HashSet::new();
-    for dir in fs::read_dir(path).map_err(|e| IOError::new("reading source directory", path, e))? {
-        if let Ok(dir) = dir {
-            if is_excluded(&dir, glob_set) {
-                continue;
-            }
+    for dir in fs::read_dir(path).map_err(|e| IOError::new("reading source directory", path, e))?.flatten() {
+        if is_excluded(&dir, glob_set) {
+            continue;
+        }
 
-            if dir
-                .file_type()
-                .map_err(|e| IOError::new("reading source entry", path, e))?
-                .is_dir()
-            {
-                resources.extend(add_resources(
-                    &dir.path(),
-                    &relative.join(dir.file_name()),
-                    glob_set,
-                    ctx,
-                )?);
-            } else {
-                if let Some(ext) = dir.path().extension() {
-                    if ext != "java" {
-                        resources.insert(copy_file(&dir, relative, ctx)?);
-                    }
-                } else {
+        if dir
+            .file_type()
+            .map_err(|e| IOError::new("reading source entry", path, e))?
+            .is_dir()
+        {
+            resources.extend(add_resources(
+                &dir.path(),
+                &relative.join(dir.file_name()),
+                glob_set,
+                ctx,
+            )?);
+        } else {
+            if let Some(ext) = dir.path().extension() {
+                if ext != "java" {
                     resources.insert(copy_file(&dir, relative, ctx)?);
                 }
+            } else {
+                resources.insert(copy_file(&dir, relative, ctx)?);
             }
         }
     }

@@ -50,7 +50,7 @@ fn entry_point(args: &JarArgs, ctx: &Context) -> Result<String, BuildError> {
         return Ok(point);
     }
 
-    return Err(BuildError::NoMainClass);
+    Err(BuildError::NoMainClass)
 }
 
 fn build_plain_jar(output: &Path, args: &JarArgs, ctx: &Context) -> Result<(), BuildError> {
@@ -93,8 +93,8 @@ fn build_fat_jar_inner(
             let entry =
                 entry.map_err(|e| IOError::new("reading library entry", lib_dir, e.into()))?;
             let path = entry.path();
-            if path.extension().map_or(false, |e| e == "jar") {
-                extract_jar(&path, temp)?;
+            if path.extension().is_some_and(|e| e == "jar") {
+                extract_jar(path, temp)?;
             }
         }
     }
@@ -184,16 +184,15 @@ pub(crate) fn build_manifest(entry_point: &str, ctx: &Context) -> Result<String,
     let mut class_path = Vec::new();
 
     for lib_dir in [&ctx.lib, &ctx.lib_annotations] {
-        for entry in WalkDir::new(&lib_dir) {
+        for entry in WalkDir::new(lib_dir) {
             let entry = entry.map_err(|e| {
                 BuildError::IoError(IOError::new("reading library entry", lib_dir, e.into()))
             })?;
             let path = entry.path();
-            if path.extension().map_or(false, |e| e == "jar") {
-                if let Ok(relative) = path.strip_prefix(&ctx.target) {
+            if path.extension().is_some_and(|e| e == "jar")
+                && let Ok(relative) = path.strip_prefix(&ctx.target) {
                     class_path.push(relative.to_string_lossy().to_string());
                 }
-            }
         }
     }
 

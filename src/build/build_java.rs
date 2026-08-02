@@ -32,13 +32,13 @@ impl LazyJava {
             }
         } else {
             Self::build_java(&args.args, ctx)?;
-            return Ok(());
+            Ok(())
         }
     }
     pub fn build_jar(args: &JarArgs, ctx: &Context) -> Result<(), BuildError> {
         Self::build_java(&args.build_args, ctx)?;
         build_jar(args, ctx)?;
-        return Ok(());
+        Ok(())
     }
 
     pub fn build_java(args: &BuildArgs, ctx: &Context) -> Result<(), BuildError> {
@@ -137,7 +137,7 @@ impl LazyJava {
 
         log::debug!("Java compilation completed status {}", status);
 
-        return Ok(status);
+        Ok(status)
     }
 
     fn rebuild(args: &BuildArgs, ctx: &Context) -> Result<ExitStatus, BuildError> {
@@ -181,7 +181,7 @@ impl LazyJava {
         Ok(())
     }
     fn show_modified_files(ctx: &Context) -> Result<(), BuildError> {
-        let build_data = BuildMetadata::fetch(&ctx.target).unwrap_or(BuildMetadata::new());
+        let build_data = BuildMetadata::fetch(&ctx.target).unwrap_or_default();
 
         let exclude = if let Some(s) = ctx.config.setup()
             && let Some(list) = s.exclude()
@@ -201,7 +201,7 @@ impl LazyJava {
         Ok(())
     }
     fn show_rebuild_files(ctx: &Context) -> Result<(), BuildError> {
-        let build_data = BuildMetadata::fetch(&ctx.target).unwrap_or(BuildMetadata::new());
+        let build_data = BuildMetadata::fetch(&ctx.target).unwrap_or_default();
 
         log::info!("Displaying files to rebuild");
 

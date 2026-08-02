@@ -21,7 +21,7 @@ pub fn build_processors(build_args: &BuildArgs, ctx: &Context) -> Result<(), Bui
     }
     log::info!("Building {} annotation processor(s)", processors.len());
 
-    let full_paths: Vec<PathBuf> = processors.iter().map(|(_k, p)| p.path.clone()).collect();
+    let full_paths: Vec<PathBuf> = processors.values().map(|p| p.path.clone()).collect();
 
     if full_paths.is_empty() {
         return Ok(());
@@ -29,7 +29,7 @@ pub fn build_processors(build_args: &BuildArgs, ctx: &Context) -> Result<(), Bui
 
     log::debug!("Processor source paths: {:?}", full_paths);
 
-    let _ = fs::remove_dir_all(&ctx.bin_processors.join("META-INF"));
+    let _ = fs::remove_dir_all(ctx.bin_processors.join("META-INF"));
 
     log::info!(
         "Compiling {} processor source(s) to {:?}",

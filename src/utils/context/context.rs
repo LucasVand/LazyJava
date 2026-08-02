@@ -234,13 +234,13 @@ impl Context {
         if args.is_some()
             && let Some(target) = &args.unwrap().global_args.target
         {
-            return target.to_string();
+            target.to_string()
         } else if let Some(setup) = &config.setup()
             && let Some(target) = setup.target()
         {
-            return target;
+            target
         } else {
-            return TARGET_FOLDER.to_string();
+            TARGET_FOLDER.to_string()
         }
     }
 
@@ -248,13 +248,13 @@ impl Context {
         if args.is_some()
             && let Some(src) = &args.unwrap().global_args.source
         {
-            return src.to_string();
+            src.to_string()
         } else if let Some(setup) = &config.setup()
             && let Some(src) = setup.src()
         {
-            return src;
+            src
         } else {
-            return SRC_FOLDER.to_string();
+            SRC_FOLDER.to_string()
         }
     }
 }

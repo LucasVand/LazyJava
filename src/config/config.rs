@@ -81,13 +81,11 @@ impl ConfigTomlEdit {
             PartialMavenIdBuf::new(remove_args.group.clone(), remove_args.artifact.clone());
 
         let mut version: Option<String> = None;
-        if let Some(deps) = self.dependancies() {
-            if let Some(d) = deps.get(&partial_id.artifact) {
-                if d.group().as_ref() == Some(&partial_id.group) {
+        if let Some(deps) = self.dependancies()
+            && let Some(d) = deps.get(&partial_id.artifact)
+                && d.group().as_ref() == Some(&partial_id.group) {
                     version = Some(d.version().unwrap().to_string());
                 }
-            }
-        }
 
         if version.is_none() {
             debug!("Could not find version");

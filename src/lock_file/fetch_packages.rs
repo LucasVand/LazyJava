@@ -45,7 +45,7 @@ impl LockFile {
                     match bin {
                         Ok(bin) => {
                             println!("        {} {}", "Downloading".green().bold(), id);
-                            return Ok((file_name, bin));
+                            Ok((file_name, bin))
                         }
                         Err(err) => match err {
                             FetchError::StatusCode(code) => {
@@ -99,7 +99,7 @@ impl LockFile {
                 fs::write(&p, bin).map_err(|s| IOError::new("writing package jar", p, s))?;
             }
 
-            return Ok(changes);
+            Ok(changes)
         })
     }
 }

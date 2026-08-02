@@ -58,7 +58,7 @@ impl LockFile {
             None => LockFile::new(),
             Some(l) => l,
         };
-        return Ok(lock);
+        Ok(lock)
     }
     fn fetch_from_fs(root: &Path) -> Result<Option<LockFile>, LockFileError> {
         let p = root.join(LOCK_FILE_NAME);
@@ -140,8 +140,7 @@ impl LockFile {
         let mut removed = 0;
         for file in walkdir::WalkDir::new(path)
             .into_iter()
-            .filter(|p| p.is_ok())
-            .map(|p| p.unwrap())
+            .flatten()
             .filter(|p| !p.file_type().is_dir())
         {
             if let Some(name) = file.path().file_name() {
@@ -157,8 +156,8 @@ impl LockFile {
                             .file_name()
                             .map(|s| s.to_string_lossy())
                             .unwrap_or_default();
-                        fs::remove_file(&path)
-                            .map_err(|s| IOError::new("removing stale package", &path, s))?;
+                        fs::remove_file(path)
+                            .map_err(|s| IOError::new("removing stale package", path, s))?;
                         println!("        {} {}", "Removed".green().bold(), stem);
                         removed += 1;
                     }
@@ -166,7 +165,7 @@ impl LockFile {
             }
         }
 
-        return Ok(removed);
+        Ok(removed)
     }
     pub fn validate_current_packages(
         &mut self,
@@ -185,7 +184,7 @@ impl LockFile {
         removed += Self::validate_dir(&ctx.lib_annotations, &mut map)?;
 
         let download_change =
-            Self::fetch_packages(ctx, map.into_iter().map(|(_k, v)| v).collect())?;
+            Self::fetch_packages(ctx, map.into_values().collect())?;
         added += download_change;
 
         let plural = |change: isize| {
@@ -209,7 +208,7 @@ impl LockFile {
         Ok(added - removed)
     }
     pub fn contains_package(&self, id: &MavenId) -> bool {
-        return self.packages.iter().any(|p| p.id == *id);
+        self.packages.iter().any(|p| p.id == *id)
     }
     pub fn sync_with_root_packages(
         &mut self,
@@ -229,7 +228,7 @@ impl LockFile {
             }
         }
 
-        for (key, _root_package) in root_packages {
+        for key in root_packages.keys() {
             map.remove(key);
         }
 

@@ -30,7 +30,7 @@ pub fn generate_pom(ctx: &Context) -> Result<(), GenerateError> {
         .map_err(|source| IOError::new("writing pom.xml", pom_path, source))?;
     println!("{} pom.xml", "Generated".green().bold());
 
-    return Ok(());
+    Ok(())
 }
 
 fn create_pom(ctx: &Context) -> Result<MavenPom, GenerateError> {
@@ -126,7 +126,7 @@ fn assert<T>(value: Option<T>, value_name: &'static str) -> Result<T, GenerateEr
     match value {
         Some(v) => Ok(v),
         None => Err(GenerateError::MissingValue {
-            value_name: value_name,
+            value_name,
             generated_value: "pom.xml",
         }),
     }

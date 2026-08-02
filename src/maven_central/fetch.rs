@@ -16,13 +16,12 @@ pub fn fetch_artifact_metadata(group: &str, artifact: &str) -> Result<MavenMetad
 
     match request.error_for_status() {
         Err(err) => {
-            if let Some(status) = err.status() {
-                if status == StatusCode::from_u16(404).unwrap() {
+            if let Some(status) = err.status()
+                && status == StatusCode::from_u16(404).unwrap() {
                     return Err(MavenError::NotFound(PartialMavenIdBuf::new(
                         group, artifact,
                     )));
                 }
-            }
             log::warn!("Failed to fetch metadata: {}", err);
             Err(MavenError::ErrorResponse(err))
         }
