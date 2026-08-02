@@ -70,10 +70,9 @@ pub fn save_metadata(
     meta: Option<BuildMetadata>,
 ) -> Result<(), BuildError> {
     let time = if !status.success() {
-        if meta.is_some() {
-            meta.unwrap().time_stamp
-        } else {
-            SystemTime::UNIX_EPOCH
+        match meta {
+            Some(meta) => meta.time_stamp,
+            None => SystemTime::UNIX_EPOCH,
         }
     } else {
         SystemTime::now()

@@ -17,11 +17,11 @@ pub enum ConfigError {
     #[error("Failed to parse")]
     ParseError(#[from] TomlError),
 
-    #[error("Faild to find config {0}")]
+    #[error("Failed to find config {0}")]
     NoConfig(PathBuf),
 
     #[error("Error when operating on the lock file")]
-    LockFileErrro(#[from] LockFileError),
+    LockFileError(#[from] LockFileError),
 
     #[error("Maven error occured")]
     MavenError(#[from] MavenError),
@@ -49,7 +49,7 @@ impl DiagnosticProvider for ConfigError {
                     path.display()
                 ))
                 .help("Create a lazy-java.toml file or specify a valid project root."),
-            ConfigError::LockFileErrro(err) => err.diagnostic(),
+            ConfigError::LockFileError(err) => err.diagnostic(),
             ConfigError::MavenError(err) => err.diagnostic(),
             ConfigError::IoError(err) => err.diagnostic(),
             ConfigError::PackageNotFound => Diagnostic::new("Package not found").message(

@@ -27,8 +27,8 @@ junit = { group_id = "junit", version = "4.13.2" }
         assert_eq!(loaded.project().unwrap().artifact().unwrap(), "my-app");
         assert_eq!(loaded.project().unwrap().version().unwrap(), "1.0.0");
         assert!(loaded.dependancies().is_some());
-        assert!(loaded.dependancies().unwrap().get("spring-core").is_some());
-        assert!(loaded.dependancies().unwrap().get("junit").is_some());
+        assert!(loaded.dependancies().unwrap().contains_key("spring-core"));
+        assert!(loaded.dependancies().unwrap().contains_key("junit"));
     }
 
     #[test]

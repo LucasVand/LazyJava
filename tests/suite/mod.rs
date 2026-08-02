@@ -3,6 +3,7 @@ mod auto_value_test;
 mod build_and_run_test;
 mod build_jar_test;
 mod create_test;
+mod dry_run_test;
 mod exclude_files_test;
 mod generate_pom_test;
 mod import_pom_test;

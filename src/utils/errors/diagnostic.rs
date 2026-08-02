@@ -52,11 +52,11 @@ impl Diagnostic {
 impl Display for Diagnostic {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let w = match self.level {
-            Level::Info => "Info",
-            Level::Warn => "Warning",
-            Level::Error => "Error",
+            Level::Info => "Info".green().bold(),
+            Level::Warn => "Warning".yellow().bold(),
+            Level::Error => "Error".red().bold(),
         };
-        writeln!(f, "{}: {}", w.red().bold(), self.title)?;
+        writeln!(f, "{}: {}", w, self.title)?;
 
         if let Some(msg) = &self.message {
             writeln!(f, "{}", msg)?;

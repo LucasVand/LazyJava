@@ -83,9 +83,11 @@ impl ConfigTomlEdit {
         let mut version: Option<String> = None;
         if let Some(deps) = self.dependancies()
             && let Some(d) = deps.get(&partial_id.artifact)
-                && d.group().as_ref() == Some(&partial_id.group) {
-                    version = Some(d.version().unwrap().to_string());
-                }
+                && d.group().as_ref() == Some(&partial_id.group)
+                && let Some(v) = d.version()
+        {
+            version = Some(v.to_string());
+        }
 
         if version.is_none() {
             debug!("Could not find version");
