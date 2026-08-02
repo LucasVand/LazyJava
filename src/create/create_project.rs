@@ -1,5 +1,5 @@
 use std::{
-    env, fs,
+    env,
     time::{Duration, SystemTime},
 };
 
@@ -16,7 +16,7 @@ use crate::{
     lazy_java::LazyJava,
     lazy_java_error::LazyJavaError,
     lsp::sync_lsp_config,
-    utils::IOError,
+    utils::{IOError, fs},
 };
 
 use super::CreateError;

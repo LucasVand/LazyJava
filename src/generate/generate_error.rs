@@ -36,9 +36,7 @@ impl DiagnosticProvider for GenerateError {
                 )),
             GenerateError::SerialError(err) => err.diagnostic(),
 
-            GenerateError::LockFileError(err) => {
-                Diagnostic::new("Failed to operate on the lock file").message(err.to_string())
-            }
+            GenerateError::LockFileError(err) => err.diagnostic(),
             GenerateError::IOError(err) => err.diagnostic(),
         }
     }

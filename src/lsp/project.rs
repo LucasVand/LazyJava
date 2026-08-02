@@ -1,13 +1,13 @@
-use std::{fs::write, io, path::Path};
+use std::{io, path::Path};
 
-use crate::config::ConfigTomlEdit;
+use crate::{config::ConfigTomlEdit, utils::fs};
 
 pub struct DotProject {}
 
 impl DotProject {
     pub fn generate(root: &Path, config: &ConfigTomlEdit) -> Result<(), io::Error> {
         let name: &str = &config.project().unwrap().name().unwrap();
-        write(
+        fs::write(
             root.join(".project"),
             format!(
                 r#"<?xml version="1.0" encoding="UTF-8"?>

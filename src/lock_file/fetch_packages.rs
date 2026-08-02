@@ -1,5 +1,4 @@
 use std::{
-    fs,
     io::{Cursor, Read},
 };
 
@@ -12,7 +11,7 @@ use zip::{ZipArchive, result::ZipError};
 use crate::{
     ContextNoConfig,
     lock_file::{LockFile, LockFileError, LockFilePackage},
-    utils::IOError,
+    utils::{IOError, fs},
 };
 
 impl LockFile {
@@ -91,15 +90,13 @@ impl LockFile {
                     list[index].annotations = annotations;
                 }
                 changes += 1;
-                if !ctx.dry_run {
-                    let path = if has_annotations {
-                        &ctx.lib_annotations
-                    } else {
-                        &ctx.lib
-                    };
-                    let p = path.join(&package_file_name);
-                    fs::write(&p, bin).map_err(|s| IOError::new("writing", p, s))?;
-                }
+                let path = if has_annotations {
+                    &ctx.lib_annotations
+                } else {
+                    &ctx.lib
+                };
+                let p = path.join(&package_file_name);
+                fs::write(&p, bin).map_err(|s| IOError::new("writing package jar", p, s))?;
             }
 
             return Ok(changes);

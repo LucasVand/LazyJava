@@ -5,7 +5,7 @@ use colored::Colorize;
 pub enum Level {
     Info,
     Warn,
-    Errror,
+    Error,
 }
 
 pub struct Diagnostic {
@@ -26,7 +26,7 @@ impl Diagnostic {
             message: None,
             help: Vec::new(),
             note: Vec::new(),
-            level: Level::Errror,
+            level: Level::Error,
         }
     }
     pub fn level(mut self, level: Level) -> Self {
@@ -51,14 +51,20 @@ impl Diagnostic {
 
 impl Display for Diagnostic {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{}: {}", "Error".red().bold(), self.title)?;
-
-        writeln!(f)?;
+        let w = match self.level {
+            Level::Info => "Info",
+            Level::Warn => "Warning",
+            Level::Error => "Error",
+        };
+        writeln!(f, "{}: {}", w.red().bold(), self.title)?;
 
         if let Some(msg) = &self.message {
             writeln!(f, "{}", msg)?;
         }
-        writeln!(f)?;
+
+        if !self.help.is_empty() || !self.note.is_empty() {
+            writeln!(f)?;
+        }
 
         for help in &self.help {
             writeln!(f, "{}: {}", "help".green().bold(), help)?;

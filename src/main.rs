@@ -1,3 +1,5 @@
+use std::process::exit;
+
 use anyhow::Result;
 use clap::Parser;
 use lazy_java::{LazyJava, args::LazyJavaArgs, utils::DiagnosticProvider};
@@ -19,10 +21,9 @@ fn main() -> Result<()> {
         .format_timestamp(None)
         .init();
 
-    let res = LazyJava::execute(args);
-    match res {
-        Err(e) => println!("{}", e.diagnostic()),
-        Ok(_) => {}
+    if let Err(e) = LazyJava::execute(args) {
+        eprint!("{}", e.diagnostic());
+        exit(1);
     }
 
     Ok(())

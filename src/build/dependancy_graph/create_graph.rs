@@ -11,9 +11,9 @@ use super::{
 use crate::utils::find_main::find_java_files;
 
 impl DependancyGraph {
-    pub fn create(src: &Path) -> Result<DependancyGraph, GraphError> {
+    pub fn create(src: &Path, exclude: &[String]) -> Result<DependancyGraph, GraphError> {
         log::debug!("Creating dependency graph from source: {:?}", src);
-        let java_files = find_java_files(src);
+        let java_files = find_java_files(src, exclude);
         log::debug!("Found {} Java files for graph", java_files.len());
 
         let mut graph = DependancyGraph::new();

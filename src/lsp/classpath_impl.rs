@@ -1,7 +1,6 @@
 use std::{
     collections::HashSet,
     ffi::OsStr,
-    fs::{self},
     io::{self, Write},
     path::{self, Path, PathBuf},
 };
@@ -17,6 +16,7 @@ use crate::{
         classpath::{Attribute, Attributes, Classpath, ClasspathEntry},
         classpath_error::ClasspathError,
     },
+    utils::fs,
 };
 
 const JAVA_CONTAINER: &str = "org.eclipse.jdt.launching.JRE_CONTAINER";

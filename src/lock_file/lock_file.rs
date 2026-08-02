@@ -1,6 +1,5 @@
 use std::{
     collections::{HashMap, HashSet},
-    fs,
     io::ErrorKind,
     mem,
     path::Path,
@@ -18,7 +17,7 @@ use crate::{
         MavenId, MavenIdBuf, PartialMavenIdBuf,
         pom::{DependancyType, MavenDependancyList, Scope},
     },
-    utils::{IOError, TomlDeserializeError, TomlSerializeError},
+    utils::{fs, IOError, TomlDeserializeError, TomlSerializeError},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -68,7 +67,7 @@ impl LockFile {
             if e.kind() == ErrorKind::NotFound {
                 return Ok(None);
             }
-            return Err(IOError::new("reading", &p, e))?;
+            return Err(IOError::new("reading lazy-java.lock", &p, e))?;
         }
         let file = file.unwrap();
 
@@ -88,7 +87,7 @@ impl LockFile {
         let str = toml::to_string_pretty(self)
             .map_err(|s| TomlSerializeError::new("writing lazy-java.lock", &p, s))?;
 
-        fs::write(&p, str).map_err(|s| IOError::new("writing", p, s))?;
+        fs::write(&p, str).map_err(|s| IOError::new("writing lazy-java.lock", p, s))?;
 
         Ok(())
     }
@@ -132,7 +131,6 @@ impl LockFile {
     fn validate_dir(
         path: &Path,
         map: &mut HashMap<String, &mut LockFilePackage>,
-        dry_run: bool,
     ) -> Result<isize, LockFileError> {
         println!(
             "    {} {}",
@@ -159,10 +157,8 @@ impl LockFile {
                             .file_name()
                             .map(|s| s.to_string_lossy())
                             .unwrap_or_default();
-                        if !dry_run {
-                            fs::remove_file(&path)
-                                .map_err(|s| IOError::new("removing", &path, s))?;
-                        }
+                        fs::remove_file(&path)
+                            .map_err(|s| IOError::new("removing stale package", &path, s))?;
                         println!("        {} {}", "Removed".green().bold(), stem);
                         removed += 1;
                     }
@@ -185,8 +181,8 @@ impl LockFile {
             .map(|p| (p.file_name.as_str().to_string(), p))
             .collect();
 
-        removed += Self::validate_dir(&ctx.lib, &mut map, ctx.dry_run)?;
-        removed += Self::validate_dir(&ctx.lib_annotations, &mut map, ctx.dry_run)?;
+        removed += Self::validate_dir(&ctx.lib, &mut map)?;
+        removed += Self::validate_dir(&ctx.lib_annotations, &mut map)?;
 
         let download_change =
             Self::fetch_packages(ctx, map.into_iter().map(|(_k, v)| v).collect())?;

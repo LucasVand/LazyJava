@@ -1,6 +1,9 @@
 use thiserror::Error;
 
-use crate::utils::{Diagnostic, DiagnosticProvider, IOError, XmlDeserializeError};
+use crate::{
+    maven_central::PartialMavenIdBuf,
+    utils::{Diagnostic, DiagnosticProvider, IOError, XmlDeserializeError},
+};
 
 #[derive(Error, Debug)]
 pub enum MavenError {
@@ -18,11 +21,17 @@ pub enum MavenError {
 
     #[error("Async task failed: {0}")]
     JoinError(#[from] tokio::task::JoinError),
+
+    #[error("Not found")]
+    NotFound(PartialMavenIdBuf),
 }
 
 impl DiagnosticProvider for MavenError {
     fn diagnostic(&self) -> Diagnostic {
         match self {
+            MavenError::NotFound(id) => Diagnostic::new("Resource not found on maven")
+                .message(format!("The resource {} was not found", id))
+                .help("Ensure that the artifact and group are correct"),
             MavenError::UnableToFetch(err) => Diagnostic::new("Unable to fetch from Maven")
                 .message("An error occurred while fetching from Maven.")
                 .help("Check your network connection and try again.")

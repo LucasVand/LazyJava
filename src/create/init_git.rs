@@ -1,8 +1,10 @@
 use std::{
-    env, fs, io,
+    env, io,
     path::Path,
     process::{Command, ExitStatus},
 };
+
+use crate::utils::fs;
 
 fn git_command() -> Result<ExitStatus, io::Error> {
     log::debug!("Executing git init command");

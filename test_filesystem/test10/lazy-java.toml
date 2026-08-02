@@ -4,6 +4,9 @@ group = "group1"
 artifact = "artifact"
 version = "1.0.0"
 
+[setup]
+exclude = ["Ignore.java"]
+
 [processors.Annot]
 kind = "annotation"
 path = "./src/processor/Annot.java"

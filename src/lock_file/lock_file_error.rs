@@ -62,9 +62,7 @@ impl DiagnosticProvider for LockFileError {
                 }
                 diag
             }
-            LockFileError::MavenError(err) => Diagnostic::new("Maven error")
-                .message("An error occurred while interacting with Maven.")
-                .note(err.to_string()),
+            LockFileError::MavenError(err) => err.diagnostic(),
             LockFileError::ZipError(err) => Diagnostic::new("Failed to process downloaded file")
                 .message("An error occurred while processing the downloaded archive.")
                 .help("The downloaded file may be corrupt or incomplete.")

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf};
 
 use crate::{
     Context,
@@ -6,7 +6,7 @@ use crate::{
     build::BuildError,
     build::compile::compile_java,
     config::{ConfigProcesserDefinition, ProcesserType},
-    utils::IOError,
+    utils::{IOError, fs},
 };
 
 pub fn build_processors(build_args: &BuildArgs, ctx: &Context) -> Result<(), BuildError> {

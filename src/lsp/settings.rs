@@ -1,8 +1,9 @@
 use std::{
-    fs::{self, write},
     io,
     path::Path,
 };
+
+use crate::utils::fs;
 
 pub struct DotSettings {}
 
@@ -12,7 +13,7 @@ impl DotSettings {
         if !fs::exists(&dot_settings)? {
             fs::create_dir(&dot_settings)?;
         }
-        write(
+        fs::write(
             root.join(".settings/org.eclipse.core.prefs"),
             format!(
                 r#"eclipse.preferences.version=1

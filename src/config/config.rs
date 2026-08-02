@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs, io::ErrorKind, path::Path};
+use std::{collections::HashMap, io::ErrorKind, path::Path};
 
 use colored::Colorize;
 use log::debug;
@@ -9,9 +9,8 @@ use crate::{
     config::{ConfigDependancy, ConfigTomlEdit, config_error::ConfigError},
     lock_file::LockFile,
     maven_central::{MavenError, MavenIdBuf, PartialMavenIdBuf, fetch_artifact_metadata},
-    utils::IOError,
+    utils::{IOError, fs},
 };
-
 impl ConfigTomlEdit {
     pub fn assert_config_file_exists(root: &Path) -> Result<(), ConfigError> {
         let config_path = root.join(CONFIG_FILE_NAME);
@@ -58,21 +57,17 @@ impl ConfigTomlEdit {
         let id = MavenIdBuf::new(add_args.group.clone(), add_args.artifact.clone(), version);
         println!("{} {} to dependency list", "Adding".green().bold(), id);
 
-        if !ctx.dry_run {
-            let mut deps = self.dependancies_mut().get_or_insert(HashMap::new());
-            let mut value = deps.insert_empty(&id.artifact);
+        let mut deps = self.dependancies_mut().get_or_insert(HashMap::new());
+        let mut value = deps.insert_empty(&id.artifact);
 
-            value.version_mut().replace(id.version.clone());
-            value.group_mut().replace(id.group.clone());
+        value.version_mut().replace(id.version.clone());
+        value.group_mut().replace(id.group.clone());
 
-            lockfile.add_package(id)?;
-        }
+        lockfile.add_package(id)?;
 
         self.sync_lock_file(&mut lockfile, ctx)?;
 
-        if !ctx.dry_run {
-            self.write(&ctx.root)?;
-        }
+        self.write(&ctx.root)?;
         Ok(())
     }
     pub fn remove_package(
@@ -109,17 +104,14 @@ impl ConfigTomlEdit {
             version
         );
 
-        if !ctx.dry_run {
-            if let Some(mut deps) = self.dependancies_mut().get_mut() {
-                deps.remove(&partial_id.artifact);
-            }
+        let mut deps_guard = self.dependancies_mut();
+        if let Some(mut deps) = deps_guard.get_mut() {
+            deps.remove(&partial_id.artifact);
         }
 
         self.sync_lock_file(&mut lockfile, ctx)?;
 
-        if !ctx.dry_run {
-            self.write(&ctx.root)?;
-        }
+        self.write(&ctx.root)?;
         Ok(())
     }
     pub fn sync_lock_file(
@@ -132,9 +124,7 @@ impl ConfigTomlEdit {
 
         lockfile.validate_current_packages(ctx)?;
 
-        if !ctx.dry_run {
-            lockfile.write(&ctx.root)?;
-        }
+        lockfile.write(&ctx.root)?;
         Ok(())
     }
     pub fn dependancy_list(

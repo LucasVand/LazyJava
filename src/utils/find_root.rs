@@ -1,8 +1,9 @@
 use std::{
-    fs::{self, DirEntry},
     io::{self, ErrorKind},
     path::{Path, PathBuf},
 };
+
+use crate::utils::{fs, fs::DirEntry};
 
 const ROOT_MARKERS: [&str; 9] = [
     ".git",

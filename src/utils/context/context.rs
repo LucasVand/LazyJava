@@ -1,5 +1,5 @@
 use std::{
-    env, fs,
+    env,
     path::{self, PathBuf},
 };
 
@@ -13,7 +13,7 @@ use crate::{
     lazy_java_error::LazyJavaError,
     lock_file::LockFile,
     lsp::sync_lsp_config,
-    utils::{IOError, find_root::find_root},
+    utils::{IOError, find_root::find_root, fs, GlobalContext},
 };
 
 use super::ContextError;
@@ -39,8 +39,6 @@ pub struct Context {
     pub relative_bin_processors: String,
 
     pub config: ConfigTomlEdit,
-
-    pub dry_run: bool,
 }
 
 impl Context {
@@ -96,11 +94,6 @@ impl Context {
         log::debug!("Build directory: {:?}", bin);
         log::debug!("Library directory: {:?}", lib);
 
-        let dry_run: bool = match args {
-            Some(args) => args.global_args.dry_run,
-            None => false,
-        };
-
         let ctx = Context {
             relative_target,
             target,
@@ -113,7 +106,6 @@ impl Context {
             root,
             current,
             config,
-            dry_run,
             lib_annotations,
             relative_lib_annotations,
             src_generated,
@@ -232,7 +224,7 @@ impl Context {
 
         let ctx = Context::compose(inc, exc);
 
-        if !ctx.dry_run {
+        if !GlobalContext::is_dry_run() {
             sync_lsp_config(&ctx)?;
         }
 

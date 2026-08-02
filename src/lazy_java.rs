@@ -3,16 +3,18 @@ use colored::Colorize;
 use crate::{
     Context,
     args::{
-        AddArgs, BuildCommand, FindArgs, GenerateArgs, ImportArgs, LazyJavaArgs, LazyJavaCommand,
-        RemoveArgs, RunArgs, SyncArgs,
+        AddArgs, BuildCommand, FindArgs, GenerateArgs, LazyJavaArgs, LazyJavaCommand, RemoveArgs,
+        RunArgs, SyncArgs,
     },
     config::ConfigTomlEdit,
     lazy_java_error::LazyJavaError,
+    utils::GlobalContext,
 };
 pub struct LazyJava;
 
 impl LazyJava {
     pub fn execute(cli_args: LazyJavaArgs) -> Result<(), LazyJavaError> {
+        GlobalContext::init(cli_args.global_args.dry_run);
         if cli_args.global_args.dry_run {
             println!(
                 "{} ({} will be made)",
@@ -30,11 +32,8 @@ impl LazyJava {
             LazyJavaCommand::Remove { args } => Self::remove_internal(&cli_args, args),
             LazyJavaCommand::Sync { args } => Self::sync_internal(&cli_args, args),
             LazyJavaCommand::Generate { args } => Self::generate_internal(&cli_args, args),
-            LazyJavaCommand::Import { args } => Self::import_internal(&cli_args, args),
+            LazyJavaCommand::Import { args } => Self::import(args),
         }
-    }
-    fn import_internal(all_args: &LazyJavaArgs, args: &ImportArgs) -> Result<(), LazyJavaError> {
-        Self::import(args, all_args)
     }
     fn generate_internal(
         all_args: &LazyJavaArgs,

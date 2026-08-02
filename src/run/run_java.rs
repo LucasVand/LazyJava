@@ -8,7 +8,7 @@ use crate::{
     lazy_java::LazyJava,
     lazy_java_error::LazyJavaError,
     run::{RunError, interactive_run::interactive_find_main},
-    utils::{IOError, processes::execute_java},
+    utils::{GlobalContext, IOError, processes::execute_java},
 };
 
 impl LazyJava {
@@ -19,21 +19,9 @@ impl LazyJava {
             return Self::run_jar(args, ctx);
         }
 
-        if ctx.dry_run {
-            let class = match &args.class {
-                Some(class) => class.clone(),
-                None => "<interactive selection>".into(),
-            };
-            println!("{} {}", "Running".bold().green(), class);
-            return Ok(());
-        }
-
         if !args.no_build {
             log::debug!("Building before run");
-            let status = Self::build_java(&args.build_args, ctx)?;
-            if !status.success() {
-                return Ok(());
-            }
+            Self::build_java(&args.build_args, ctx)?;
         }
 
         let class = match &args.class {
@@ -56,13 +44,12 @@ impl LazyJava {
             return Err(RunError::JarNotFound(jar_path))?;
         }
 
-        if ctx.dry_run {
-            println!("{} {:?}", "Running".bold().green(), jar_path);
-            return Ok(());
-        }
-
         println!("{} {}", "Running".bold().green(), jar_path.display());
         log::info!("Running jar: {:?}", jar_path);
+
+        if GlobalContext::is_dry_run() {
+            return Ok(());
+        }
 
         let status = Command::new("java")
             .arg("-jar")

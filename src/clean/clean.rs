@@ -1,8 +1,8 @@
-use std::fs;
-
 use colored::Colorize;
 
-use crate::{Context, lazy_java::LazyJava, lazy_java_error::LazyJavaError};
+use crate::{
+    Context, lazy_java::LazyJava, lazy_java_error::LazyJavaError, utils::fs,
+};
 
 impl LazyJava {
     pub fn clean(ctx: &Context) -> Result<(), LazyJavaError> {

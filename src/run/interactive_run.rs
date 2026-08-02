@@ -8,7 +8,14 @@ use crate::{
 
 pub fn interactive_find_main(ctx: &Context) -> Result<String, RunError> {
     log::debug!("Finding main classes interactively");
-    let options = find_main_classes(&ctx.src)
+    let exclude = if let Some(s) = ctx.config.setup()
+        && let Some(list) = s.exclude()
+    {
+        list
+    } else {
+        Vec::new()
+    };
+    let options = find_main_classes(&ctx.src, &exclude)
         .map_err(|e| IOError::new("finding main classes", &ctx.src, e))?;
     log::debug!("Found {} main classes", options.len());
 

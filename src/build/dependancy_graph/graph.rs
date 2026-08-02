@@ -1,11 +1,11 @@
 use std::{
     collections::HashMap,
-    fs, io,
+    io,
     path::{Path, PathBuf},
 };
 
 use super::graph_error::GraphError;
-use crate::{IMPORT_REGEX, PACKAGE_REGEX};
+use crate::{IMPORT_REGEX, PACKAGE_REGEX, utils::fs};
 
 #[derive(Debug, Clone)]
 pub struct DependancyGraph {

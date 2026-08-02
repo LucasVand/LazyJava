@@ -1,5 +1,6 @@
 pub mod find_main;
 pub mod find_root;
+pub mod fs;
 mod join_dir;
 pub mod processes;
 

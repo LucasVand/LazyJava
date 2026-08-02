@@ -1,5 +1,4 @@
 use std::{
-    fs::{self, write},
     hash::{DefaultHasher, Hash, Hasher},
     path::Path,
     process::ExitStatus,
@@ -12,7 +11,7 @@ use walkdir::DirEntry;
 use crate::{
     BUILD_METADATA_NAME, Context,
     build::BuildError,
-    utils::{IOError, TomlSerializeError},
+    utils::{IOError, TomlSerializeError, fs},
 };
 
 #[derive(Clone, Serialize, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
@@ -54,8 +53,7 @@ impl BuildMetadata {
         let ser = toml::to_string_pretty(self)
             .map_err(|e| TomlSerializeError::new("serializing build metadata", &path, e))?;
 
-        write(&path, ser).map_err(|e| IOError::new("writing build metadata", &path, e))?;
-
+        fs::write(&path, ser).map_err(|e| IOError::new("writing build metadata", &path, e))?;
         Ok(())
     }
 }

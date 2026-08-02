@@ -9,13 +9,17 @@ use crate::{
     utils::find_main::find_java_files,
 };
 
-pub fn find_modified_files(build: &BuildMetadata, src: &Path) -> Result<Vec<PathBuf>, io::Error> {
+pub fn find_modified_files(
+    build: &BuildMetadata,
+    src: &Path,
+    exclude: &[String],
+) -> Result<Vec<PathBuf>, io::Error> {
     log::debug!("Finding modified files in src: {:?}", src);
 
     let last_build_time = build.time_stamp;
     log::debug!("Last build time: {:?}", last_build_time);
 
-    let java_files = find_java_files(src);
+    let java_files = find_java_files(src, exclude);
     log::debug!("Found {} Java files to check", java_files.len());
 
     let mut stale_files = Vec::new();

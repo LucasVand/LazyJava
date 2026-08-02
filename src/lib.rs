@@ -1,3 +1,6 @@
+#![deny(clippy::disallowed_methods)]
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
+
 use std::sync::LazyLock;
 
 use regex::{Regex, RegexBuilder};

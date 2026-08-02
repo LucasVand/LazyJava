@@ -1,6 +1,6 @@
 use colored::Colorize;
 use std::{
-    fs, io,
+    io,
     path::{Path, absolute},
     process::{Command, Stdio},
 };
@@ -8,11 +8,11 @@ use walkdir::WalkDir;
 
 use log::debug;
 
-use crate::{Context, args::JarArgs, build::BuildError, utils::IOError};
+use crate::{Context, args::JarArgs, build::BuildError, utils::{IOError, fs, GlobalContext}};
 
 pub fn build_jar(args: &JarArgs, ctx: &Context) -> Result<(), BuildError> {
     // ISSUE: cheap dry run this is not good and should be improved
-    if ctx.dry_run {
+    if GlobalContext::is_dry_run() {
         let entry = entry_point(args, ctx).unwrap_or_default();
         println!(
             "{} jar with entry point: {}",

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs};
+use std::collections::HashMap;
 
 use colored::Colorize;
 use quick_xml::se::Serializer;
@@ -12,7 +12,7 @@ use crate::{
         AnnotationProcessorPaths, Build, Configuration, DependancyType, Dependencies, Dependency,
         MavenPom, Plugin, Plugins, ProcessorPath, Properties, Scope,
     },
-    utils::{IOError, XmlSerializeError},
+    utils::{IOError, XmlSerializeError, fs},
 };
 
 pub fn generate_pom(ctx: &Context) -> Result<(), GenerateError> {
@@ -26,9 +26,8 @@ pub fn generate_pom(ctx: &Context) -> Result<(), GenerateError> {
     pom.serialize(serializer)
         .map_err(|source| XmlSerializeError::new("serializing pom.xml", &pom_path, source))?;
 
-    if !ctx.dry_run {
-        fs::write(&pom_path, buffer).map_err(|source| IOError::new("writing", pom_path, source))?;
-    }
+    fs::write(&pom_path, buffer)
+        .map_err(|source| IOError::new("writing pom.xml", pom_path, source))?;
     println!("{} pom.xml", "Generated".green().bold());
 
     return Ok(());

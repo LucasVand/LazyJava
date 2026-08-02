@@ -1,0 +1,5 @@
+[project]
+name = "exclude-files"
+
+[setup]
+exclude = ["**/Broken.java"]

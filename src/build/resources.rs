@@ -1,12 +1,11 @@
 use std::{
     collections::HashSet,
-    fs,
     path::{Path, PathBuf},
 };
 
 use globset::{Glob, GlobSet, GlobSetBuilder};
 
-use crate::{Context, build::BuildError, utils::IOError};
+use crate::{Context, build::BuildError, utils::{IOError, fs}};
 
 pub fn copy_resources(ctx: &Context) -> Result<(), BuildError> {
     let glob_set = build_globset(ctx);
@@ -23,7 +22,9 @@ fn remove_unknown_resources(
     ctx: &Context,
 ) -> Result<isize, BuildError> {
     let mut change = 0;
-    for dir in fs::read_dir(current).map_err(|s| IOError::new("reading", current, s))? {
+    for dir in fs::read_dir(current)
+        .map_err(|s| IOError::new("reading build directory", current, s))?
+    {
         if let Ok(dir) = dir {
             if dir.file_type().unwrap().is_dir() {
                 change += remove_unknown_resources(resources, &dir.path(), ctx)?;
