@@ -15,4 +15,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
+      # run clippy but only on disallowed_methods and disallowed_types
+      - run: cargo clippy --all-targets -- -A clippy::all -D clippy::disallowed_methods -D clippy::disallowed_types
       - run: cargo build
