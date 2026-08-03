@@ -1,10 +1,12 @@
 use std::{
     collections::HashSet,
+    ffi::OsStr,
     fs::Metadata,
     io::{self, ErrorKind},
     path::{Path, PathBuf},
-    rc::Rc,
 };
+
+use globset::GlobSet;
 
 use crate::{IMPORT_REGEX, PACKAGE_REGEX, build::graph::package::Package, utils::fs};
 
@@ -26,7 +28,11 @@ pub enum Node {
 }
 
 impl Node {
-    pub fn from_path(path: &Path, prev_package: &Package) -> Result<Node, io::Error> {
+    pub fn from_path(
+        path: &Path,
+        prev_package: &Package,
+        excluded: &GlobSet,
+    ) -> Result<Node, io::Error> {
         if path.is_dir() {
             let Some(p) = path.file_name() else {
                 return Err(io::Error::new(ErrorKind::Other, "No name"));
@@ -37,7 +43,12 @@ impl Node {
             for dir in fs::read_dir(&path)? {
                 let dir = dir?;
                 let dir_path = dir.path();
-                files.push(Node::from_path(&dir_path, &package)?);
+                let ex = excluded.is_match(&dir_path) || excluded.is_match(dir.file_name());
+                let is_java = dir_path.extension() == Some(OsStr::new("java")) || dir_path.is_dir();
+
+                if !ex && is_java {
+                    files.push(Node::from_path(&dir_path, &package, excluded)?);
+                }
             }
 
             // resolving the interpackage dependencies

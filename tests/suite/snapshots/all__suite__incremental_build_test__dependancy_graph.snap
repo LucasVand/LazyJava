@@ -4,24 +4,24 @@ expression: "normalize_output(&run(&dest, &[\"build\", \"dependancies\"])?, &des
 ---
     Validating lib
     Validating lib-annotations
-  - com.example.greeting.Formatter
-  - com.example.greeting.Formatter
-  - com.example.lib.Greeter
-  - com.example.lib.Greeter
-  - com.example.math.Adder
-  - com.example.math.Adder
-  - com.example.math.Calc
-  - com.example.math.Calc
-  - com.example.math.Calc
-  - com.example.math.Subtracter
-  - com.example.math.Subtracter
- Adder.java
- Calc.java
- Formatter.java
- Greeter.java
- Main.java
- Painter.java
- Strings.java
- Subtracter.java
+  - Adder.java (math/Adder.java)
+  - Adder.java (math/Adder.java)
+  - Calc.java (math/Calc.java)
+  - Calc.java (math/Calc.java)
+  - Calc.java (math/Calc.java)
+  - Formatter.java (greeting/Formatter.java)
+  - Formatter.java (greeting/Formatter.java)
+  - Greeter.java (lib/Greeter.java)
+  - Greeter.java (lib/Greeter.java)
+  - Subtracter.java (math/Subtracter.java)
+  - Subtracter.java (math/Subtracter.java)
+Adder.java (math/Adder.java)
+Calc.java (math/Calc.java)
 Dependancy graph
+Formatter.java (greeting/Formatter.java)
+Greeter.java (lib/Greeter.java)
+Main.java (Main.java)
+Painter.java (ui/Painter.java)
+Strings.java (util/Strings.java)
+Subtracter.java (math/Subtracter.java)
 Syncing dependancies

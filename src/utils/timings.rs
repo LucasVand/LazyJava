@@ -6,14 +6,16 @@ use std::{
 use colored::Colorize;
 
 pub struct Timings {
+    title: String,
     pub total: Instant,
     current: Instant,
     steps: Vec<(String, Duration)>,
 }
 
 impl Timings {
-    pub fn start() -> Self {
+    pub fn start(title: impl Into<String>) -> Self {
         Timings {
+            title: title.into(),
             total: Instant::now(),
             current: Instant::now(),
             steps: Vec::new(),
@@ -31,6 +33,7 @@ impl Timings {
 }
 impl Display for Timings {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{} timings", self.title.green().bold())?;
         for (desc, time) in &self.steps {
             writeln!(
                 f,
@@ -41,8 +44,8 @@ impl Display for Timings {
         }
         writeln!(
             f,
-            "  {:<36} {:>10.4}s",
-            "Total time".green().bold(),
+            "{:<36} {:>10.4}s",
+            "Total".green().bold(),
             self.total.elapsed().as_secs_f64()
         )
     }

@@ -2,23 +2,24 @@ use std::{
     collections::{HashMap, HashSet},
     io,
     path::{Path, PathBuf},
-    rc::Rc,
     time::SystemTime,
 };
+
+use globset::GlobSet;
 
 use crate::build::graph::{node::NodeFile, package::Package};
 
 use super::node::Node;
 
 pub struct Graph {
-    root: Rc<Node>,
-    dependents: HashMap<PathBuf, Vec<PathBuf>>,
-    dependencies: HashMap<PathBuf, Vec<PathBuf>>,
+    pub root: Node,
+    pub dependents: HashMap<PathBuf, Vec<PathBuf>>,
+    pub dependencies: HashMap<PathBuf, Vec<PathBuf>>,
 }
 
 impl Graph {
-    pub fn from_path(path: &Path) -> Result<Graph, io::Error> {
-        let root = Rc::new(Node::from_path(path, &Package::empty())?);
+    pub fn from_path(path: &Path, excluded: &GlobSet) -> Result<Graph, io::Error> {
+        let root = Node::from_path(path, &Package::empty(), excluded)?;
 
         let mut dependents: HashMap<PathBuf, Vec<PathBuf>> = HashMap::new();
 
@@ -88,13 +89,14 @@ impl Graph {
             }
         }
 
-        let mut stale: Vec<PathBuf> = Vec::new();
+        let mut stale: HashSet<PathBuf> = HashSet::new();
 
         for m in modified {
             let dependents = self.dependents_of(&m.path);
             stale.extend(dependents);
+            stale.insert(m.path.clone());
         }
 
-        stale
+        stale.into_iter().collect()
     }
 }

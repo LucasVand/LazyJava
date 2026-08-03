@@ -117,6 +117,10 @@ fn copy_file(file: &fs::DirEntry, relative: &Path, ctx: &Context) -> Result<Path
 
     let src = file.path();
     if !dest_path.exists() {
+        if let Some(parent) = dest_path.parent() {
+            fs::create_dir_all(parent)
+                .map_err(|e| IOError::new("creating resource directory", parent, e))?;
+        }
         log::info!("Copying {} to {}", src.display(), dest_path.display());
         fs::copy(&src, &dest_path).map_err(|e| IOError::new("copying resource", &dest_path, e))?;
     } else {

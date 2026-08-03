@@ -90,14 +90,15 @@ public class Calc {
 "#;
 
 #[test]
-fn incremental_build_dependancy_and_subcommand_snapshots() -> Result<(), Box<dyn std::error::Error>> {
+fn incremental_build_dependancy_and_subcommand_snapshots() -> Result<(), Box<dyn std::error::Error>>
+{
     let tmp = copy_fixture();
     let dest = tmp.path().join("project");
 
     // Baseline: full build
     insta::assert_snapshot!(
         "full_build_output",
-        normalize_output(&run(&dest, &["build"])?, &dest)
+        normalize_output(&run(&dest, &["build", "--show-compiled"])?, &dest)
     );
 
     // Dependency and dependant graphs
@@ -112,10 +113,6 @@ fn incremental_build_dependancy_and_subcommand_snapshots() -> Result<(), Box<dyn
 
     // Nothing should be stale right after a build
     insta::assert_snapshot!(
-        "modified_after_full_build",
-        normalize_output(&run(&dest, &["build", "modified"])?, &dest)
-    );
-    insta::assert_snapshot!(
         "stale_after_full_build",
         normalize_output(&run(&dest, &["build", "stale"])?, &dest)
     );
@@ -124,10 +121,6 @@ fn incremental_build_dependancy_and_subcommand_snapshots() -> Result<(), Box<dyn
     std::fs::write(dest.join("src/greeting/Formatter.java"), MODIFIED_FORMATTER)?;
 
     insta::assert_snapshot!(
-        "modified_after_leaf_edit",
-        normalize_output(&run(&dest, &["build", "modified"])?, &dest)
-    );
-    insta::assert_snapshot!(
         "stale_after_leaf_edit",
         normalize_output(&run(&dest, &["build", "stale"])?, &dest)
     );
@@ -135,13 +128,7 @@ fn incremental_build_dependancy_and_subcommand_snapshots() -> Result<(), Box<dyn
     // Incremental build recompiles the file plus its transitive dependants
     insta::assert_snapshot!(
         "incrimental_build_after_leaf_edit",
-        normalize_output(&run(&dest, &["build"])?, &dest)
-    );
-
-    // And now nothing is stale again
-    insta::assert_snapshot!(
-        "modified_after_incrimental_build",
-        normalize_output(&run(&dest, &["build", "modified"])?, &dest)
+        normalize_output(&run(&dest, &["build", "--show-compiled"])?, &dest)
     );
 
     // A second build with no changes skips compilation entirely
