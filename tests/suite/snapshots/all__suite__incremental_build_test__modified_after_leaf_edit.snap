@@ -1,9 +1,0 @@
----
-source: tests/suite/incremental_build_test.rs
-expression: "normalize_output(&run(&dest, &[\"build\", \"modified\"])?, &dest)"
----
-    Validating lib
-    Validating lib-annotations
-  <ROOT>/src/greeting/Formatter.java
-Modified 1 file since last build
-Syncing dependancies
