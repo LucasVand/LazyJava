@@ -98,11 +98,27 @@ pub fn find_java_files(root: &Path, excluded: &[String]) -> Vec<PathBuf> {
     for entry in WalkDir::new(root) {
         if let Ok(file) = entry
             && file.file_type().is_file()
-                && file.path().extension() == Some(OsStr::new("java"))
-                && !is_excluded(&file, &set)
-            {
-                java_files.push(file.into_path());
-            }
+            && file.path().extension() == Some(OsStr::new("java"))
+            && !is_excluded(&file, &set)
+        {
+            java_files.push(file.into_path());
+        }
+    }
+
+    java_files
+}
+pub fn find_java_files_glob(root: &Path, set: &GlobSet) -> Vec<PathBuf> {
+    log::debug!("Recursively searching for Java files in {:?}", root);
+    let mut java_files: Vec<PathBuf> = Vec::new();
+
+    for entry in WalkDir::new(root) {
+        if let Ok(file) = entry
+            && file.file_type().is_file()
+            && file.path().extension() == Some(OsStr::new("java"))
+            && !is_excluded(&file, &set)
+        {
+            java_files.push(file.into_path());
+        }
     }
 
     java_files

@@ -1,0 +1,12 @@
+---
+source: tests/suite/incremental_build_test.rs
+expression: "normalize_output(&run(&dest, &[\"build\", \"stale\"])?, &dest)"
+---
+    Validating lib
+    Validating lib-annotations
+  <ROOT>/src/Main.java
+  <ROOT>/src/greeting/Formatter.java
+  <ROOT>/src/lib/Greeter.java
+  <ROOT>/src/ui/Painter.java
+Stale 4 files to recompile
+Syncing dependancies

@@ -93,6 +93,10 @@ pub struct BuildArgs {
     #[arg(long = "timings")]
     pub timings: bool,
 
+    /// Shows all the files that were recompiled
+    #[arg(long = "show-compiled")]
+    pub show_compiled: bool,
+
     #[arg(long = "javac-args", num_args = 1.., allow_hyphen_values = true)]
     pub javac_args: Vec<String>,
 }
@@ -107,8 +111,6 @@ pub struct BuildCommand {
 }
 #[derive(Subcommand, Debug, Clone)]
 pub enum BuildSubCommand {
-    /// Shows files that have been modified since last build
-    Modified {},
     /// Shows all files and their dependancies
     Dependancies {},
     /// Shows all files and their dependants

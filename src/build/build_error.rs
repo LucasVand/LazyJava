@@ -1,7 +1,6 @@
 use thiserror::Error;
 
 use crate::{
-    build::dependancy_graph::GraphError,
     config::ConfigError,
     lsp::classpath_error::ClasspathError,
     utils::{Diagnostic, DiagnosticProvider, IOError, TomlSerializeError},
@@ -17,9 +16,6 @@ pub enum BuildError {
 
     #[error("Errors while creating the jar")]
     JarCreationError,
-
-    #[error("Graph error occured")]
-    GraphError(#[from] GraphError),
 
     #[error("Classpath error occured")]
     ClasspathError(#[from] ClasspathError),
@@ -53,9 +49,6 @@ impl DiagnosticProvider for BuildError {
             BuildError::JarCreationError => Diagnostic::new("Jar creation failed")
                 .message("An error occurred while creating the jar file.")
                 .help("Check that the jar tool is available and the target directory is writable."),
-            BuildError::GraphError(err) => Diagnostic::new("Dependency graph error")
-                .message("An error occurred while building the dependency graph.")
-                .note(err.to_string()),
             BuildError::ClasspathError(err) => Diagnostic::new("Classpath error")
                 .message("An error occurred while generating the classpath.")
                 .note(err.to_string()),

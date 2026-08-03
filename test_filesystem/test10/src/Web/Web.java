@@ -19,6 +19,7 @@ public class Web {
         SpringApplication.run(Web.class, args);
     }
 
+
     @GetMapping("/")
     public String get() {
         return "This is from spring";

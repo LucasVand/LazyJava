@@ -1,0 +1,104 @@
+---
+source: tests/suite/group44_test.rs
+expression: "normalize_output(&run(&dest, &[\"build\", \"--show-compiled\"])?, &dest)"
+---
+    Validating lib
+    Validating lib-annotations
+  <ROOT>/src/App.java
+  <ROOT>/src/UIComponents/Flexbox.java
+  <ROOT>/src/UIComponents/Header.java
+  <ROOT>/src/UIComponents/InputField.java
+  <ROOT>/src/UIComponents/PageLayout.java
+  <ROOT>/src/UIComponents/StyledButton.java
+  <ROOT>/src/UIComponents/Subheader.java
+  <ROOT>/src/UIComponents/Text.java
+  <ROOT>/src/broadcasting/Room.java
+  <ROOT>/src/broadcasting/RoomFinder.java
+  <ROOT>/src/broadcasting/RoomServer.java
+  <ROOT>/src/controller/Controller.java
+  <ROOT>/src/controller/game/GameController.java
+  <ROOT>/src/controller/screens/ScreenController.java
+  <ROOT>/src/controller/screens/screenEvent/ScreenEvent.java
+  <ROOT>/src/controller/screens/screenEvent/ScreenEventBus.java
+  <ROOT>/src/controller/screens/screenEvent/ScreenEventListener.java
+  <ROOT>/src/eventSystem/engine/ClientEventEngine.java
+  <ROOT>/src/eventSystem/engine/EchoServer.java
+  <ROOT>/src/eventSystem/engine/ServerEventEngine.java
+  <ROOT>/src/eventSystem/events/Event.java
+  <ROOT>/src/eventSystem/events/EventCallback.java
+  <ROOT>/src/eventSystem/events/EventCoder.java
+  <ROOT>/src/eventSystem/events/EventManager.java
+  <ROOT>/src/eventSystem/events/ResponseEvent.java
+  <ROOT>/src/eventSystem/events/StandaloneEvent.java
+  <ROOT>/src/eventSystem/networking/RawEvent.java
+  <ROOT>/src/eventSystem/networking/client/Client.java
+  <ROOT>/src/eventSystem/networking/server/Server.java
+  <ROOT>/src/eventSystem/networking/server/TraceableRawEvent.java
+  <ROOT>/src/gameplayScreens/Boat.java
+  <ROOT>/src/gameplayScreens/GameOver.java
+  <ROOT>/src/gameplayScreens/Gameplay.java
+  <ROOT>/src/gameplayScreens/MainGame.java
+  <ROOT>/src/gameplayScreens/Powerup.java
+  <ROOT>/src/gameplayScreens/PowerupKey.java
+  <ROOT>/src/login/LoginPage.java
+  <ROOT>/src/mainMenu/InstructionsPage.java
+  <ROOT>/src/mainMenu/MainMenuPage.java
+  <ROOT>/src/mainMenu/ScoreRecord.java
+  <ROOT>/src/mainMenu/ViewHighScoresPage.java
+  <ROOT>/src/parentalControls/CreateAccountPage.java
+  <ROOT>/src/parentalControls/ParentTeacherLoginPage.java
+  <ROOT>/src/parentalControls/PlayerStatisticsPage.java
+  <ROOT>/src/parentalControls/ResetPasswordPage.java
+  <ROOT>/src/parentalControls/TeacherControlsPage.java
+  <ROOT>/src/playerScreen/FindRoomsPage.java
+  <ROOT>/src/playerScreen/OpenRoom.java
+  <ROOT>/src/playerScreen/PlayerIcon.java
+  <ROOT>/src/playerScreen/PlayerPlaceholder.java
+  <ROOT>/src/playerScreen/PlayerScreenPage.java
+  <ROOT>/src/playerScreen/PlayerStatsCard.java
+  <ROOT>/src/playerScreen/WaitingRoomPage.java
+  <ROOT>/src/saveData/Account.java
+  <ROOT>/src/saveData/HighscoreTable.java
+  <ROOT>/src/saveData/History.java
+  <ROOT>/src/saveData/Identity.java
+  <ROOT>/src/saveData/SaveData.java
+  <ROOT>/src/saveData/Stats.java
+  <ROOT>/src/state/clientState/ClientState.java
+  <ROOT>/src/state/clientState/GameData.java
+  <ROOT>/src/state/clientState/GameState.java
+  <ROOT>/src/state/clientState/Player.java
+  <ROOT>/src/state/clientState/Powerup.java
+  <ROOT>/src/state/clientState/Powerups.java
+  <ROOT>/src/state/clientState/events/DisconnectEvent.java
+  <ROOT>/src/state/clientState/events/IntoRankingEvent.java
+  <ROOT>/src/state/clientState/events/IntoTyperacerEvent.java
+  <ROOT>/src/state/clientState/events/JoinEvent.java
+  <ROOT>/src/state/clientState/lobbyState/LobbyEvent.java
+  <ROOT>/src/state/clientState/lobbyState/LobbyJoinEvent.java
+  <ROOT>/src/state/clientState/lobbyState/LobbyReadyEvent.java
+  <ROOT>/src/state/clientState/lobbyState/LobbyState.java
+  <ROOT>/src/state/clientState/lobbyState/PlayerLobbyState.java
+  <ROOT>/src/state/clientState/rankState/PlayerRankingState.java
+  <ROOT>/src/state/clientState/rankState/RankReadyEvent.java
+  <ROOT>/src/state/clientState/rankState/RankRestartToggleEvent.java
+  <ROOT>/src/state/clientState/rankState/RankState.java
+  <ROOT>/src/state/clientState/rankState/Ranking.java
+  <ROOT>/src/state/clientState/typeracerState/PlayerTyperacerState.java
+  <ROOT>/src/state/clientState/typeracerState/TyperacerState.java
+  <ROOT>/src/state/clientState/typeracerState/TyperacerStatusEvent.java
+  <ROOT>/src/state/clientState/typeracerState/TyperacerTypeEvent.java
+  <ROOT>/src/state/serverState/PartyServer.java
+  <ROOT>/src/state/serverState/ServerPlayerTypeState.java
+  <ROOT>/src/state/serverState/paragraphGenerator/Paragraph.java
+  <ROOT>/src/state/serverState/paragraphGenerator/ParagraphGenerator.java
+  <ROOT>/src/utils/ColorManager.java
+  <ROOT>/src/utils/FontManager.java
+  <ROOT>/src/utils/Tuple.java
+Compiled in <TIME>s
+Compiling using full build (90 files)
+Creating annotation library directory: <ROOT>/target/lib-annotations
+Creating build directory: <ROOT>/target/bin
+Creating build processor directory: <ROOT>/target/processor-bin
+Creating generated src directory: <ROOT>/target/generated-source
+Creating library directory: <ROOT>/target/lib
+Syncing dependancies
