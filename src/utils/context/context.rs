@@ -70,6 +70,8 @@ impl Context {
             None => ConfigTomlEdit::fetch(&root),
         }?;
 
+        Self::assert_project_name(&config)?;
+
         log::info!("Project root: {:?}", root);
 
         let relative_target = Self::target_path(args, &config).to_string();
@@ -115,6 +117,20 @@ impl Context {
         };
 
         Ok(ctx)
+    }
+
+    fn assert_project_name(config: &ConfigTomlEdit) -> Result<(), ContextError> {
+        if config.project().and_then(|p| p.name()).is_none() {
+            return Err(ContextError::MissingProjectName);
+        }
+        Ok(())
+    }
+
+    pub fn name(&self) -> String {
+        self.config
+            .project()
+            .and_then(|p| p.name())
+            .expect("project name is asserted during context construction")
     }
 
     pub fn assert_src_exists(&self) -> Result<(), ContextError> {

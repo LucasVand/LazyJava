@@ -34,19 +34,13 @@ impl BuildMetadata {
         }
     }
     pub fn fetch(target: &Path) -> Option<BuildMetadata> {
-        let build_str = fs::read_to_string(target.join(BUILD_METADATA_NAME));
-        if build_str.is_err() {
+        let Ok(build_str) = fs::read_to_string(target.join(BUILD_METADATA_NAME)) else {
             return None;
-        }
-        let build_str = build_str.unwrap();
-
-        let metadata: Result<BuildMetadata, toml::de::Error> = toml::from_str(&build_str);
-
-        if metadata.is_err() {
+        };
+        let Ok(metadata) = toml::from_str(&build_str) else {
             return None;
-        }
-
-        Some(metadata.unwrap())
+        };
+        Some(metadata)
     }
     pub fn write(&self, target: &Path) -> Result<(), BuildError> {
         let path = target.join(BUILD_METADATA_NAME);
