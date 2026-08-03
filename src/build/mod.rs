@@ -10,6 +10,7 @@ mod compile;
 #[cfg(test)]
 mod compile_tests;
 mod dependancy_graph;
+mod graph;
 #[cfg(test)]
 mod metadata_tests;
 mod processors;

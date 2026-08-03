@@ -1,0 +1,27 @@
+---
+source: tests/suite/incremental_build_test.rs
+expression: "normalize_output(&run(&dest, &[\"build\", \"dependants\"])?, &dest)"
+---
+    Validating lib
+    Validating lib-annotations
+  - com.example.Main
+  - com.example.Main
+  - com.example.Main
+  - com.example.lib.Greeter
+  - com.example.math.Adder
+  - com.example.math.Adder
+  - com.example.math.Calc
+  - com.example.math.Calc
+  - com.example.math.Subtracter
+  - com.example.math.Subtracter
+  - com.example.ui.Painter
+ Adder.java
+ Calc.java
+ Formatter.java
+ Greeter.java
+ Main.java
+ Painter.java
+ Strings.java
+ Subtracter.java
+Dependants graph
+Syncing dependancies

@@ -7,6 +7,7 @@ mod dry_run_test;
 mod exclude_files_test;
 mod generate_pom_test;
 mod import_pom_test;
+mod incremental_build_test;
 mod remove_dependency_test;
 mod resources_copy_test;
 mod sync_build_run_test;
