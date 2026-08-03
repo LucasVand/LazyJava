@@ -23,10 +23,6 @@ pub fn build_processors(build_args: &BuildArgs, ctx: &Context) -> Result<(), Bui
 
     let full_paths: Vec<PathBuf> = processors.values().map(|p| p.path.clone()).collect();
 
-    if full_paths.is_empty() {
-        return Ok(());
-    }
-
     log::debug!("Processor source paths: {:?}", full_paths);
 
     let _ = fs::remove_dir_all(ctx.bin_processors.join("META-INF"));

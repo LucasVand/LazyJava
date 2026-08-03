@@ -6,6 +6,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use colored::Colorize;
+
 use crate::utils::GlobalContext;
 
 pub use std_fs::{DirEntry, Metadata, ReadDir};
@@ -13,7 +15,7 @@ pub use std_fs::{DirEntry, Metadata, ReadDir};
 pub fn write<P: AsRef<Path>, C: AsRef<[u8]>>(path: P, contents: C) -> io::Result<()> {
     let path = path.as_ref();
     if GlobalContext::is_dry_run() {
-        println!("dry-run: would write {}", path.display());
+        println!("{}: would write {}", "dry-run".red().bold(), path.display());
         return Ok(());
     }
     std_fs::write(path, contents)
@@ -22,7 +24,11 @@ pub fn write<P: AsRef<Path>, C: AsRef<[u8]>>(path: P, contents: C) -> io::Result
 pub fn create_dir<P: AsRef<Path>>(path: P) -> io::Result<()> {
     let path = path.as_ref();
     if GlobalContext::is_dry_run() {
-        println!("dry-run: would create directory {}", path.display());
+        println!(
+            "{}: would create directory {}",
+            "dry-run".red().bold(),
+            path.display()
+        );
         return Ok(());
     }
     std_fs::create_dir(path)
@@ -31,7 +37,11 @@ pub fn create_dir<P: AsRef<Path>>(path: P) -> io::Result<()> {
 pub fn create_dir_all<P: AsRef<Path>>(path: P) -> io::Result<()> {
     let path = path.as_ref();
     if GlobalContext::is_dry_run() {
-        println!("dry-run: would create directory {}", path.display());
+        println!(
+            "{}: would create directory {}",
+            "dry-run".red().bold(),
+            path.display()
+        );
         return Ok(());
     }
     std_fs::create_dir_all(path)
@@ -40,7 +50,7 @@ pub fn create_dir_all<P: AsRef<Path>>(path: P) -> io::Result<()> {
 pub fn remove_file<P: AsRef<Path>>(path: P) -> io::Result<()> {
     let path = path.as_ref();
     if GlobalContext::is_dry_run() {
-        println!("dry-run: would remove file {}", path.display());
+        println!("{}: would remove file {}", "dry-run".red().bold(), path.display());
         return Ok(());
     }
     std_fs::remove_file(path)
@@ -49,7 +59,11 @@ pub fn remove_file<P: AsRef<Path>>(path: P) -> io::Result<()> {
 pub fn remove_dir_all<P: AsRef<Path>>(path: P) -> io::Result<()> {
     let path = path.as_ref();
     if GlobalContext::is_dry_run() {
-        println!("dry-run: would remove directory {}", path.display());
+        println!(
+            "{}: would remove directory {}",
+            "dry-run".red().bold(),
+            path.display()
+        );
         return Ok(());
     }
     std_fs::remove_dir_all(path)
@@ -59,7 +73,12 @@ pub fn copy<P: AsRef<Path>, Q: AsRef<Path>>(from: P, to: Q) -> io::Result<u64> {
     let from = from.as_ref();
     let to = to.as_ref();
     if GlobalContext::is_dry_run() {
-        println!("dry-run: would copy {} to {}", from.display(), to.display());
+        println!(
+            "{}: would copy {} to {}",
+            "dry-run".red().bold(),
+            from.display(),
+            to.display()
+        );
         return Ok(0);
     }
     std_fs::copy(from, to)

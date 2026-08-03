@@ -89,6 +89,10 @@ pub struct BuildArgs {
     #[arg(long = "build-all")]
     pub build_all: bool,
 
+    /// Show a per-step breakdown of compile times
+    #[arg(long = "timings")]
+    pub timings: bool,
+
     #[arg(long = "javac-args", num_args = 1.., allow_hyphen_values = true)]
     pub javac_args: Vec<String>,
 }

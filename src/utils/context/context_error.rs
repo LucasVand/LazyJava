@@ -21,6 +21,9 @@ pub enum ContextError {
     #[error(r#"Could not find source directory {0}, try changing the source location, or add the directory"#)]
     NoSource(String),
 
+    #[error("lazy-java.toml is missing the project name")]
+    MissingProjectName,
+
     #[error("Error when operating on config file")]
     ConfigError(#[from] ConfigError),
 
@@ -44,6 +47,9 @@ impl DiagnosticProvider for ContextError {
             ContextError::NoSource(path) => Diagnostic::new("Source directory not found")
                 .message(format!("Could not find source directory {path}."))
                 .help("Change the source location, or add the directory."),
+            ContextError::MissingProjectName => Diagnostic::new("Missing project name")
+                .message("The [project] section of lazy-java.toml must define a name.")
+                .help("Add a name to the [project] section of lazy-java.toml."),
             ContextError::ConfigError(err) => err.diagnostic(),
             ContextError::LockFileError(err) => err.diagnostic(),
             ContextError::IoError(err) => err.diagnostic(),

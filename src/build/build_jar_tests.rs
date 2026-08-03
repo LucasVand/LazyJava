@@ -10,7 +10,10 @@ fn test_ctx(target: &Path) -> Context {
         None,
         Some(
             ConfigTomlEdit::parse(&format!(
-                r#"[setup]
+                r#"[project]
+name = "test"
+
+[setup]
 src = "src"
 target = "{}"
 "#,

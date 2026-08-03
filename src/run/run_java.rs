@@ -45,7 +45,6 @@ impl LazyJava {
         }
 
         println!("{} {}", "Running".bold().green(), jar_path.display());
-        log::info!("Running jar: {:?}", jar_path);
 
         if GlobalContext::is_dry_run() {
             return Ok(());

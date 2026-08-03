@@ -5,7 +5,11 @@ use std::{
 
 use globset::{Glob, GlobSet, GlobSetBuilder};
 
-use crate::{Context, build::BuildError, utils::{IOError, fs}};
+use crate::{
+    Context,
+    build::BuildError,
+    utils::{IOError, fs},
+};
 
 pub fn copy_resources(ctx: &Context) -> Result<(), BuildError> {
     let glob_set = build_globset(ctx);
@@ -23,9 +27,10 @@ fn remove_unknown_resources(
 ) -> Result<isize, BuildError> {
     let mut change = 0;
     for dir in fs::read_dir(current)
-        .map_err(|s| IOError::new("reading build directory", current, s))?.flatten()
+        .map_err(|s| IOError::new("reading build directory", current, s))?
+        .flatten()
     {
-        if dir.file_type().unwrap().is_dir() {
+        if dir.file_type().is_ok_and(|t| t.is_dir()) {
             change += remove_unknown_resources(resources, &dir.path(), ctx)?;
         } else {
             if let Some(ext) = dir.path().extension() {
@@ -75,7 +80,10 @@ fn add_resources(
     ctx: &Context,
 ) -> Result<HashSet<PathBuf>, BuildError> {
     let mut resources = HashSet::new();
-    for dir in fs::read_dir(path).map_err(|e| IOError::new("reading source directory", path, e))?.flatten() {
+    for dir in fs::read_dir(path)
+        .map_err(|e| IOError::new("reading source directory", path, e))?
+        .flatten()
+    {
         if is_excluded(&dir, glob_set) {
             continue;
         }

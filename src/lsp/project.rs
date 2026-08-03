@@ -1,14 +1,12 @@
-use std::{io, path::Path};
-
-use crate::{config::ConfigTomlEdit, utils::fs};
+use crate::{Context, lazy_java_error::LazyJavaError, utils::fs};
 
 pub struct DotProject {}
 
 impl DotProject {
-    pub fn generate(root: &Path, config: &ConfigTomlEdit) -> Result<(), io::Error> {
-        let name: &str = &config.project().unwrap().name().unwrap();
+    pub fn generate(ctx: &Context) -> Result<(), LazyJavaError> {
+        let name = ctx.name();
         fs::write(
-            root.join(".project"),
+            ctx.root.join(".project"),
             format!(
                 r#"<?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
@@ -40,6 +38,7 @@ impl DotProject {
 </projectDescription>
 "#
             ),
-        )
+        )?;
+        Ok(())
     }
 }
