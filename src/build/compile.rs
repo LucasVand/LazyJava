@@ -1,12 +1,16 @@
 use std::{
     io,
     path::{self, Path, PathBuf},
-    process::{Command, ExitStatus, Output, Stdio},
+    process::{ExitStatus, Output, Stdio},
 };
 
 use log::warn;
 
-use crate::{Context, JAVAC_SEPERATOR, utils::join_directory};
+use crate::{
+    Context, JAVAC_SEPERATOR,
+    build::BuildError,
+    utils::{IOError, join_directory, processes::java_tool_command},
+};
 
 /// Anything postfixed with list should be a : or ; seperated list depending on platform, expect
 /// src_list that is a space seperated list
@@ -20,13 +24,14 @@ pub(crate) fn compile_command(
     src_generated_dir: &str,
     build_processor_dir: &str,
     javac_args: &Vec<String>,
+    release: Option<&str>,
 ) -> Result<Output, io::Error> {
     let sep = JAVAC_SEPERATOR;
     let classpath =
         format!("{build_processor_dir}{sep}{bin_dir}{sep}{annotation_lib}/*{sep}{lib_dir}/*");
     let processorpath = format!("{annotation_lib_list}{sep}{build_processor_dir}");
 
-    let mut cmd = Command::new("javac");
+    let mut cmd = java_tool_command("javac");
     cmd.arg("-s")
         .arg(src_generated_dir)
         .arg("-processorpath")
@@ -35,6 +40,9 @@ pub(crate) fn compile_command(
         .arg(&classpath)
         .arg("-d")
         .arg(output_dir);
+    if let Some(version) = release {
+        cmd.arg("--release").arg(version);
+    }
     cmd.args(javac_args);
     for src in src_list.split_whitespace() {
         cmd.arg(src);
@@ -54,7 +62,8 @@ pub fn compile_java(
     ctx: &Context,
     javac_args: &Vec<String>,
     compile_generated_source: bool,
-) -> Result<ExitStatus, io::Error> {
+    release: Option<&str>,
+) -> Result<ExitStatus, BuildError> {
     log::debug!("Using library path: {:?}", ctx.lib);
     log::debug!("Javac arguments: {:?}", javac_args);
 
@@ -70,14 +79,21 @@ pub fn compile_java(
         .map(|c_path| c_path.to_string_lossy().to_string())
         .collect();
 
-    let ab_dest = path::absolute(dest)?;
-    let ab_lib = path::absolute(&ctx.lib)?;
-    let ab_bin = path::absolute(&ctx.bin)?;
-    let ab_annotation_lib = path::absolute(&ctx.lib_annotations)?;
+    let resolve = |what: &'static str, p: &Path| -> Result<PathBuf, BuildError> {
+        path::absolute(p).map_err(|e| BuildError::IoError(IOError::new(what, p, e)))
+    };
+
+    let ab_dest = resolve("resolving output directory", dest)?;
+    let ab_lib = resolve("resolving library directory", &ctx.lib)?;
+    let ab_bin = resolve("resolving bin directory", &ctx.bin)?;
+    let ab_annotation_lib = resolve(
+        "resolving annotation library directory",
+        &ctx.lib_annotations,
+    )?;
     let ab_annotation_lib_list = join_directory(&ctx.lib_annotations, JAVAC_SEPERATOR);
-    let ab_src_generated = path::absolute(&ctx.src_generated)?;
+    let ab_src_generated = resolve("resolving generated source directory", &ctx.src_generated)?;
     let src_generated_destructured = join_directory(&ab_src_generated, ' ');
-    let ab_bin_processor = path::absolute(&ctx.bin_processors)?;
+    let ab_bin_processor = resolve("resolving processor bin directory", &ctx.bin_processors)?;
     log::debug!("Processor build output directory: {:?}", ab_bin_processor);
     log::debug!("Annotation library path: {:?}", ab_annotation_lib_list);
 
@@ -87,7 +103,7 @@ pub fn compile_java(
         src_des.push_str(&src_generated_destructured);
     }
 
-    let command = compile_command(
+    let output = match compile_command(
         &src_des,
         ab_dest.to_str().unwrap(),
         ab_bin.to_str().unwrap(),
@@ -97,9 +113,18 @@ pub fn compile_java(
         ab_src_generated.to_str().unwrap(),
         ab_bin_processor.to_str().unwrap(),
         javac_args,
-    );
-
-    let output = command.expect("Compile Command Failed");
+        release,
+    ) {
+        Ok(output) => output,
+        Err(e) if e.kind() == io::ErrorKind::NotFound => return Err(BuildError::JavacNotFound),
+        Err(e) => {
+            return Err(BuildError::IoError(IOError::new(
+                "running javac",
+                &ab_bin,
+                e,
+            )));
+        }
+    };
 
     if output.status.success() {
         log::info!("Compilation completed successfully");

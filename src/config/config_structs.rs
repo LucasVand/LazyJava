@@ -89,6 +89,10 @@ pub struct ConfigSetup {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub main_class: Option<String>,
 
+    /// JDK release version passed to `javac --release` (e.g. "17")
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub release: Option<String>,
+
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub exclude: Vec<String>,
 }

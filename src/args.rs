@@ -99,6 +99,10 @@ pub struct BuildArgs {
 
     #[arg(long = "javac-args", num_args = 1.., allow_hyphen_values = true)]
     pub javac_args: Vec<String>,
+
+    /// JDK release version passed to javac via --release (e.g. 17)
+    #[arg(long = "release")]
+    pub release: Option<String>,
 }
 
 #[derive(Parser, Debug, Clone)]

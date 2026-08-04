@@ -13,7 +13,7 @@ use crate::{
     lazy_java_error::LazyJavaError,
     lock_file::LockFile,
     lsp::sync_lsp_config,
-    utils::{IOError, find_root::find_root, fs, GlobalContext},
+    utils::{GlobalContext, IOError, find_root::find_root, fs},
 };
 
 use super::ContextError;

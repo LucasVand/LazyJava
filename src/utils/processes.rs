@@ -1,12 +1,33 @@
 use std::{
-    io,
+    env, io,
     path::{self, Path, PathBuf},
     process::{Command, ExitStatus, Output, Stdio},
 };
 
 use log::debug;
 
-use crate::JAVAC_SEPERATOR;
+use crate::{
+    JAVAC_SEPERATOR, build::BuildError, utils::IOError,
+};
+
+
+/// Build a command for a JDK tool (`javac`, `jar`, `java`). Prefers the
+/// executable from `$JAVA_HOME/bin` and falls back to the system PATH.
+pub fn java_tool_command(tool: &str) -> Command {
+    if let Some(home) = env::var_os("JAVA_HOME") {
+        let base = Path::new(&home).join("bin");
+        let mut candidate = base.join(tool);
+        if cfg!(windows) && candidate.extension().is_none() {
+            candidate.set_extension("exe");
+        }
+        if candidate.is_file() {
+            return Command::new(candidate);
+        }
+    }
+    Command::new(tool)
+}
+
+
 
 fn run_command(
     build: &str,
@@ -16,7 +37,7 @@ fn run_command(
 ) -> Result<Output, io::Error> {
     let sep = JAVAC_SEPERATOR;
 
-    let mut c = Command::new("java");
+    let mut c = java_tool_command("java");
     let command = c
         .args(["-classpath", &format!("{}{sep}{}/*", build, lib)])
         .arg(class)
@@ -36,7 +57,7 @@ pub fn execute_java(
     classpath: &PathBuf,
     lib: &Path,
     args: &Vec<String>,
-) -> Result<ExitStatus, io::Error> {
+) -> Result<ExitStatus, BuildError> {
     log::info!("Executing Java class: {}", classname);
     log::debug!("Using classpath: {:?}", classpath);
     log::debug!("Using library path: {:?}", lib);
@@ -44,8 +65,10 @@ pub fn execute_java(
         log::debug!("Program arguments: {:?}", args);
     }
 
-    let ab_classpath = path::absolute(classpath)?;
-    let ab_lib = path::absolute(lib)?;
+    let ab_classpath = path::absolute(classpath)
+        .map_err(|e| BuildError::IoError(IOError::new("resolving classpath", classpath, e)))?;
+    let ab_lib = path::absolute(lib)
+        .map_err(|e| BuildError::IoError(IOError::new("resolving library path", lib, e)))?;
 
     let output = run_command(
         ab_classpath.to_str().unwrap(),
@@ -53,7 +76,13 @@ pub fn execute_java(
         classname,
         args,
     )
-    .expect("Run Command Failed");
+    .map_err(|e| {
+        if e.kind() == io::ErrorKind::NotFound {
+            BuildError::JavaNotFound
+        } else {
+            BuildError::IoError(IOError::new("running java", &ab_classpath, e))
+        }
+    })?;
 
     if output.status.success() {
         log::info!("Java execution completed successfully");
@@ -65,31 +94,6 @@ pub fn execute_java(
     }
 
     Ok(output.status)
-}
-
-pub fn java_version() -> Result<String, io::Error> {
-    let command = "java --version";
-    let output = if cfg!(target_os = "windows") {
-        Command::new("powershell")
-            .args(["-Command", command])
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .output()
-    } else {
-        Command::new("sh")
-            .arg("-c")
-            .arg(command)
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .output()
-    }?;
-
-    let str = String::from_utf8_lossy(&output.stdout);
-    let mut split = str.split(" ");
-
-    let version = split.next().unwrap();
-
-    Ok(version.to_string())
 }
 
 #[cfg(test)]

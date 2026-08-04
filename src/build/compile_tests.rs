@@ -46,6 +46,7 @@ fn test_compile_command_simple() -> Result<(), std::io::Error> {
         &src_generated_dir.to_string_lossy(),
         &processor_dir.to_string_lossy(),
         &Vec::new(),
+        None,
     )?;
 
     assert!(
@@ -100,6 +101,7 @@ public class Greeting {{
         &src_generated_dir.to_string_lossy(),
         &processor_dir.to_string_lossy(),
         &Vec::new(),
+        None,
     )?;
 
     assert!(

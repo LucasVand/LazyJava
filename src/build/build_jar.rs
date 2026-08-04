@@ -2,13 +2,13 @@ use colored::Colorize;
 use std::{
     io,
     path::{Path, absolute},
-    process::{Command, Stdio},
+    process::Stdio,
 };
 use walkdir::WalkDir;
 
 use log::debug;
 
-use crate::{Context, args::JarArgs, build::BuildError, utils::{IOError, fs, GlobalContext}};
+use crate::{Context, args::JarArgs, build::BuildError, utils::{GlobalContext, IOError, fs, processes::java_tool_command}};
 
 pub fn build_jar(args: &JarArgs, ctx: &Context) -> Result<(), BuildError> {
     // ISSUE: cheap dry run this is not good and should be improved
@@ -119,14 +119,20 @@ fn build_fat_jar_inner(
 fn extract_jar(jar: &Path, dest: &Path) -> Result<(), BuildError> {
     let jar = absolute(jar).map_err(|e| IOError::new("resolving jar path", jar, e))?;
 
-    let status = Command::new("jar")
+    let status = java_tool_command("jar")
         .current_dir(dest)
         .arg("xf")
         .arg(&jar)
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .status()
-        .map_err(|e| IOError::new("extracting jar", &jar, e))?;
+        .map_err(|e| {
+            if e.kind() == io::ErrorKind::NotFound {
+                BuildError::JarNotFound
+            } else {
+                BuildError::IoError(IOError::new("extracting jar", &jar, e))
+            }
+        })?;
     if !status.success() {
         return Err(BuildError::JarCreationError);
     }
@@ -221,7 +227,7 @@ pub(crate) fn build_manifest(entry_point: &str, ctx: &Context) -> Result<String,
 }
 
 fn run_jar_command(output: &Path, manifest: &Path, dirs: &[&Path]) -> Result<(), BuildError> {
-    let mut cmd = Command::new("jar");
+    let mut cmd = java_tool_command("jar");
     cmd.arg("-cfm").arg(output).arg(manifest);
     for dir in dirs {
         cmd.arg("-C").arg(dir).arg(".");
@@ -231,7 +237,13 @@ fn run_jar_command(output: &Path, manifest: &Path, dirs: &[&Path]) -> Result<(),
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .status()
-        .map_err(|e| IOError::new("running jar command", output, e))?;
+        .map_err(|e| {
+            if e.kind() == io::ErrorKind::NotFound {
+                BuildError::JarNotFound
+            } else {
+                BuildError::IoError(IOError::new("running jar command", output, e))
+            }
+        })?;
     if !status.success() {
         return Err(BuildError::JarCreationError);
     }

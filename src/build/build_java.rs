@@ -16,6 +16,7 @@ use crate::lazy_java::LazyJava;
 use crate::build::BuildError;
 use crate::lsp::classpath::Classpath;
 use crate::utils::find_main::find_java_files_glob;
+use crate::utils::jdk_version::desired_jdk_version;
 use crate::utils::{GlobalContext, IOError, Timings};
 
 impl LazyJava {
@@ -53,6 +54,11 @@ impl LazyJava {
         let lib_hash_match = build_data
             .as_ref()
             .is_some_and(|t| current_lib_hash == t.lib_hash);
+
+        let jdk = desired_jdk_version(Some(args), Some(ctx));
+        let version_match = build_data
+            .as_ref()
+            .is_some_and(|t| t.java_version == jdk);
         timings.record_current("Metadata parse");
 
         build_processors(args, ctx)?;
@@ -61,7 +67,7 @@ impl LazyJava {
         let glob = build_globset(ctx);
 
         let files: Result<Vec<PathBuf>, BuildError> =
-            if args.build_all || !lib_hash_match || build_data.is_none() {
+            if args.build_all || !lib_hash_match || build_data.is_none() || !version_match {
                 let files = find_java_files_glob(&ctx.src, &glob);
                 println!(
                     "{} using full build ({} file{})",
@@ -94,8 +100,8 @@ impl LazyJava {
         timings.record_current("Incrimental prcoessing");
         let mut status: Option<ExitStatus> = None;
         if !files.is_empty() {
-            let e_status = compile_java(files, &ctx.bin, ctx, &args.javac_args, true)
-                .map_err(|e| IOError::new("compiling java files", &ctx.bin, e))?;
+            let e_status = compile_java(files, &ctx.bin, ctx, &args.javac_args, true, Some(&jdk))?;
+
             timings.record_current("Compile");
             status = Some(e_status);
         }
@@ -104,7 +110,7 @@ impl LazyJava {
         timings.record_current("Copy resources");
 
         if let Some(status) = status {
-            save_metadata(ctx, status, build_data)?;
+            save_metadata(ctx, status, build_data, &jdk)?;
 
             if !status.success() {
                 return Err(BuildError::MainCompilationErrors);

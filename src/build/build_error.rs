@@ -33,6 +33,15 @@ pub enum BuildError {
         "No main class specified, provide one in the command line or insert into the lazy-java.toml file"
     )]
     NoMainClass,
+
+    #[error("`javac` was not found on the PATH, ensure a JDK is installed and on the PATH")]
+    JavacNotFound,
+
+    #[error("`jar` was not found on the PATH, ensure a JDK is installed and on the PATH")]
+    JarNotFound,
+
+    #[error("`java` was not found on the PATH, ensure a JDK is installed and on the PATH")]
+    JavaNotFound,
 }
 
 impl DiagnosticProvider for BuildError {
@@ -58,6 +67,15 @@ impl DiagnosticProvider for BuildError {
             BuildError::NoMainClass => Diagnostic::new("No main class specified")
                 .message("No main class was specified for the jar.")
                 .help("Provide one in the command line or insert into the lazy-java.toml file."),
+            BuildError::JavacNotFound => Diagnostic::new("javac not found")
+                .message("The `javac` compiler could not be found on the PATH.")
+                .help("Ensure a JDK is installed and its bin directory is on the PATH."),
+            BuildError::JarNotFound => Diagnostic::new("jar not found")
+                .message("The `jar` tool could not be found on the PATH.")
+                .help("Ensure a JDK is installed and its bin directory is on the PATH."),
+            BuildError::JavaNotFound => Diagnostic::new("java not found")
+                .message("The `java` command could not be found on the PATH.")
+                .help("Ensure a JDK is installed and its bin directory is on the PATH."),
         }
     }
 }

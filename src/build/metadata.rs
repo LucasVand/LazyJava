@@ -62,6 +62,7 @@ pub fn save_metadata(
     ctx: &Context,
     status: ExitStatus,
     meta: Option<BuildMetadata>,
+    jdk: &str,
 ) -> Result<(), BuildError> {
     let time = if !status.success() {
         match meta {
@@ -73,7 +74,7 @@ pub fn save_metadata(
     };
     let meta = BuildMetadata {
         time_stamp: time,
-        java_version: "25".to_string(),
+        java_version: jdk.to_string(),
         lib_hash: hash_directory(&ctx.lib),
         bin_hash: hash_directory(&ctx.bin),
         build_passed: status.success(),
