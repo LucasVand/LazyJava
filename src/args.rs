@@ -169,6 +169,9 @@ pub struct AddArgs {
     pub artifact: String,
     // the specific version to add
     pub artifact_version: Option<String>,
+
+    // the scope of the dependancy
+    pub scope: Option<String>,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -215,6 +218,10 @@ pub struct ImportPomArgs {
     /// Overwrite existing lazy-java.toml if it exists
     #[arg(long = "overwrite")]
     pub overwrite: bool,
+
+    /// Will only import the pom.xml dependencies and not other configurations
+    #[arg(long = "only-dependencies")]
+    pub only_dependencies: bool,
 }
 
 #[derive(Debug, Parser, Clone)]

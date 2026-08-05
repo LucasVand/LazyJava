@@ -12,5 +12,12 @@ public class Main {
         BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
         String content = reader.readLine();
         System.out.println("Resource content: " + content);
+
+        InputStream ext = Main.class.getResourceAsStream("/external.txt");
+        if (ext == null) {
+            System.out.println("External resource external.txt was not found on the classpath!");
+            return;
+        }
+        System.out.println("External: " + new BufferedReader(new InputStreamReader(ext)).readLine());
     }
 }

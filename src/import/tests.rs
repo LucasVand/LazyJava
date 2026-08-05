@@ -30,6 +30,7 @@ name = "original""#,
         &ImportPomArgs {
             pom_path: "pom.xml".into(),
             overwrite: false,
+            only_dependencies: false,
         },
     )
     .unwrap();
@@ -65,6 +66,7 @@ name = "original""#,
         &ImportPomArgs {
             pom_path: "pom.xml".into(),
             overwrite: true,
+            only_dependencies: false,
         },
     )
     .unwrap();

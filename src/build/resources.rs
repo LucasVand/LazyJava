@@ -3,22 +3,76 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use globset::{Glob, GlobSet, GlobSetBuilder};
-
 use crate::{
     Context,
     build::BuildError,
     utils::{IOError, fs},
 };
+use globset::{Glob, GlobSet, GlobSetBuilder};
+use same_file::is_same_file;
 
 pub fn copy_resources(ctx: &Context) -> Result<(), BuildError> {
-    let glob_set = build_globset(ctx);
-    let resource_paths = add_resources(&ctx.src, Path::new(""), &glob_set, ctx)?;
+    let list = if let Some(r) = ctx.config.resources()
+        && let Some(l) = r.exclude()
+    {
+        l
+    } else {
+        Vec::new()
+    };
+    let glob_set = build_globset(&list);
+
+    let mut resource_paths = add_resources(&ctx.src, Path::new(""), &glob_set, ctx)?;
     log::info!("Found {} resources", resource_paths.len());
+
+    let external = if let Some(r) = ctx.config.resources()
+        && let Some(list) = r.external()
+    {
+        list
+    } else {
+        Vec::new()
+    };
+    let glob_external = build_globset(&external);
+
+    let external_paths = add_external_resources(&ctx.root, &glob_external, ctx)?;
+
+    resource_paths.extend(external_paths);
 
     let removed = remove_unknown_resources(&resource_paths, &ctx.bin, ctx)?;
     log::info!("Removed {} resources", removed);
     Ok(())
+}
+fn add_external_resources(
+    path: &Path,
+    glob_set: &GlobSet,
+    ctx: &Context,
+) -> Result<HashSet<PathBuf>, BuildError> {
+    let mut res = HashSet::new();
+    for entry in fs::read_dir(path)
+        .map_err(|s| IOError::new("reading project directory", path, s))?
+        .flatten()
+    {
+        let p = entry.path();
+
+        if is_same_file(&p, &ctx.src).unwrap_or(false)
+            || is_same_file(&p, &ctx.target).unwrap_or(false)
+            || is_same_file(&p, &ctx.bin).unwrap_or(false)
+        {
+            continue;
+        }
+        if entry.file_type().is_ok_and(|t| t.is_dir()) {
+            if entry.file_name().to_string_lossy().starts_with('.') {
+                continue;
+            }
+            res.extend(add_external_resources(&p, glob_set, ctx)?);
+        } else {
+            let relative = p.strip_prefix(&ctx.root).unwrap_or(&p);
+            if glob_set.is_match(relative) {
+                res.insert(copy_file(&entry, Path::new("."), ctx)?);
+            }
+        }
+    }
+
+    Ok(res)
 }
 fn remove_unknown_resources(
     resources: &HashSet<PathBuf>,
@@ -56,17 +110,13 @@ fn remove_file(resources: &HashSet<PathBuf>, dir: &fs::DirEntry) -> Result<isize
 
     Ok(0)
 }
-fn build_globset(ctx: &Context) -> GlobSet {
+fn build_globset(list: &[String]) -> GlobSet {
     let mut builder = GlobSetBuilder::new();
-    if let Some(r) = ctx.config.resources()
-        && let Some(exclude) = r.exclude()
-    {
-        for rule in exclude {
-            if let Ok(glob_rule) = Glob::new(&rule) {
-                builder.add(glob_rule);
-            } else {
-                log::warn!("Invalid glob rule, \"{}\" is not a valid rule", rule);
-            }
+    for rule in list {
+        if let Ok(glob_rule) = Glob::new(rule) {
+            builder.add(glob_rule);
+        } else {
+            log::warn!("Invalid glob rule, \"{}\" is not a valid rule", rule);
         }
     }
 

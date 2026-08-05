@@ -27,6 +27,7 @@ mod tests {
         let meta = BuildMetadata {
             time_stamp: SystemTime::UNIX_EPOCH,
             java_version: "21".into(),
+            src: "src".into(),
             lib_hash: 42,
             bin_hash: 123,
             build_passed: true,

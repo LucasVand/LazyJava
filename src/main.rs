@@ -19,7 +19,6 @@ fn main() -> Result<()> {
     };
 
     env_logger::builder()
-        .format_target(cfg!(debug_assertions))
         .filter_level(log_level)
         .format_timestamp(None)
         .init();

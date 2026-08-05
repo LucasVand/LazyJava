@@ -19,7 +19,7 @@ mod tests {
     #[test]
     fn test_maven_dependancy_list_simple() {
         // Test creating a dependency list for a simple artifact (junit has no dependencies)
-        let result = MavenDependancyList::new(MavenIdBuf::new("junit", "junit", "4.13.2"));
+        let result = MavenDependancyList::new(MavenIdBuf::new("junit", "junit", "4.13.2"), None);
         assert!(
             result.is_ok(),
             "Failed to create dependency list: {:?}",
@@ -46,7 +46,7 @@ mod tests {
             "com.fasterxml.jackson.core",
             "jackson-databind",
             "2.15.0",
-        ));
+        ), None);
         assert!(
             result.is_ok(),
             "Failed to create dependency list: {:?}",
@@ -73,7 +73,7 @@ mod tests {
             "invalid.id.group",
             "invalid.id.artifact",
             "1.0.0",
-        ));
+        ), None);
         assert!(result.is_err(), "Should fail for non-existent artifact");
     }
 
@@ -81,7 +81,7 @@ mod tests {
     fn test_maven_dependancy_list_against_real_list() {
         // Test that transitive dependencies are included
         let result =
-            MavenDependancyList::new(MavenIdBuf::new("com.google.guava", "guava", "33.6.0-jre"));
+            MavenDependancyList::new(MavenIdBuf::new("com.google.guava", "guava", "33.6.0-jre"), None);
         assert!(result.is_ok());
 
         let mut dep_list = result.unwrap();
@@ -154,7 +154,7 @@ mod tests {
             "org.springframework.boot",
             "spring-boot-starter-web",
             "4.1.0-RC1",
-        ));
+        ), None);
         assert!(result.is_ok());
 
         let dep_list = result.unwrap();
@@ -183,7 +183,7 @@ mod tests {
     fn test_maven_dependancy_list_versions_valid() {
         // Test that all versions in the list are valid version strings
         let result =
-            MavenDependancyList::new(MavenIdBuf::new("com.google.guava", "guava", "31.1-jre"));
+            MavenDependancyList::new(MavenIdBuf::new("com.google.guava", "guava", "31.1-jre"), None);
         assert!(result.is_ok());
 
         let dep_list = result.unwrap();
@@ -203,7 +203,7 @@ mod tests {
     #[test]
     fn test_maven_dependancy_list_root_artifact_included() {
         // Test that the root artifact is included in the dependency list
-        let result = MavenDependancyList::new(MavenIdBuf::new("junit", "junit", "4.13.2"));
+        let result = MavenDependancyList::new(MavenIdBuf::new("junit", "junit", "4.13.2"), None);
         assert!(result.is_ok());
 
         let dep_list = result.unwrap();
@@ -222,7 +222,7 @@ mod tests {
     fn test_maven_dependancy_list_dependency_types() {
         // Test that dependencies have valid packaging types
         let result =
-            MavenDependancyList::new(MavenIdBuf::new("com.google.guava", "guava", "31.1-jre"));
+            MavenDependancyList::new(MavenIdBuf::new("com.google.guava", "guava", "31.1-jre"), None);
         assert!(result.is_ok());
 
         let dep_list = result.unwrap();

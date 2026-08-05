@@ -12,7 +12,7 @@ impl MavenPom {
     pub fn deserialize(id: &MavenId, content: &str) -> Result<MavenPom, MavenError> {
         let mut pom: MavenPom = quick_xml::de::from_str(content)
             .map_err(|e| XmlDeserializeError::new("parsing pom", id.to_string(), e))?;
-        log::info!("Successfully parsed POM {}", id);
+        log::debug!("Successfully parsed POM {}", id);
 
         pom.group_id = id.group.to_string();
         pom.version = id.version.to_string();

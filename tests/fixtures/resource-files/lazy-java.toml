@@ -3,3 +3,4 @@ name = "resource-files"
 
 [resources]
 exclude = ["**/secret.txt"]
+external = ["external.txt"]

@@ -1,4 +1,4 @@
-use crate::config::ConfigError;
+use crate::{config::ConfigError, maven_central::pom::Scope};
 use std::{collections::HashMap, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
@@ -102,15 +102,18 @@ pub struct ConfigSetup {
 pub struct ConfigDependancy {
     pub group: String,
     pub version: String,
+    pub scope: Option<Scope>,
 }
 
 impl<'a> ConfigDependancyTomlEditView<'a> {
     pub fn to_config_dependancy(&self) -> Result<ConfigDependancy, ConfigError> {
         let group = assert(self.group(), "group_id")?;
         let version = assert(self.version(), "version")?;
+        let scope = self.scope();
         Ok(ConfigDependancy {
             group,
             version,
+            scope,
         })
     }
 }
@@ -121,6 +124,10 @@ pub struct ConfigResources {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     #[serde(default)]
     pub exclude: Vec<String>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
+    pub external: Vec<String>,
 }
 
 fn is_default<T: Default + PartialEq>(value: &T) -> bool {
