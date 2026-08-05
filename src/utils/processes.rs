@@ -6,10 +6,7 @@ use std::{
 
 use log::debug;
 
-use crate::{
-    JAVAC_SEPERATOR, build::BuildError, utils::IOError,
-};
-
+use crate::{JAVAC_SEPERATOR, build::BuildError, utils::IOError};
 
 /// Build a command for a JDK tool (`javac`, `jar`, `java`). Prefers the
 /// executable from `$JAVA_HOME/bin` and falls back to the system PATH.
@@ -26,8 +23,6 @@ pub fn java_tool_command(tool: &str) -> Command {
     }
     Command::new(tool)
 }
-
-
 
 fn run_command(
     build: &str,

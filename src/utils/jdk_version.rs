@@ -126,4 +126,3 @@ mod tests {
         assert_eq!(parse_major("javac something"), None);
     }
 }
-

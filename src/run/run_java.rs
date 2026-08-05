@@ -4,19 +4,19 @@ use std::process::Stdio;
 use colored::Colorize;
 
 use crate::{
-        Context,
-        args::RunArgs,
-        build::BuildError,
-        build::metadata::BuildMetadata,
-        lazy_java::LazyJava,
-        lazy_java_error::LazyJavaError,
-        run::{RunError, interactive_run::interactive_find_main},
-        utils::{
-            GlobalContext, IOError,
-            jdk_version::warn_runtime_mismatch,
-            processes::{execute_java, java_tool_command},
-        },
-    };
+    Context,
+    args::RunArgs,
+    build::BuildError,
+    build::metadata::BuildMetadata,
+    lazy_java::LazyJava,
+    lazy_java_error::LazyJavaError,
+    run::{RunError, interactive_run::interactive_find_main},
+    utils::{
+        GlobalContext, IOError,
+        jdk_version::warn_runtime_mismatch,
+        processes::{execute_java, java_tool_command},
+    },
+};
 
 impl LazyJava {
     pub fn run(args: &RunArgs, ctx: &Context) -> Result<(), LazyJavaError> {

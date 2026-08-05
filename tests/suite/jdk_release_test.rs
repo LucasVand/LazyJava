@@ -21,8 +21,8 @@ fn copy_fixture() -> tempfile::TempDir {
 }
 
 #[test]
-fn release_version_flows_to_settings_classpath_and_metadata() -> Result<(), Box<dyn std::error::Error>>
-{
+fn release_version_flows_to_settings_classpath_and_metadata()
+-> Result<(), Box<dyn std::error::Error>> {
     let tmp = copy_fixture();
     let dest = tmp.path().join("project");
 

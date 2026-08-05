@@ -35,7 +35,10 @@ fn build_copies_resources_to_bin_and_run_reads_them() -> Result<(), Box<dyn std:
         "secret.txt should be excluded from bin resources"
     );
     assert!(
-        dest.join("target").join("bin").join("external.txt").exists(),
+        dest.join("target")
+            .join("bin")
+            .join("external.txt")
+            .exists(),
         "external.txt should be copied to bin as an external resource"
     );
 
