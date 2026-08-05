@@ -5,7 +5,7 @@ use crate::{
 use reqwest::{Client, Response};
 
 pub async fn fetch_jar(client: Client, id: &MavenId<'_>) -> Result<Vec<u8>, MavenError> {
-    log::info!("Fetching JAR for {}", id);
+    log::debug!("Fetching JAR for {}", id);
     let res = get_from_maven(client, id, "jar").await?;
 
     let bytes = res.bytes().await?.to_vec();
@@ -14,7 +14,7 @@ pub async fn fetch_jar(client: Client, id: &MavenId<'_>) -> Result<Vec<u8>, Mave
 }
 
 pub async fn fetch_pom(client: Client, id: &MavenId<'_>) -> Result<MavenPom, MavenError> {
-    log::info!("Fetching POM for {}", id);
+    log::debug!("Fetching POM for {}", id);
     let res = get_from_maven(client, id, "pom").await?;
 
     let text = res.text().await?;

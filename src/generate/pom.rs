@@ -12,7 +12,7 @@ use crate::{
         AnnotationProcessorPaths, Build, Configuration, DependancyType, Dependencies, Dependency,
         MavenPom, Plugin, Plugins, ProcessorPath, Properties, Scope,
     },
-    utils::{IOError, XmlSerializeError, fs},
+    utils::{IOError, XmlSerializeError, fs, jdk_version::desired_jdk_version},
 };
 
 pub fn generate_pom(ctx: &Context) -> Result<(), GenerateError> {
@@ -38,6 +38,8 @@ fn create_pom(ctx: &Context) -> Result<MavenPom, GenerateError> {
     let group_id = assert(project.group(), "group")?;
     let artifact_id = assert(project.artifact(), "artifact")?;
     let version_id = assert(project.version(), "version")?;
+
+    let jdk = desired_jdk_version(None, Some(ctx));
 
     if ctx.config.processors().is_some_and(|p| !p.is_empty()) {
         eprintln!(
@@ -115,7 +117,7 @@ fn create_pom(ctx: &Context) -> Result<MavenPom, GenerateError> {
         dependencies: Some(dependancies),
         dependency_management: None,
         properties: Properties {
-            map: HashMap::new(),
+            map: HashMap::from([("maven.compiler.release".to_string(), jdk)]),
         },
         parent: None,
         build,

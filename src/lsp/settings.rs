@@ -1,25 +1,25 @@
-use std::{
-    io,
-    path::Path,
-};
+use std::io;
 
-use crate::utils::fs;
+use crate::{Context, utils::fs, utils::jdk_version::desired_jdk_version};
 
 pub struct DotSettings {}
 
 impl DotSettings {
-    pub fn generate(root: &Path) -> Result<(), io::Error> {
+    pub fn generate(ctx: &Context) -> Result<(), io::Error> {
+        let root = &ctx.root;
+        let version = desired_jdk_version(None, Some(ctx));
         let dot_settings = root.join(".settings");
         if !fs::exists(&dot_settings)? {
             fs::create_dir(&dot_settings)?;
         }
         fs::write(
             root.join(".settings/org.eclipse.core.prefs"),
-            r#"eclipse.preferences.version=1
-org.eclipse.jdt.core.compiler.source=25
-org.eclipse.jdt.core.compiler.compliance=25
-org.eclipse.jdt.core.compiler.codegen.targetPlatform=25
-"#,
+            format!(
+                "eclipse.preferences.version=1\n\
+                 org.eclipse.jdt.core.compiler.source={version}\n\
+                 org.eclipse.jdt.core.compiler.compliance={version}\n\
+                 org.eclipse.jdt.core.compiler.codegen.targetPlatform={version}\n"
+            ),
         )
     }
 }

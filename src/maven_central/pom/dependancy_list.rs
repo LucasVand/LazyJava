@@ -6,7 +6,7 @@ use std::{
     sync::{Arc, LazyLock},
 };
 
-use log::{debug, warn};
+use log::{debug, trace};
 use maven_version::Maven3ArtifactVersion;
 use regex::{Regex, RegexBuilder};
 use tokio::{
@@ -35,7 +35,10 @@ struct ResolveContext {
 }
 
 impl MavenDependancyList {
-    async fn runtime_entry(id: MavenIdBuf) -> Result<Vec<MavenDependancy>, MavenError> {
+    async fn runtime_entry(
+        id: MavenIdBuf,
+        scope: Option<Scope>,
+    ) -> Result<Vec<MavenDependancy>, MavenError> {
         log::info!("Creating POM list for {}", id);
 
         let cache = Arc::new(RwLock::new(HashMap::new()));
@@ -47,7 +50,7 @@ impl MavenDependancyList {
             list: dep_list.clone(),
             client,
         };
-        Self::resolve_pom(id.clone(), ctx).await?;
+        Self::resolve_pom(id.clone(), ctx, scope).await?;
 
         let mut map: HashMap<u64, MavenDependancy> = HashMap::new();
 
@@ -79,12 +82,16 @@ impl MavenDependancyList {
         }
         Ok(list)
     }
-    pub fn new(id: MavenIdBuf) -> Result<Vec<MavenDependancy>, MavenError> {
+    pub fn new(id: MavenIdBuf, scope: Option<Scope>) -> Result<Vec<MavenDependancy>, MavenError> {
         let rt = Runtime::new().unwrap();
 
-        rt.block_on(Self::runtime_entry(id))
+        rt.block_on(Self::runtime_entry(id, scope))
     }
-    async fn resolve_pom(id: MavenIdBuf, ctx: ResolveContext) -> Result<Arc<MavenPom>, MavenError> {
+    async fn resolve_pom(
+        id: MavenIdBuf,
+        ctx: ResolveContext,
+        scope: Option<Scope>,
+    ) -> Result<Arc<MavenPom>, MavenError> {
         log::debug!("Resolving POM for {}", id);
         let hash = Self::hash_maven_id(&id.as_maven_id());
 
@@ -153,43 +160,45 @@ impl MavenDependancyList {
             Self::resolve_properties_inital(&mut pom);
         }
 
-        let bom_handles = Self::bom_handles(&pom, &ctx);
-        if let Some(mut bom_handles) = bom_handles {
-            while let Some(result) = bom_handles.join_next().await {
-                let bom_pom = result??;
-                log::debug!(
-                    "Found BOM import: {}:{}:{} for {}",
-                    bom_pom.group_id,
-                    bom_pom.artifact_id,
-                    bom_pom.version,
-                    id
-                );
-                // extend properties
-                let mut bom_props = bom_pom.properties.map.clone();
-                bom_props.extend(pom.properties.map);
-                pom.properties.map = bom_props;
-
-                // backwords
-                pom.dependency_management_map
-                    .extend(bom_pom.dependency_management_map.clone());
-            }
-        }
-
-        Self::resolve_properties_inital(&mut pom);
-
-        // tracks the dep list for the dependancy list
         let mut dependancy_list: Vec<Dependancy> = Vec::new();
 
-        let dependacy_handles = Self::dependancy_handles(&pom, &ctx);
-        if let Some(mut dependacy_handles) = dependacy_handles {
-            while let Some(result) = dependacy_handles.join_next().await {
-                let (dep_result, id) = result?;
-                let dep_pom = dep_result?;
-                let mut dep_props = dep_pom.properties.map.clone();
-                dep_props.extend(pom.properties.map);
-                pom.properties.map = dep_props;
+        if scope != Some(Scope::Provided) {
+            let bom_handles = Self::bom_handles(&pom, &ctx);
+            if let Some(mut bom_handles) = bom_handles {
+                while let Some(result) = bom_handles.join_next().await {
+                    let bom_pom = result??;
+                    log::debug!(
+                        "Found BOM import: {}:{}:{} for {}",
+                        bom_pom.group_id,
+                        bom_pom.artifact_id,
+                        bom_pom.version,
+                        id
+                    );
+                    // extend properties
+                    let mut bom_props = bom_pom.properties.map.clone();
+                    bom_props.extend(pom.properties.map);
+                    pom.properties.map = bom_props;
 
-                dependancy_list.push(Dependancy { id });
+                    // backwords
+                    pom.dependency_management_map
+                        .extend(bom_pom.dependency_management_map.clone());
+                }
+            }
+            Self::resolve_properties_inital(&mut pom);
+
+            // tracks the dep list for the dependancy list
+
+            let dependacy_handles = Self::dependancy_handles(&pom, &ctx);
+            if let Some(mut dependacy_handles) = dependacy_handles {
+                while let Some(result) = dependacy_handles.join_next().await {
+                    let (dep_result, id) = result?;
+                    let dep_pom = dep_result?;
+                    let mut dep_props = dep_pom.properties.map.clone();
+                    dep_props.extend(pom.properties.map);
+                    pom.properties.map = dep_props;
+
+                    dependancy_list.push(Dependancy { id });
+                }
             }
         }
 
@@ -295,7 +304,7 @@ impl MavenDependancyList {
             let owned_id: MavenIdBuf =
                 MavenIdBuf::new(&parent.group_id, &parent.artifact_id, &parent.version);
 
-            let handle = spawn(async move { Self::resolve_pom(owned_id, ctx_clone).await });
+            let handle = spawn(async move { Self::resolve_pom(owned_id, ctx_clone, None).await });
             return Some(handle);
         }
         None
@@ -307,14 +316,16 @@ impl MavenDependancyList {
         if let Some(dep_management) = &pom.dependency_management {
             let mut set: JoinSet<Result<Arc<MavenPom>, MavenError>> = JoinSet::new();
             for dep in &dep_management.dependencies.dependency {
-                let scope = &dep.scope;
-                if *scope == Scope::Import && !dep.optional {
+                let scope = dep.scope;
+                if scope == Scope::Import && !dep.optional {
                     let bom_version = dep.version.as_ref().expect("Bom is missing version");
                     let id = MavenId::new(&dep.group_id, &dep.artifact_id, bom_version);
 
                     let ctx_clone = ctx.clone();
                     let owned_id: MavenIdBuf = id.into();
-                    set.spawn(async move { Self::resolve_pom(owned_id, ctx_clone).await });
+                    set.spawn(
+                        async move { Self::resolve_pom(owned_id, ctx_clone, Some(scope)).await },
+                    );
                 }
             }
             return Some(set);
@@ -329,7 +340,9 @@ impl MavenDependancyList {
             let mut set = JoinSet::new();
             for dep in &deps.dependency {
                 let scope = &dep.scope;
-                if ![Scope::Compile, Scope::Runtime].contains(scope) || dep.optional {
+                if ![Scope::Compile, Scope::Runtime, Scope::Provided].contains(scope)
+                    || dep.optional
+                {
                     continue;
                 }
 
@@ -353,9 +366,10 @@ impl MavenDependancyList {
                 let owned_id: MavenIdBuf =
                     MavenIdBuf::new(dep.group_id.clone(), dep.artifact_id.clone(), dep_version);
 
+                let scope = *scope;
                 set.spawn(async move {
                     (
-                        Self::resolve_pom(owned_id.clone(), ctx_clone).await,
+                        Self::resolve_pom(owned_id.clone(), ctx_clone, Some(scope)).await,
                         owned_id,
                     )
                 });
@@ -392,7 +406,7 @@ fn resolve_string_final(label: &mut String, map: &HashMap<String, String>) {
             if let Some(property) = map.get(capture.as_str()) {
                 replaced = replaced.replace(&format!("${{{}}}", capture.as_str()), property);
             } else {
-                warn!(
+                trace!(
                     "Property found in field but not present in map, property: {}",
                     capture.as_str()
                 );

@@ -1,14 +1,21 @@
-use std::process::{Command, Stdio};
+use std::io;
+use std::process::Stdio;
 
 use colored::Colorize;
 
 use crate::{
     Context,
     args::RunArgs,
+    build::BuildError,
+    build::metadata::BuildMetadata,
     lazy_java::LazyJava,
     lazy_java_error::LazyJavaError,
     run::{RunError, interactive_run::interactive_find_main},
-    utils::{GlobalContext, IOError, processes::execute_java},
+    utils::{
+        GlobalContext, IOError,
+        jdk_version::warn_runtime_mismatch,
+        processes::{execute_java, java_tool_command},
+    },
 };
 
 impl LazyJava {
@@ -30,8 +37,13 @@ impl LazyJava {
         };
         println!("{} {}", "Running".bold().green(), class);
 
-        execute_java(class, &ctx.bin, &ctx.lib, &args.args)
-            .map_err(|_e| RunError::InvalidMainClass(class.to_string()))?;
+        if let Some(meta) = BuildMetadata::fetch(&ctx.target)
+            && !meta.java_version.is_empty()
+        {
+            warn_runtime_mismatch(&meta.java_version);
+        }
+
+        execute_java(class, &ctx.bin, &ctx.lib, &args.args)?;
 
         log::info!("Java execution completed successfully");
         Ok(())
@@ -50,7 +62,7 @@ impl LazyJava {
             return Ok(());
         }
 
-        let status = Command::new("java")
+        let status = java_tool_command("java")
             .arg("-jar")
             .arg(&jar_path)
             .args(&args.args)
@@ -58,7 +70,13 @@ impl LazyJava {
             .stderr(Stdio::inherit())
             .stdin(Stdio::inherit())
             .status()
-            .map_err(|e| RunError::IoError(IOError::new("executing jar", &jar_path, e)))?;
+            .map_err(|e| {
+                if e.kind() == io::ErrorKind::NotFound {
+                    RunError::BuildError(BuildError::JavaNotFound)
+                } else {
+                    RunError::IoError(IOError::new("executing jar", &jar_path, e))
+                }
+            })?;
 
         if !status.success() {
             log::warn!("jar exited with code: {:?}", status.code());

@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use strum::AsRefStr;
+use strum::{AsRefStr, EnumString};
+use toml_edit_derive::TomlEdit;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename = "project")]
@@ -83,9 +84,22 @@ pub struct Properties {
     pub map: HashMap<String, String>,
 }
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash, Default, PartialOrd, Ord,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Deserialize,
+    Serialize,
+    Hash,
+    Default,
+    PartialOrd,
+    Ord,
+    TomlEdit,
+    EnumString,
 )]
 #[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
 pub enum Scope {
     #[default]
     Compile,

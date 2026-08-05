@@ -34,8 +34,15 @@ fn build_copies_resources_to_bin_and_run_reads_them() -> Result<(), Box<dyn std:
         !dest.join("target").join("bin").join("secret.txt").exists(),
         "secret.txt should be excluded from bin resources"
     );
+    assert!(
+        dest.join("target")
+            .join("bin")
+            .join("external.txt")
+            .exists(),
+        "external.txt should be copied to bin as an external resource"
+    );
 
-    // Run reads the resource from the classpath
+    // Run reads the resources from the classpath
     let mut cmd = Command::cargo_bin("lazy-java")?;
     cmd.current_dir(&dest);
     cmd.args(["run", "Main"]);
@@ -43,6 +50,9 @@ fn build_copies_resources_to_bin_and_run_reads_them() -> Result<(), Box<dyn std:
         .success()
         .stdout(predicate::str::contains(
             "Resource content: Hello from resource file!",
+        ))
+        .stdout(predicate::str::contains(
+            "External: External resource content",
         ));
 
     Ok(())

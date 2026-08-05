@@ -32,14 +32,15 @@ pub fn build_processors(build_args: &BuildArgs, ctx: &Context) -> Result<(), Bui
         processors.len(),
         ctx.bin_processors
     );
+    let release = crate::utils::jdk_version::desired_jdk_version(Some(build_args), Some(ctx));
     let result = compile_java(
         full_paths,
         &ctx.bin_processors,
         ctx,
         &build_args.javac_args,
         false,
-    )
-    .map_err(|e| IOError::new("compiling annotation processors", &ctx.bin_processors, e))?;
+        Some(&release),
+    )?;
     log::info!(
         "Annotation processor compilation completed with status: {}",
         result

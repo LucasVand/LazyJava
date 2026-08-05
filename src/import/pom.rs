@@ -9,7 +9,7 @@ use colored::Colorize;
 use crate::{
     args::ImportPomArgs,
     config::ConfigTomlEdit,
-    maven_central::pom::MavenPom,
+    maven_central::{fetch_artifact_metadata, pom::MavenPom},
     utils::{IOError, XmlDeserializeError, fs},
 };
 
@@ -48,13 +48,6 @@ pub fn import_pom(root: &Path, args: &ImportPomArgs) -> Result<(), ImportError> 
     let mgmt_map = dep_mgmt_map(&pom);
 
     let mut config = ConfigTomlEdit::parse("")?;
-    {
-        let mut p = config.project_mut().get_or_insert_empty();
-        p.name_mut().set(pom.artifact_id.clone());
-        p.group_mut().set(pom.group_id.clone());
-        p.artifact_mut().set(pom.artifact_id.clone());
-        p.version_mut().set(pom.version.clone());
-    }
     if let Some(deps) = pom.dependencies {
         let mut tomldeps = config.dependancies_mut().get_or_insert(HashMap::new());
         for dep in deps.dependency {
@@ -66,13 +59,20 @@ pub fn import_pom(root: &Path, args: &ImportPomArgs) -> Result<(), ImportError> 
                     match mgmt_map.get(&hasher.finish()) {
                         Some(v) => v.clone(),
                         None => {
-                            eprintln!(
-                                "{} Skipping {}:{} — no version in dep or dependencyManagement",
-                                "Warning:".yellow().bold(),
-                                dep.group_id,
-                                dep.artifact_id,
-                            );
-                            continue;
+                            if let Ok(meta) =
+                                fetch_artifact_metadata(&dep.group_id, &dep.artifact_id)
+                                && let Some(latest) = meta.get_latest_version()
+                            {
+                                latest.to_string()
+                            } else {
+                                eprintln!(
+                                    "{} Skipping {}:{} — no version in dep or dependencyManagement and cannot resolve maven artifact",
+                                    "Warning:".yellow().bold(),
+                                    dep.group_id,
+                                    dep.artifact_id,
+                                );
+                                continue;
+                            }
                         }
                     }
                 }
@@ -80,12 +80,40 @@ pub fn import_pom(root: &Path, args: &ImportPomArgs) -> Result<(), ImportError> 
             let mut entry = tomldeps.insert_empty(&dep.artifact_id);
             entry.group_mut().set(dep.group_id.clone());
             entry.version_mut().set(version);
+            entry.scope_mut().set(dep.scope);
         }
+    }
+
+    if !args.only_dependencies {
+        {
+            let mut p = config.project_mut().get_or_insert_empty();
+            p.name_mut().set(pom.artifact_id.clone());
+            p.group_mut().set(pom.group_id.clone());
+            p.artifact_mut().set(pom.artifact_id.clone());
+            p.version_mut().set(pom.version.clone());
+        }
+
+        if let Some(version) = pom.properties.map.get("java.version") {
+            let mut v = config.setup_mut().get_or_insert_empty();
+            v.release_mut().replace(version.to_string());
+        }
+        config
+            .setup_mut()
+            .get_or_insert_empty()
+            .src_mut()
+            .replace("src/main/java".to_string());
+
+        config
+            .resources_mut()
+            .get_or_insert_empty()
+            .external_mut()
+            .replace(vec!["src/main/resources/**".to_string()]);
     }
 
     let toml_str = config.to_toml_string();
 
-    fs::write(&toml_path, toml_str).map_err(|e| IOError::new("writing lazy-java.toml", toml_path, e))?;
+    fs::write(&toml_path, toml_str)
+        .map_err(|e| IOError::new("writing lazy-java.toml", toml_path, e))?;
     println!("{} lazy-java.toml from pom.xml", "Imported".green().bold());
 
     Ok(())

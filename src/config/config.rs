@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io::ErrorKind, path::Path};
+use std::{collections::HashMap, io::ErrorKind, path::Path, str::FromStr};
 
 use colored::Colorize;
 use log::debug;
@@ -8,7 +8,9 @@ use crate::{
     args::{AddArgs, RemoveArgs},
     config::{ConfigDependancy, ConfigTomlEdit, config_error::ConfigError},
     lock_file::LockFile,
-    maven_central::{MavenError, MavenIdBuf, PartialMavenIdBuf, fetch_artifact_metadata},
+    maven_central::{
+        MavenError, MavenIdBuf, PartialMavenIdBuf, fetch_artifact_metadata, pom::Scope,
+    },
     utils::{IOError, fs},
 };
 impl ConfigTomlEdit {
@@ -63,7 +65,14 @@ impl ConfigTomlEdit {
         value.version_mut().replace(id.version.clone());
         value.group_mut().replace(id.group.clone());
 
-        lockfile.add_package(id)?;
+        let scope = Scope::from_str(add_args.scope.as_ref().map_or("", |s| s.as_str())).ok();
+        if let Some(s) = &add_args.scope
+            && scope.is_none()
+        {
+            println!("{}: unknown scope `{}`", "Warning".yellow().bold(), s)
+        }
+
+        lockfile.add_package(id, scope)?;
 
         self.sync_lock_file(&mut lockfile, ctx)?;
 
@@ -83,8 +92,8 @@ impl ConfigTomlEdit {
         let mut version: Option<String> = None;
         if let Some(deps) = self.dependancies()
             && let Some(d) = deps.get(&partial_id.artifact)
-                && d.group().as_ref() == Some(&partial_id.group)
-                && let Some(v) = d.version()
+            && d.group().as_ref() == Some(&partial_id.group)
+            && let Some(v) = d.version()
         {
             version = Some(v.to_string());
         }

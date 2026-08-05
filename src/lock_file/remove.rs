@@ -3,7 +3,7 @@ use std::{
     mem,
 };
 
-use log::debug;
+use log::info;
 
 use crate::{
     lock_file::{LockFile, LockFileError, LockFilePackage},
@@ -23,7 +23,7 @@ impl LockFile {
 
         if let Some(pos) = pos {
             let package = self.packages.remove(pos);
-            debug!("Removed package {}", package.id);
+            info!("Removed package {}", package.id);
 
             self.packages.iter_mut().for_each(|p| {
                 p.dependancies.retain(|dep| dep != &package.id);

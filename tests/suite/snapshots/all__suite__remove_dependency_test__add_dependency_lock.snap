@@ -109,11 +109,20 @@ artifact = "log4j-api"
 version = "2.25.4"
 file_name = "log4j-api-2.25.4.jar"
 url = "https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-api/2.25.4/log4j-api-2.25.4.jar"
-dependancies = []
 packaging = "jar"
 root = false
 scope = "compile"
 annotations = []
+
+[[package.dependancies]]
+group = "org.jspecify"
+artifact = "jspecify"
+version = "1.0.0"
+
+[[package.dependancies]]
+group = "org.osgi"
+artifact = "org.osgi.core"
+version = "6.0.0"
 
 [[package]]
 group = "org.apache.logging.log4j"
@@ -131,12 +140,34 @@ group = "org.apache.logging.log4j"
 artifact = "log4j-api"
 version = "2.25.4"
 
+[[package.dependancies]]
+group = "org.jspecify"
+artifact = "jspecify"
+version = "1.0.0"
+
+[[package.dependancies]]
+group = "org.osgi"
+artifact = "org.osgi.core"
+version = "6.0.0"
+
 [[package]]
 group = "org.jspecify"
 artifact = "jspecify"
 version = "1.0.0"
 file_name = "jspecify-1.0.0.jar"
 url = "https://repo1.maven.org/maven2/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar"
+dependancies = []
+packaging = "jar"
+root = false
+scope = "compile"
+annotations = []
+
+[[package]]
+group = "org.osgi"
+artifact = "org.osgi.core"
+version = "6.0.0"
+file_name = "org.osgi.core-6.0.0.jar"
+url = "https://repo1.maven.org/maven2/org/osgi/org.osgi.core/6.0.0/org.osgi.core-6.0.0.jar"
 dependancies = []
 packaging = "jar"
 root = false

@@ -16,7 +16,7 @@ use crate::{
         classpath::{Attribute, Attributes, Classpath, ClasspathEntry},
         classpath_error::ClasspathError,
     },
-    utils::fs,
+    utils::{fs, jdk_version::desired_jdk_version},
 };
 
 const JAVA_CONTAINER: &str = "org.eclipse.jdt.launching.JRE_CONTAINER";
@@ -98,9 +98,12 @@ impl Classpath {
             attributes: None,
         });
 
+        let version = desired_jdk_version(None, Some(ctx));
         entries.push(ClasspathEntry {
             kind: "con".into(),
-            path: JAVA_CONTAINER.into(),
+            path: format!(
+                "{JAVA_CONTAINER}/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-{version}"
+            ),
             including: None,
             output: None,
             attributes: None,

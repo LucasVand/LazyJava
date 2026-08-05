@@ -1,23 +1,26 @@
 use std::{
     hash::{DefaultHasher, Hash, Hasher},
-    path::Path,
+    path::{Path, PathBuf},
     process::ExitStatus,
     time::SystemTime,
 };
 
+use same_file::is_same_file;
 use serde::{Deserialize, Serialize};
 use walkdir::DirEntry;
 
 use crate::{
     BUILD_METADATA_NAME, Context,
+    args::BuildArgs,
     build::BuildError,
-    utils::{IOError, TomlSerializeError, fs},
+    utils::{IOError, TomlSerializeError, fs, jdk_version::desired_jdk_version},
 };
 
 #[derive(Clone, Serialize, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
 pub struct BuildMetadata {
     pub time_stamp: SystemTime,
     pub java_version: String,
+    pub src: PathBuf,
     pub lib_hash: u64,
     pub bin_hash: u64,
     pub build_passed: bool,
@@ -28,6 +31,7 @@ impl BuildMetadata {
         BuildMetadata {
             time_stamp: SystemTime::now(),
             java_version: "".into(),
+            src: "".into(),
             lib_hash: 0,
             bin_hash: 0,
             build_passed: false,
@@ -57,11 +61,27 @@ impl Default for BuildMetadata {
         Self::new()
     }
 }
+pub fn required_full_build(args: &BuildArgs, ctx: &Context, meta: Option<&BuildMetadata>) -> bool {
+    let Some(meta) = meta else {
+        return true;
+    };
+
+    let current_lib_hash = hash_directory(&ctx.lib);
+    let lib_hash_match = current_lib_hash == meta.lib_hash;
+
+    let jdk = desired_jdk_version(Some(args), Some(ctx));
+    let version_match = meta.java_version == jdk;
+
+    let src_match = is_same_file(&meta.src, &ctx.src).unwrap_or(false);
+
+    args.build_all || !lib_hash_match || !version_match || !src_match
+}
 
 pub fn save_metadata(
     ctx: &Context,
     status: ExitStatus,
     meta: Option<BuildMetadata>,
+    jdk: &str,
 ) -> Result<(), BuildError> {
     let time = if !status.success() {
         match meta {
@@ -73,10 +93,11 @@ pub fn save_metadata(
     };
     let meta = BuildMetadata {
         time_stamp: time,
-        java_version: "25".to_string(),
+        java_version: jdk.to_string(),
         lib_hash: hash_directory(&ctx.lib),
         bin_hash: hash_directory(&ctx.bin),
         build_passed: status.success(),
+        src: ctx.src.clone(),
     };
 
     meta.write(&ctx.target)?;

@@ -34,6 +34,11 @@ expression: pom_content
             <type>jar</type>
         </dependency>
     </dependencies>
+    <properties>
+        <map>
+            <maven.compiler.release>25</maven.compiler.release>
+        </map>
+    </properties>
     <build>
         <plugins>
             <plugin>

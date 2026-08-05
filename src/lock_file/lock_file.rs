@@ -6,6 +6,7 @@ use std::{
 };
 
 use colored::Colorize;
+use log::info;
 use maven_version::Maven3ArtifactVersion;
 use serde::{Deserialize, Serialize};
 
@@ -17,7 +18,7 @@ use crate::{
         MavenId, MavenIdBuf, PartialMavenIdBuf,
         pom::{DependancyType, MavenDependancyList, Scope},
     },
-    utils::{fs, IOError, TomlDeserializeError, TomlSerializeError},
+    utils::{IOError, TomlDeserializeError, TomlSerializeError, fs},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -55,7 +56,10 @@ impl LockFile {
     pub fn fetch(root: &Path) -> Result<LockFile, LockFileError> {
         let fs_file = Self::fetch_from_fs(root)?;
         let lock = match fs_file {
-            None => LockFile::new(),
+            None => {
+                log::info!("Creating lock file from new");
+                LockFile::new()
+            }
             Some(l) => l,
         };
         Ok(lock)
@@ -91,8 +95,12 @@ impl LockFile {
 
         Ok(())
     }
-    pub fn add_package(&mut self, id: MavenIdBuf) -> Result<isize, LockFileError> {
-        let list: Vec<LockFilePackage> = MavenDependancyList::new(id)?
+    pub fn add_package(
+        &mut self,
+        id: MavenIdBuf,
+        scope: Option<Scope>,
+    ) -> Result<isize, LockFileError> {
+        let list: Vec<LockFilePackage> = MavenDependancyList::new(id, scope)?
             .into_iter()
             .map(|m| m.into())
             .collect();
@@ -115,7 +123,13 @@ impl LockFile {
                 let old_version = Maven3ArtifactVersion::new(&old.id.version);
                 let new_version = Maven3ArtifactVersion::new(&package.id.version);
 
-                if new_version > old_version {
+                let replaces = if old.root {
+                    package.root && new_version > old_version
+                } else {
+                    package.root || new_version > old_version
+                };
+
+                if replaces {
                     map.insert(hash, package);
                 } else {
                     map.insert(hash, old);
@@ -183,8 +197,7 @@ impl LockFile {
         removed += Self::validate_dir(&ctx.lib, &mut map)?;
         removed += Self::validate_dir(&ctx.lib_annotations, &mut map)?;
 
-        let download_change =
-            Self::fetch_packages(ctx, map.into_values().collect())?;
+        let download_change = Self::fetch_packages(ctx, map.into_values().collect())?;
         added += download_change;
 
         let plural = |change: isize| {
@@ -224,7 +237,8 @@ impl LockFile {
         for (key, package) in root_packages {
             if !map.contains(key) {
                 let id = key.clone().to_full_buf(package.version.clone());
-                self.add_package(id)?;
+                info!("Adding package '{}'", id);
+                self.add_package(id, package.scope)?;
             }
         }
 

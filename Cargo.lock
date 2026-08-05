@@ -1207,6 +1207,7 @@ dependencies = [
  "quick-xml",
  "regex",
  "reqwest",
+ "same-file",
  "serde",
  "strum",
  "tempfile",
