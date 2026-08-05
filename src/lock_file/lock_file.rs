@@ -123,7 +123,13 @@ impl LockFile {
                 let old_version = Maven3ArtifactVersion::new(&old.id.version);
                 let new_version = Maven3ArtifactVersion::new(&package.id.version);
 
-                if (new_version > old_version || package.root) && !old.root {
+                let replaces = if old.root {
+                    package.root && new_version > old_version
+                } else {
+                    package.root || new_version > old_version
+                };
+
+                if replaces {
                     map.insert(hash, package);
                 } else {
                     map.insert(hash, old);
