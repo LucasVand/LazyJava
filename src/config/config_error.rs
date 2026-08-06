@@ -36,16 +36,16 @@ pub enum ConfigError {
     UnexpectedValue(&'static str),
 
     #[error("Local dependency path does not exist")]
-    LocalDependnecyNotFound(PathBuf),
+    LocalDependencyNotFound(PathBuf),
 
     #[error("Local dependency is not a jar file")]
-    LocalDependnecyNotJar(PathBuf),
+    LocalDependencyNotJar(PathBuf),
 }
 
 impl DiagnosticProvider for ConfigError {
     fn diagnostic(&self) -> Diagnostic {
         match self {
-            ConfigError::LocalDependnecyNotFound(path) => {
+            ConfigError::LocalDependencyNotFound(path) => {
                 Diagnostic::new("Local dependency path does not exist")
                     .message(format!(
                         "Could not find the local dependency {}",
@@ -53,7 +53,7 @@ impl DiagnosticProvider for ConfigError {
                     ))
                     .help("Ensure that the path given exists and is a jar file")
             }
-            ConfigError::LocalDependnecyNotJar(path) => {
+            ConfigError::LocalDependencyNotJar(path) => {
                 Diagnostic::new("Local dependency is not a jar file")
                     .message(format!(
                         "The local dependency {} does not have a .jar extension",

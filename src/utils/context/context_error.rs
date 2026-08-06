@@ -13,6 +13,9 @@ pub enum ContextError {
     #[error("Could not read current directory, {0}")]
     NoCurrentDir(io::Error),
 
+    #[error("Could not change the working directory to the project root, {0}")]
+    NoDir(io::Error),
+
     #[error(
         "Could not locate root, no root markers were found, try adding in a root marker or manually specify a root"
     )]
@@ -39,6 +42,9 @@ impl DiagnosticProvider for ContextError {
         match self {
             ContextError::NoCurrentDir(err) => Diagnostic::new("Could not read current directory")
                 .message("Could not determine the current working directory.")
+                .note(err.to_string()),
+            ContextError::NoDir(err) => Diagnostic::new("Could not change working directory")
+                .message("Could not change the working directory to the project root.")
                 .note(err.to_string()),
             ContextError::NoRoot(err) => Diagnostic::new("Could not locate project root")
                 .message("No root markers were found while locating the project.")

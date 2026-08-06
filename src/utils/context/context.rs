@@ -1,6 +1,6 @@
 use std::{
     env,
-    path::{self, PathBuf},
+    path::{self, Path, PathBuf},
 };
 
 use colored::Colorize;
@@ -64,6 +64,12 @@ impl Context {
         })?;
 
         let root = root.unwrap_or(env::current_dir().map_err(ContextError::NoRoot)?);
+
+        // Anchor the process to the project root so any relative paths resolved
+        // from here on (e.g. local dependency `path` values, `canonicalize`)
+        // are interpreted relative to the project rather than the invocation
+        // directory.
+        env::set_current_dir(&root).map_err(ContextError::NoDir)?;
 
         let config = match config {
             Some(config) => Ok(config),
@@ -131,6 +137,18 @@ impl Context {
             .project()
             .and_then(|p| p.name())
             .expect("project name is asserted during context construction")
+    }
+
+    /// Resolve a possibly-relative path against the project root. Absolute
+    /// paths are returned unchanged, and relative paths (e.g. a local
+    /// dependency's `path` value) are anchored at [`Context::root`] rather than
+    /// the process working directory, keeping the config portable.
+    pub fn resolve(&self, path: &Path) -> PathBuf {
+        if path.is_relative() {
+            self.root.join(path)
+        } else {
+            path.to_path_buf()
+        }
     }
 
     pub fn assert_src_exists(&self) -> Result<(), ContextError> {

@@ -111,10 +111,6 @@ pub struct RemoteDependency {
 pub struct LocalDependency {
     pub path: PathBuf,
 }
-pub enum ConfigDependancyParsed {
-    Remote(RemoteDependency),
-    Local(LocalDependency),
-}
 
 impl<'a> ConfigDependancyTomlEditView<'a> {
     pub fn to_remote_dependency(&self) -> Result<Option<RemoteDependency>, ConfigError> {
@@ -155,10 +151,10 @@ impl<'a> ConfigDependancyTomlEditView<'a> {
         let path = PathBuf::from(&path);
 
         if !path.exists() {
-            return Err(ConfigError::LocalDependnecyNotFound(path));
+            return Err(ConfigError::LocalDependencyNotFound(path));
         }
         if path.extension() != Some(OsStr::new("jar")) {
-            return Err(ConfigError::LocalDependnecyNotJar(path));
+            return Err(ConfigError::LocalDependencyNotJar(path));
         }
 
         let con = canonicalize(&path)
