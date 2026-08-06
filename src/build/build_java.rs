@@ -57,7 +57,7 @@ impl LazyJava {
         let glob = build_globset(ctx);
 
         let files: Result<Vec<PathBuf>, BuildError> =
-            if required_full_build(args, ctx, build_data.as_ref()) {
+            if required_full_build(args, ctx, build_data.as_ref())? {
                 let files = find_java_files_glob(&ctx.src, &glob);
                 println!(
                     "{} using full build ({} file{})",

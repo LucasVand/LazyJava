@@ -1,5 +1,5 @@
 use assert_cmd::Command;
-use predicates::prelude::predicate;
+use predicates::prelude::{PredicateBooleanExt, predicate};
 use std::path::Path;
 
 /// Locate a JDK tool (`javac`, `jar`), preferring `$JAVA_HOME/bin`, falling
@@ -124,6 +124,27 @@ fn local_lib_jar_is_required_at_runtime() -> Result<(), Box<dyn std::error::Erro
         .success()
         .stdout(predicate::str::contains("hello-from-lib-annotations"))
         .stdout(predicate::str::contains("generated-by-processor"));
+
+    // A second build with no changes must not trigger a full rebuild.
+    let mut cmd = Command::cargo_bin("lazy-java")?;
+    cmd.current_dir(&dest);
+    cmd.args(["build"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("full build").not());
+
+    // Changing the local jar's contents forces a full rebuild.
+    let greet = dest.join("lib-src").join("runtime").join("RuntimeHelper.java");
+    let original_greet = std::fs::read_to_string(&greet)?;
+    std::fs::write(&greet, original_greet.replace("hello-from-lib-annotations", "hello-2"))?;
+    build_lib_jar(&dest)?;
+
+    let mut cmd = Command::cargo_bin("lazy-java")?;
+    cmd.current_dir(&dest);
+    cmd.args(["build"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("full build"));
 
     Ok(())
 }

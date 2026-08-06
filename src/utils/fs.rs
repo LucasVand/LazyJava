@@ -88,6 +88,10 @@ pub fn read_to_string<P: AsRef<Path>>(path: P) -> io::Result<String> {
     std_fs::read_to_string(path)
 }
 
+pub fn read<P: AsRef<Path>>(path: P) -> io::Result<Vec<u8>> {
+    std_fs::read(path)
+}
+
 pub fn read_dir<P: AsRef<Path>>(path: P) -> io::Result<std_fs::ReadDir> {
     std_fs::read_dir(path)
 }

@@ -2,6 +2,7 @@ package runtime.gen;
 
 import java.util.Set;
 import javax.annotation.processing.AbstractProcessor;
+import javax.annotation.processing.FilerException;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.TypeElement;
@@ -35,6 +36,9 @@ public class MyProcessor extends AbstractProcessor {
                 w.write("    public static String msg() { return \"generated-by-processor\"; }\n");
                 w.write("}\n");
             }
+        } catch (FilerException e) {
+            // The generated source already exists from a previous round or
+            // full rebuild; there is nothing to regenerate.
         } catch (java.io.IOException e) {
             throw new RuntimeException(e);
         }
