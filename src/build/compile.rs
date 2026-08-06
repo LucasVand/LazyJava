@@ -9,42 +9,48 @@ use log::warn;
 use crate::{
     Context, JAVAC_SEPERATOR,
     build::BuildError,
-    utils::{IOError, join_directory, processes::java_tool_command},
+    utils::{IOError, SeperatorList, join_directory, processes::java_tool_command},
 };
 
-/// Anything postfixed with list should be a : or ; seperated list depending on platform, expect
-/// src_list that is a space seperated list
+/// Build and run a `javac` command. Each `Option<&str>` maps to a javac flag
+/// that is emitted only when present:
+///
+///   - `output_dir`         -> `-d <dir>`
+///   - `classpath`          -> `-classpath <cp>`
+///   - `processorpath`      -> `-processorpath <pp>`
+///   - `src_generated_dir`  -> `-s <dir>`
+///   - `release`            -> `--release <version>`
+///
+/// `javac_args` are forwarded verbatim and `source_files` are added as
+/// positional arguments.
 pub(crate) fn compile_command(
-    src_list: &str,
-    output_dir: &str,
-    bin_dir: &str,
-    lib_dir: &str,
-    annotation_lib_list: &str,
-    annotation_lib: &str,
-    src_generated_dir: &str,
-    build_processor_dir: &str,
-    javac_args: &Vec<String>,
+    output_dir: Option<&str>,
+    classpath: Option<&str>,
+    processorpath: Option<&str>,
+    src_generated_dir: Option<&str>,
     release: Option<&str>,
+    javac_args: &[String],
+    source_files: &[String],
 ) -> Result<Output, io::Error> {
-    let sep = JAVAC_SEPERATOR;
-    let classpath =
-        format!("{build_processor_dir}{sep}{bin_dir}{sep}{annotation_lib}/*{sep}{lib_dir}/*");
-    let processorpath = format!("{annotation_lib_list}{sep}{build_processor_dir}");
-
     let mut cmd = java_tool_command("javac");
-    cmd.arg("-s")
-        .arg(src_generated_dir)
-        .arg("-processorpath")
-        .arg(&processorpath)
-        .arg("-classpath")
-        .arg(&classpath)
-        .arg("-d")
-        .arg(output_dir);
+
+    if let Some(dir) = output_dir {
+        cmd.arg("-d").arg(dir);
+    }
+    if let Some(cp) = classpath {
+        cmd.arg("-classpath").arg(cp);
+    }
+    if let Some(pp) = processorpath {
+        cmd.arg("-processorpath").arg(pp);
+    }
+    if let Some(gen_dir) = src_generated_dir {
+        cmd.arg("-s").arg(gen_dir);
+    }
     if let Some(version) = release {
         cmd.arg("--release").arg(version);
     }
     cmd.args(javac_args);
-    for src in src_list.split_whitespace() {
+    for src in source_files {
         cmd.arg(src);
     }
 
@@ -94,26 +100,46 @@ pub fn compile_java(
     let ab_src_generated = resolve("resolving generated source directory", &ctx.src_generated)?;
     let src_generated_destructured = join_directory(&ab_src_generated, ' ');
     let ab_bin_processor = resolve("resolving processor bin directory", &ctx.bin_processors)?;
-    log::debug!("Processor build output directory: {:?}", ab_bin_processor);
-    log::debug!("Annotation library path: {:?}", ab_annotation_lib_list);
 
-    let mut src_des = string_list.join(" ");
+    let local_deps: Vec<_> = ctx
+        .config
+        .local_package_list()?
+        .into_iter()
+        .map(|dep| dep.path.to_string_lossy().to_string())
+        .collect();
+
+    let sep = JAVAC_SEPERATOR;
+    let classpath = SeperatorList::new(sep)
+        .add(ab_bin_processor.display())
+        .add(ab_bin.display())
+        .add_glob(ab_annotation_lib.display())
+        .add_glob(ab_lib.display())
+        .add_slice(&local_deps)
+        .build();
+
+    let processorpath = SeperatorList::new(sep)
+        .add(ab_annotation_lib_list)
+        .add(ab_bin_processor.display())
+        .add_slice(&local_deps)
+        .build();
+
+    let mut source_files = string_list;
     if compile_generated_source {
-        src_des.push(' ');
-        src_des.push_str(&src_generated_destructured);
+        source_files.extend(
+            src_generated_destructured
+                .split_whitespace()
+                .map(|s| s.to_string()),
+        );
     }
 
     let output = match compile_command(
-        &src_des,
-        ab_dest.to_str().unwrap(),
-        ab_bin.to_str().unwrap(),
-        ab_lib.to_str().unwrap(),
-        &ab_annotation_lib_list,
-        ab_annotation_lib.to_str().unwrap(),
-        ab_src_generated.to_str().unwrap(),
-        ab_bin_processor.to_str().unwrap(),
-        javac_args,
+        Some(ab_dest.to_str().unwrap()),
+        Some(&classpath),
+        Some(&processorpath),
+        Some(ab_src_generated.to_str().unwrap()),
         release,
+        javac_args,
+        &source_files,
     ) {
         Ok(output) => output,
         Err(e) if e.kind() == io::ErrorKind::NotFound => return Err(BuildError::JavacNotFound),

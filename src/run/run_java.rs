@@ -10,11 +10,11 @@ use crate::{
     build::metadata::BuildMetadata,
     lazy_java::LazyJava,
     lazy_java_error::LazyJavaError,
-    run::{RunError, interactive_run::interactive_find_main},
+    run::{RunError, execute::execute_java, interactive_run::interactive_find_main},
     utils::{
         GlobalContext, IOError,
         jdk_version::warn_runtime_mismatch,
-        processes::{execute_java, java_tool_command},
+        processes::java_tool_command,
     },
 };
 
@@ -43,7 +43,7 @@ impl LazyJava {
             warn_runtime_mismatch(&meta.java_version);
         }
 
-        execute_java(class, &ctx.bin, &ctx.lib, &args.args)?;
+        execute_java(class, args, ctx)?;
 
         log::info!("Java execution completed successfully");
         Ok(())

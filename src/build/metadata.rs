@@ -22,7 +22,9 @@ pub struct BuildMetadata {
     pub java_version: String,
     pub src: PathBuf,
     pub lib_hash: u64,
+    pub lib_annotations_hash: u64,
     pub bin_hash: u64,
+    pub local_libs_hash: u64,
     pub build_passed: bool,
 }
 
@@ -33,7 +35,9 @@ impl BuildMetadata {
             java_version: "".into(),
             src: "".into(),
             lib_hash: 0,
+            lib_annotations_hash: 0,
             bin_hash: 0,
+            local_libs_hash: 0,
             build_passed: false,
         }
     }
@@ -61,20 +65,36 @@ impl Default for BuildMetadata {
         Self::new()
     }
 }
-pub fn required_full_build(args: &BuildArgs, ctx: &Context, meta: Option<&BuildMetadata>) -> bool {
+pub fn required_full_build(
+    args: &BuildArgs,
+    ctx: &Context,
+    meta: Option<&BuildMetadata>,
+) -> Result<bool, BuildError> {
     let Some(meta) = meta else {
-        return true;
+        return Ok(true);
     };
 
     let current_lib_hash = hash_directory(&ctx.lib);
     let lib_hash_match = current_lib_hash == meta.lib_hash;
+
+    let current_lib_annotations_hash = hash_directory(&ctx.lib_annotations);
+    let lib_annotations_hash_match =
+        current_lib_annotations_hash == meta.lib_annotations_hash;
+
+    let current_local_hash = hash_local_libs(ctx)?;
+    let local_hash_match = current_local_hash == meta.local_libs_hash;
 
     let jdk = desired_jdk_version(Some(args), Some(ctx));
     let version_match = meta.java_version == jdk;
 
     let src_match = is_same_file(&meta.src, &ctx.src).unwrap_or(false);
 
-    args.build_all || !lib_hash_match || !version_match || !src_match
+    Ok(args.build_all
+        || !lib_hash_match
+        || !lib_annotations_hash_match
+        || !version_match
+        || !src_match
+        || !local_hash_match)
 }
 
 pub fn save_metadata(
@@ -95,7 +115,9 @@ pub fn save_metadata(
         time_stamp: time,
         java_version: jdk.to_string(),
         lib_hash: hash_directory(&ctx.lib),
+        lib_annotations_hash: hash_directory(&ctx.lib_annotations),
         bin_hash: hash_directory(&ctx.bin),
+        local_libs_hash: hash_local_libs(ctx)?,
         build_passed: status.success(),
         src: ctx.src.clone(),
     };
@@ -126,4 +148,27 @@ pub fn hash_directory(path: &Path) -> u64 {
     let hash = hasher.finish();
     log::debug!("hash_directory({:?}) = {}", path, hash);
     hash
+}
+
+/// Hash the local dependency jars referenced by the project's config so a full
+/// rebuild is triggered whenever one of them changes.
+pub fn hash_local_libs(ctx: &Context) -> Result<u64, BuildError> {
+    let deps = ctx.config.local_package_list()?;
+    let paths: Vec<PathBuf> = deps.into_iter().map(|dep| dep.path).collect();
+
+    let hash = hash_files(&paths);
+    log::debug!("hash_local_libs = {}", hash);
+    Ok(hash)
+}
+
+/// Hash a set of files by their paths and byte contents.
+pub fn hash_files(paths: &[PathBuf]) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    for path in paths {
+        path.hash(&mut hasher);
+        if let Ok(bytes) = fs::read(path) {
+            bytes.hash(&mut hasher);
+        }
+    }
+    hasher.finish()
 }

@@ -10,6 +10,7 @@ mod group44_test;
 mod import_pom_test;
 mod incremental_build_test;
 mod jdk_release_test;
+mod local_annot_runtime_test;
 mod remove_dependency_test;
 mod resources_copy_test;
 mod sync_build_run_test;

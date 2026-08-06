@@ -31,11 +31,12 @@ pub fn copy_resources(ctx: &Context) -> Result<(), BuildError> {
     } else {
         Vec::new()
     };
-    let glob_external = build_globset(&external);
 
-    let external_paths = add_external_resources(&ctx.root, &glob_external, ctx)?;
-
-    resource_paths.extend(external_paths);
+    if !external.is_empty() {
+        let glob_external = build_globset(&external);
+        let external_paths = add_external_resources(&ctx.root, &glob_external, ctx)?;
+        resource_paths.extend(external_paths);
+    }
 
     let removed = remove_unknown_resources(&resource_paths, &ctx.bin, ctx)?;
     log::info!("Removed {} resources", removed);

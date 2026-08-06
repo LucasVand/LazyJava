@@ -36,17 +36,29 @@ fn test_compile_command_simple() -> Result<(), std::io::Error> {
 
     let java_file = test_java_file(&src_dir);
 
+    let sep = crate::JAVAC_SEPERATOR;
+    let classpath = format!(
+        "{}{sep}{}{sep}{}/*{sep}{}/*",
+        processor_dir.display(),
+        build_dir.display(),
+        annotation_lib_dir.display(),
+        lib_dir.display()
+    );
+    let processorpath = format!(
+        "{}{sep}{}",
+        annotation_lib_dir.display(),
+        processor_dir.display()
+    );
+    let source_files = vec![java_file.to_string_lossy().to_string()];
+
     let result = compile_command(
-        &java_file.to_string_lossy(),
-        &build_dir.to_string_lossy(),
-        &build_dir.to_string_lossy(),
-        &lib_dir.to_string_lossy(),
-        &annotation_lib_dir.to_string_lossy(),
-        &annotation_lib_dir.to_string_lossy(),
-        &src_generated_dir.to_string_lossy(),
-        &processor_dir.to_string_lossy(),
-        &Vec::new(),
+        Some(&build_dir.to_string_lossy()),
+        Some(&classpath),
+        Some(&processorpath),
+        Some(&src_generated_dir.to_string_lossy()),
         None,
+        &Vec::new(),
+        &source_files,
     )?;
 
     assert!(
@@ -91,17 +103,29 @@ public class Greeting {{
     )
     .unwrap();
 
+    let sep = crate::JAVAC_SEPERATOR;
+    let classpath = format!(
+        "{}{sep}{}{sep}{}/*{sep}{}/*",
+        processor_dir.display(),
+        build_dir.display(),
+        annotation_lib_dir.display(),
+        lib_dir.display()
+    );
+    let processorpath = format!(
+        "{}{sep}{}",
+        annotation_lib_dir.display(),
+        processor_dir.display()
+    );
+    let source_files = vec![file_path.to_string_lossy().to_string()];
+
     let result = compile_command(
-        &file_path.to_string_lossy(),
-        &build_dir.to_string_lossy(),
-        &build_dir.to_string_lossy(),
-        &lib_dir.to_string_lossy(),
-        &annotation_lib_dir.to_string_lossy(),
-        &annotation_lib_dir.to_string_lossy(),
-        &src_generated_dir.to_string_lossy(),
-        &processor_dir.to_string_lossy(),
-        &Vec::new(),
+        Some(&build_dir.to_string_lossy()),
+        Some(&classpath),
+        Some(&processorpath),
+        Some(&src_generated_dir.to_string_lossy()),
         None,
+        &Vec::new(),
+        &source_files,
     )?;
 
     assert!(

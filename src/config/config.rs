@@ -6,8 +6,8 @@ use log::debug;
 use crate::{
     CONFIG_FILE_NAME, ContextNoConfig,
     args::{AddArgs, RemoveArgs},
-    config::{ConfigDependancy, ConfigTomlEdit, config_error::ConfigError},
-    lock_file::LockFile,
+    config::{ConfigTomlEdit, LocalDependency, RemoteDependency, config_error::ConfigError},
+    lock_file::{LockFile, RootPackage},
     maven_central::{
         MavenError, MavenIdBuf, PartialMavenIdBuf, fetch_artifact_metadata, pom::Scope,
     },
@@ -128,7 +128,7 @@ impl ConfigTomlEdit {
         lockfile: &mut LockFile,
         ctx: &ContextNoConfig,
     ) -> Result<(), ConfigError> {
-        let dep_list = self.dependancy_list()?;
+        let dep_list = self.root_package_list()?;
         lockfile.sync_with_root_packages(&dep_list)?;
 
         lockfile.validate_current_packages(ctx)?;
@@ -136,23 +136,38 @@ impl ConfigTomlEdit {
         lockfile.write(&ctx.root)?;
         Ok(())
     }
-    pub fn dependancy_list(
+    pub fn root_package_list(
         &self,
-    ) -> Result<HashMap<PartialMavenIdBuf, ConfigDependancy>, ConfigError> {
+    ) -> Result<HashMap<PartialMavenIdBuf, RootPackage>, ConfigError> {
         if let Some(deps) = self.dependancies() {
             let mut map = HashMap::new();
             for (k, dep) in deps {
-                let de: Result<ConfigDependancy, ConfigError> = dep.to_config_dependancy();
-                let de = de?;
+                let de: Option<RemoteDependency> = dep.to_remote_dependency()?;
 
-                let id = PartialMavenIdBuf::new(&de.group, k);
+                if let Some(dep) = de {
+                    let id = PartialMavenIdBuf::new(&dep.group, k);
 
-                map.insert(id, de);
+                    map.insert(id, dep.into());
+                }
             }
 
             Ok(map)
         } else {
             Ok(HashMap::new())
+        }
+    }
+    pub fn local_package_list(&self) -> Result<Vec<LocalDependency>, ConfigError> {
+        if let Some(deps) = self.dependancies() {
+            let mut v = Vec::new();
+            for (_key, dep) in deps {
+                let de: Option<LocalDependency> = dep.to_local_dependency()?;
+                if let Some(dep) = de {
+                    v.push(dep);
+                }
+            }
+            Ok(v)
+        } else {
+            Ok(Vec::new())
         }
     }
 
