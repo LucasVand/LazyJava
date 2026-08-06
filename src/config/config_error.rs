@@ -31,15 +31,48 @@ pub enum ConfigError {
 
     #[error("Could not remove because package is not included in config file")]
     PackageNotFound,
+
+    #[error("Could not parse ConfigDependancy unexpected field '{0}'")]
+    UnexpectedValue(&'static str),
+
+    #[error("Local dependency path does not exist")]
+    LocalDependnecyNotFound(PathBuf),
+
+    #[error("Local dependency is not a jar file")]
+    LocalDependnecyNotJar(PathBuf),
 }
 
 impl DiagnosticProvider for ConfigError {
     fn diagnostic(&self) -> Diagnostic {
         match self {
+            ConfigError::LocalDependnecyNotFound(path) => {
+                Diagnostic::new("Local dependency path does not exist")
+                    .message(format!(
+                        "Could not find the local dependency {}",
+                        path.display()
+                    ))
+                    .help("Ensure that the path given exists and is a jar file")
+            }
+            ConfigError::LocalDependnecyNotJar(path) => {
+                Diagnostic::new("Local dependency is not a jar file")
+                    .message(format!(
+                        "The local dependency {} does not have a .jar extension",
+                        path.display()
+                    ))
+                    .note("Currently only .jar files are supported as local dependencies")
+                    .help("Point the dependency at a valid .jar file")
+            }
+
             ConfigError::MissingValue(field) => Diagnostic::new("Missing lazy-java.toml value")
                 .message(format!(
                     "Could not parse lazy-java.toml, missing field '{field}'."
                 )),
+            ConfigError::UnexpectedValue(field) => {
+                Diagnostic::new("Unexpected value in lazy-java.toml ").message(format!(
+                    "Could not parse lazy-java.toml, unexpected field '{field}'."
+                ))
+            }
+
             ConfigError::ParseError(err) => {
                 Diagnostic::new("Failed to parse lazy-java.toml").note(err.to_string())
             }

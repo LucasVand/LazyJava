@@ -12,7 +12,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     ContextNoConfig, LOCK_FILE_NAME,
-    config::ConfigDependancy,
     lock_file::LockFileError,
     maven_central::{
         MavenId, MavenIdBuf, PartialMavenIdBuf,
@@ -45,6 +44,13 @@ pub struct LockFilePackage {
 
     #[serde(default)]
     pub annotations: Vec<String>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
+pub struct RootPackage {
+    pub scope: Option<Scope>,
+    pub group: String,
+    pub version: String,
 }
 
 impl LockFile {
@@ -225,7 +231,7 @@ impl LockFile {
     }
     pub fn sync_with_root_packages(
         &mut self,
-        root_packages: &HashMap<PartialMavenIdBuf, ConfigDependancy>,
+        root_packages: &HashMap<PartialMavenIdBuf, RootPackage>,
     ) -> Result<(), LockFileError> {
         let mut map: HashSet<PartialMavenIdBuf> = self
             .packages

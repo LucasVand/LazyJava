@@ -1,5 +1,10 @@
-use crate::{config::ConfigError, maven_central::pom::Scope};
-use std::{collections::HashMap, path::PathBuf};
+use crate::{
+    config::ConfigError,
+    lock_file::RootPackage,
+    maven_central::pom::Scope,
+    utils::{IOError, fs::canonicalize},
+};
+use std::{collections::HashMap, ffi::OsStr, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 use toml_edit_derive::TomlEdit;
@@ -54,13 +59,6 @@ impl<'a> ConfigProcesserDefinitionTomlEditView<'a> {
         })
     }
 }
-fn assert<T>(value: Option<T>, name: &'static str) -> Result<T, ConfigError> {
-    if let Some(v) = value {
-        Ok(v)
-    } else {
-        Err(ConfigError::MissingValue(name))
-    }
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, TomlEdit)]
 #[serde(deny_unknown_fields)]
@@ -102,19 +100,80 @@ pub struct ConfigSetup {
 pub struct ConfigDependancy {
     pub group: String,
     pub version: String,
+    pub scope: Scope,
+    pub path: String,
+}
+pub struct RemoteDependency {
+    pub group: String,
+    pub version: String,
     pub scope: Option<Scope>,
+}
+pub struct LocalDependency {
+    pub path: PathBuf,
+}
+pub enum ConfigDependancyParsed {
+    Remote(RemoteDependency),
+    Local(LocalDependency),
 }
 
 impl<'a> ConfigDependancyTomlEditView<'a> {
-    pub fn to_config_dependancy(&self) -> Result<ConfigDependancy, ConfigError> {
-        let group = assert(self.group(), "group_id")?;
-        let version = assert(self.version(), "version")?;
+    pub fn to_remote_dependency(&self) -> Result<Option<RemoteDependency>, ConfigError> {
+        let group = self.group();
+        let version = self.version();
         let scope = self.scope();
-        Ok(ConfigDependancy {
+        let path = self.path();
+
+        if group.is_none() && version.is_none() {
+            return Ok(None);
+        }
+        assert_none(path, "path")?;
+
+        let group = assert(group, "group")?;
+        let version = assert(version, "version")?;
+
+        Ok(Some(RemoteDependency {
             group,
             version,
             scope,
-        })
+        }))
+    }
+    pub fn to_local_dependency(&self) -> Result<Option<LocalDependency>, ConfigError> {
+        let group = self.group();
+        let version = self.version();
+        let scope = self.scope();
+        let path = self.path();
+
+        if path.is_none() {
+            return Ok(None);
+        }
+        assert_none(group, "group")?;
+        assert_none(version, "version")?;
+        assert_none(scope, "scope")?;
+
+        let path = assert(path, "path")?;
+
+        let path = PathBuf::from(&path);
+
+        if !path.exists() {
+            return Err(ConfigError::LocalDependnecyNotFound(path));
+        }
+        if path.extension() != Some(OsStr::new("jar")) {
+            return Err(ConfigError::LocalDependnecyNotJar(path));
+        }
+
+        let con = canonicalize(&path)
+            .map_err(|e| IOError::new("resolving local dependency path", path, e))?;
+
+        Ok(Some(LocalDependency { path: con }))
+    }
+}
+impl Into<RootPackage> for RemoteDependency {
+    fn into(self) -> RootPackage {
+        RootPackage {
+            scope: self.scope,
+            group: self.group,
+            version: self.version,
+        }
     }
 }
 
@@ -132,4 +191,20 @@ pub struct ConfigResources {
 
 fn is_default<T: Default + PartialEq>(value: &T) -> bool {
     value == &T::default()
+}
+
+fn assert<T>(value: Option<T>, name: &'static str) -> Result<T, ConfigError> {
+    if let Some(v) = value {
+        Ok(v)
+    } else {
+        Err(ConfigError::MissingValue(name))
+    }
+}
+
+fn assert_none<T>(value: Option<T>, name: &'static str) -> Result<(), ConfigError> {
+    if let Some(_v) = value {
+        Err(ConfigError::UnexpectedValue(name))
+    } else {
+        Ok(())
+    }
 }
