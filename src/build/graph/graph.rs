@@ -19,7 +19,7 @@ pub struct Graph {
 
 impl Graph {
     pub fn from_path(path: &Path, excluded: &GlobSet) -> Result<Graph, io::Error> {
-        let root = Node::from_path(path, &Package::empty(), excluded)?;
+        let root = Node::from_path(path, excluded)?;
 
         let mut dependents: HashMap<PathBuf, Vec<PathBuf>> = HashMap::new();
 
