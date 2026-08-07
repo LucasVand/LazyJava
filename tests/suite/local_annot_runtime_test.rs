@@ -62,7 +62,7 @@ fn walkdir(dir: &Path, ext: &str) -> Result<Vec<String>, Box<dyn std::error::Err
         let path = entry.path();
         if path.is_dir() {
             out.extend(walkdir(&path, ext)?);
-        } else if path.extension().map_or(false, |e| e == ext) {
+        } else if path.extension().is_some_and(|e| e == ext) {
             out.push(path.to_string_lossy().to_string());
         }
     }

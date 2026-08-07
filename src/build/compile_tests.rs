@@ -36,7 +36,7 @@ fn test_compile_command_simple() -> Result<(), std::io::Error> {
 
     let java_file = test_java_file(&src_dir);
 
-    let sep = crate::JAVAC_SEPERATOR;
+    let sep = crate::JAVAC_SEPARATOR;
     let classpath = format!(
         "{}{sep}{}{sep}{}/*{sep}{}/*",
         processor_dir.display(),
@@ -103,7 +103,7 @@ public class Greeting {{
     )
     .unwrap();
 
-    let sep = crate::JAVAC_SEPERATOR;
+    let sep = crate::JAVAC_SEPARATOR;
     let classpath = format!(
         "{}{sep}{}{sep}{}/*{sep}{}/*",
         processor_dir.display(),

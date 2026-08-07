@@ -2,7 +2,7 @@
 mod tests {
     use crate::{
         lock_file::{LockFile, LockFilePackage},
-        maven_central::{MavenIdBuf, pom::DependancyType},
+        maven_central::{MavenIdBuf, pom::DependencyType},
     };
 
     fn package(id: &str, deps: &[&str]) -> LockFilePackage {
@@ -19,8 +19,8 @@ mod tests {
             id: MavenIdBuf::new(parts[0], parts[1], parts[2]),
             file_name: String::new(),
             url: String::new(),
-            dependancies: dep_ids,
-            packaging: DependancyType::Jar,
+            dependencies: dep_ids,
+            packaging: DependencyType::Jar,
             root: false,
             scope: crate::maven_central::pom::Scope::Compile,
             annotations: Vec::new(),
@@ -70,7 +70,7 @@ mod tests {
     }
 
     #[test]
-    fn transitive_cleans_dependancy_lists() {
+    fn transitive_cleans_dependency_lists() {
         let mut lock = lockfile(vec![
             package("g:x:1.0", &["g:a:1.0"]),
             package("g:a:1.0", &["g:b:1.0", "g:c:1.0"]),

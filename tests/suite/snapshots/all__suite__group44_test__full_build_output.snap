@@ -101,4 +101,4 @@ Creating build directory: <ROOT>/target/bin
 Creating build processor directory: <ROOT>/target/processor-bin
 Creating generated src directory: <ROOT>/target/generated-source
 Creating library directory: <ROOT>/target/lib
-Syncing dependancies
+Syncing dependencies

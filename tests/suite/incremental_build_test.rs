@@ -93,7 +93,7 @@ public class Calc {
 "#;
 
 #[test]
-fn incremental_build_dependancy_and_subcommand_snapshots() -> Result<(), Box<dyn std::error::Error>>
+fn incremental_build_dependency_and_subcommand_snapshots() -> Result<(), Box<dyn std::error::Error>>
 {
     let tmp = copy_fixture();
     let dest = tmp.path().join("project");
@@ -104,14 +104,14 @@ fn incremental_build_dependancy_and_subcommand_snapshots() -> Result<(), Box<dyn
         normalize_output(&run(&dest, &["build", "--show-compiled"])?, &dest)
     );
 
-    // Dependency and dependant graphs
+    // Dependency and dependents graphs
     insta::assert_snapshot!(
-        "dependancy_graph",
-        normalize_output(&run(&dest, &["build", "dependancies"])?, &dest)
+        "dependency_graph",
+        normalize_output(&run(&dest, &["build", "dependencies"])?, &dest)
     );
     insta::assert_snapshot!(
-        "dependants_graph",
-        normalize_output(&run(&dest, &["build", "dependants"])?, &dest)
+        "dependents_graph",
+        normalize_output(&run(&dest, &["build", "dependents"])?, &dest)
     );
 
     // Nothing should be stale right after a build
@@ -120,7 +120,7 @@ fn incremental_build_dependancy_and_subcommand_snapshots() -> Result<(), Box<dyn
         normalize_output(&run(&dest, &["build", "stale"])?, &dest)
     );
 
-    // Editing a leaf file (no dependants of its own) fans out to all transitive dependants
+    // Editing a leaf file (no dependents of its own) fans out to all transitive dependents
     std::fs::write(dest.join("src/greeting/Formatter.java"), MODIFIED_FORMATTER)?;
 
     insta::assert_snapshot!(
@@ -128,19 +128,19 @@ fn incremental_build_dependancy_and_subcommand_snapshots() -> Result<(), Box<dyn
         normalize_output(&run(&dest, &["build", "stale"])?, &dest)
     );
 
-    // Incremental build recompiles the file plus its transitive dependants
+    // Incremental build recompiles the file plus its transitive dependents
     insta::assert_snapshot!(
-        "incrimental_build_after_leaf_edit",
+        "incremental_build_after_leaf_edit",
         normalize_output(&run(&dest, &["build", "--show-compiled"])?, &dest)
     );
 
     // A second build with no changes skips compilation entirely
     insta::assert_snapshot!(
-        "incrimental_build_no_changes",
+        "incremental_build_no_changes",
         normalize_output(&run(&dest, &["build"])?, &dest)
     );
 
-    // Editing a mid-graph file fans out to its same-package files and dependants
+    // Editing a mid-graph file fans out to its same-package files and dependents
     std::fs::write(dest.join("src/math/Calc.java"), MODIFIED_CALC)?;
 
     insta::assert_snapshot!(
@@ -148,7 +148,7 @@ fn incremental_build_dependancy_and_subcommand_snapshots() -> Result<(), Box<dyn
         normalize_output(&run(&dest, &["build", "stale"])?, &dest)
     );
     insta::assert_snapshot!(
-        "incrimental_build_after_mid_edit",
+        "incremental_build_after_mid_edit",
         normalize_output(&run(&dest, &["build"])?, &dest)
     );
 

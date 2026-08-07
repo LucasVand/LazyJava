@@ -17,7 +17,7 @@ kind = "processor"
 path = "./src/processor/ProcessorImpl.java"
 package = "processor"
 
-[dependancies]
+[dependencies]
 spring-boot-starter-web= { group = "org.springframework.boot", version = "4.1.0" }
 auto-value-annotations= { group = "com.google.auto.value", version = "1.11.1" }
 auto-value= { group = "com.google.auto.value", version = "1.11.1" }

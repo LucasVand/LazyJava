@@ -73,5 +73,5 @@ expression: "normalize_output(&run(&dest, &[\"build\", \"--show-compiled\"])?, &
   <ROOT>/src/utils/FontManager.java
   <ROOT>/src/utils/Tuple.java
 Compiled in <TIME>s
-Compiling using incrimental build (68 stale files)
-Syncing dependancies
+Compiling using incremental build (68 stale files)
+Syncing dependencies

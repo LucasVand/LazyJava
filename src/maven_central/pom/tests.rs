@@ -4,7 +4,7 @@ mod tests {
     use crate::maven_central::{
         MavenIdBuf,
         pom::{
-            MavenDependancyList, dependancy_list_structs::MavenDependancy, pom::DependancyType,
+            MavenDependencyList, dependency_list_structs::MavenDependency, pom::DependencyType,
             pom::Scope,
         },
     };
@@ -17,9 +17,9 @@ mod tests {
     }
 
     #[test]
-    fn test_maven_dependancy_list_simple() {
+    fn test_maven_dependency_list_simple() {
         // Test creating a dependency list for a simple artifact (junit has no dependencies)
-        let result = MavenDependancyList::new(MavenIdBuf::new("junit", "junit", "4.13.2"), None);
+        let result = MavenDependencyList::new(MavenIdBuf::new("junit", "junit", "4.13.2"), None);
         assert!(
             result.is_ok(),
             "Failed to create dependency list: {:?}",
@@ -40,9 +40,9 @@ mod tests {
     }
 
     #[test]
-    fn test_maven_dependancy_list_excludes_pom_packaging() {
+    fn test_maven_dependency_list_excludes_pom_packaging() {
         // Test that POM-type dependencies are excluded from the list
-        let result = MavenDependancyList::new(
+        let result = MavenDependencyList::new(
             MavenIdBuf::new("com.fasterxml.jackson.core", "jackson-databind", "2.15.0"),
             None,
         );
@@ -57,7 +57,7 @@ mod tests {
         // All dependencies should be JAR, not POM
         for dep in &dep_list {
             assert!(
-                dep.dependancy_type != DependancyType::Pom,
+                dep.dependency_type != DependencyType::Pom,
                 "POM dependencies should be excluded from list, found: {}:{}",
                 dep.id.group,
                 dep.id.artifact
@@ -66,9 +66,9 @@ mod tests {
     }
 
     #[test]
-    fn test_maven_dependancy_list_invalid_artifact() {
+    fn test_maven_dependency_list_invalid_artifact() {
         // Test that invalid artifacts produce errors
-        let result = MavenDependancyList::new(
+        let result = MavenDependencyList::new(
             MavenIdBuf::new("invalid.id.group", "invalid.id.artifact", "1.0.0"),
             None,
         );
@@ -76,9 +76,9 @@ mod tests {
     }
 
     #[test]
-    fn test_maven_dependancy_list_against_real_list() {
+    fn test_maven_dependency_list_against_real_list() {
         // Test that transitive dependencies are included
-        let result = MavenDependancyList::new(
+        let result = MavenDependencyList::new(
             MavenIdBuf::new("com.google.guava", "guava", "33.6.0-jre"),
             None,
         );
@@ -87,49 +87,49 @@ mod tests {
         let mut dep_list = result.unwrap();
 
         let mut expected = vec![
-            MavenDependancy {
+            MavenDependency {
                 id: MavenIdBuf::new("com.google.guava", "guava", "33.6.0-jre"),
-                dependancy_type: DependancyType::Bundle,
-                dependancies: Vec::new(),
+                dependency_type: DependencyType::Bundle,
+                dependencies: Vec::new(),
                 root: true,
                 scope: Scope::Compile,
             },
-            MavenDependancy {
+            MavenDependency {
                 id: MavenIdBuf::new("com.google.errorprone", "error_prone_annotations", "2.47.0"),
-                dependancy_type: DependancyType::Jar,
-                dependancies: Vec::new(),
+                dependency_type: DependencyType::Jar,
+                dependencies: Vec::new(),
                 root: false,
                 scope: Scope::Compile,
             },
-            MavenDependancy {
+            MavenDependency {
                 id: MavenIdBuf::new("com.google.guava", "failureaccess", "1.0.3"),
-                dependancy_type: DependancyType::Jar,
-                dependancies: Vec::new(),
+                dependency_type: DependencyType::Jar,
+                dependencies: Vec::new(),
                 root: false,
                 scope: Scope::Compile,
             },
-            MavenDependancy {
+            MavenDependency {
                 id: MavenIdBuf::new(
                     "com.google.guava",
                     "listenablefuture",
                     "9999.0-empty-to-avoid-conflict-with-guava",
                 ),
-                dependancy_type: DependancyType::Jar,
-                dependancies: Vec::new(),
+                dependency_type: DependencyType::Jar,
+                dependencies: Vec::new(),
                 root: false,
                 scope: Scope::Compile,
             },
-            MavenDependancy {
+            MavenDependency {
                 id: MavenIdBuf::new("com.google.j2objc", "j2objc-annotations", "3.1"),
-                dependancy_type: DependancyType::Jar,
-                dependancies: Vec::new(),
+                dependency_type: DependencyType::Jar,
+                dependencies: Vec::new(),
                 root: false,
                 scope: Scope::Compile,
             },
-            MavenDependancy {
+            MavenDependency {
                 id: MavenIdBuf::new("org.jspecify", "jspecify", "1.0.0"),
-                dependancy_type: DependancyType::Jar,
-                dependancies: Vec::new(),
+                dependency_type: DependencyType::Jar,
+                dependencies: Vec::new(),
                 root: false,
                 scope: Scope::Compile,
             },
@@ -139,7 +139,7 @@ mod tests {
 
         for (expected, result) in expected.iter().zip(dep_list.iter()) {
             assert!(
-                expected.id == result.id && expected.dependancy_type == result.dependancy_type,
+                expected.id == result.id && expected.dependency_type == result.dependency_type,
                 "Resulting and expected dependences do not match, expected: {:#?}, result: {:#?}",
                 expected,
                 result
@@ -148,9 +148,9 @@ mod tests {
     }
 
     #[test]
-    fn test_maven_dependancy_list_no_duplicates() {
+    fn test_maven_dependency_list_no_duplicates() {
         // Test that the list doesn't have duplicate entries
-        let result = MavenDependancyList::new(
+        let result = MavenDependencyList::new(
             MavenIdBuf::new(
                 "org.springframework.boot",
                 "spring-boot-starter-web",
@@ -183,9 +183,9 @@ mod tests {
     }
 
     #[test]
-    fn test_maven_dependancy_list_versions_valid() {
+    fn test_maven_dependency_list_versions_valid() {
         // Test that all versions in the list are valid version strings
-        let result = MavenDependancyList::new(
+        let result = MavenDependencyList::new(
             MavenIdBuf::new("com.google.guava", "guava", "31.1-jre"),
             None,
         );
@@ -206,9 +206,9 @@ mod tests {
     }
 
     #[test]
-    fn test_maven_dependancy_list_root_artifact_included() {
+    fn test_maven_dependency_list_root_artifact_included() {
         // Test that the root artifact is included in the dependency list
-        let result = MavenDependancyList::new(MavenIdBuf::new("junit", "junit", "4.13.2"), None);
+        let result = MavenDependencyList::new(MavenIdBuf::new("junit", "junit", "4.13.2"), None);
         assert!(result.is_ok());
 
         let dep_list = result.unwrap();
@@ -224,9 +224,9 @@ mod tests {
     }
 
     #[test]
-    fn test_maven_dependancy_list_dependency_types() {
+    fn test_maven_dependency_list_dependency_types() {
         // Test that dependencies have valid packaging types
-        let result = MavenDependancyList::new(
+        let result = MavenDependencyList::new(
             MavenIdBuf::new("com.google.guava", "guava", "31.1-jre"),
             None,
         );
@@ -236,13 +236,13 @@ mod tests {
 
         for dep in &dep_list {
             assert!(
-                dep.dependancy_type == DependancyType::Jar
-                    || dep.dependancy_type == DependancyType::Bundle
-                    || matches!(dep.dependancy_type, DependancyType::Other(_)),
+                dep.dependency_type == DependencyType::Jar
+                    || dep.dependency_type == DependencyType::Bundle
+                    || matches!(dep.dependency_type, DependencyType::Other(_)),
                 "Dependency {}:{} has invalid type: {:?}",
                 dep.id.group,
                 dep.id.artifact,
-                dep.dependancy_type
+                dep.dependency_type
             );
         }
     }

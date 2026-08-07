@@ -17,7 +17,7 @@ pub enum ClasspathError {
     #[error("Could not read lib folder at {0}, OS Error: {1}")]
     OSErrorLib(String, io::Error),
 
-    #[error("Could not write classpath file, attemping to write it at {0}, OS Error: {1}")]
+    #[error("Could not write classpath file, attempting to write it at {0}, OS Error: {1}")]
     ClasspathWrite(String, io::Error),
 
     #[error("Could not serialize classpath, Error: {0}")]

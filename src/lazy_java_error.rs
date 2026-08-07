@@ -25,14 +25,14 @@ pub enum LazyJavaError {
     #[error("Could not create project")]
     CreateError(#[from] CreateError),
 
-    #[error("Build error occured")]
+    #[error("Build error occurred")]
     BuildError(#[from] BuildError),
 
-    #[error("Context error occured")]
+    #[error("Context error occurred")]
     ContextError(#[from] ContextError),
 
     #[error("Unable to find main classes, {0}")]
-    CouldntFindMains(io::Error),
+    CouldNotFindMains(io::Error),
 
     #[error("Unable to remove build directory when cleaning, {0}")]
     NoRemoveBuild(io::Error),
@@ -40,13 +40,13 @@ pub enum LazyJavaError {
     #[error("IO error: {0}")]
     IoError(#[from] io::Error),
 
-    #[error("Run error occured")]
+    #[error("Run error occurred")]
     RunError(#[from] RunError),
 
-    #[error("Classpath error occured")]
+    #[error("Classpath error occurred")]
     ClasspathError(#[from] ClasspathError),
 
-    #[error("Maven error occured")]
+    #[error("Maven error occurred")]
     MavenError(#[from] MavenError),
 
     #[error("Error when operating on lock file")]
@@ -67,7 +67,7 @@ impl DiagnosticProvider for LazyJavaError {
             LazyJavaError::CreateError(err) => err.diagnostic(),
             LazyJavaError::BuildError(err) => err.diagnostic(),
             LazyJavaError::ContextError(err) => err.diagnostic(),
-            LazyJavaError::CouldntFindMains(err) => Diagnostic::new("Unable to find main classes")
+            LazyJavaError::CouldNotFindMains(err) => Diagnostic::new("Unable to find main classes")
                 .message("Could not locate any main classes in the project.")
                 .help("Create a main class, then try running again.")
                 .note(err.to_string()),

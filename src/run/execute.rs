@@ -4,10 +4,10 @@ use std::{
 };
 
 use crate::{
-    Context, JAVAC_SEPERATOR,
+    Context, JAVAC_SEPARATOR,
     args::RunArgs,
     build::BuildError,
-    utils::{IOError, SeperatorList, processes::java_tool_command},
+    utils::{IOError, SeparatorList, processes::java_tool_command},
 };
 
 /// Build and run a raw `java` command. `classpath` is emitted only when
@@ -55,7 +55,7 @@ pub fn execute_java(class: &str, args: &RunArgs, ctx: &Context) -> Result<ExitSt
         ))
     })?;
 
-    let classpath = SeperatorList::new(JAVAC_SEPERATOR)
+    let classpath = SeparatorList::new(JAVAC_SEPARATOR)
         .add(ab_bin_processors.display())
         .add(ab_bin.display())
         .add_glob(ab_lib_annotations.display())

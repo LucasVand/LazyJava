@@ -5,4 +5,4 @@ expression: toml_after_remove
 [project]
 name = "with-dependency"
 
-[dependancies]
+[dependencies]

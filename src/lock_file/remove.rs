@@ -26,7 +26,7 @@ impl LockFile {
             info!("Removed package {}", package.id);
 
             self.packages.iter_mut().for_each(|p| {
-                p.dependancies.retain(|dep| dep != &package.id);
+                p.dependencies.retain(|dep| dep != &package.id);
             });
 
             Ok(package)
@@ -56,7 +56,7 @@ impl LockFile {
                 in_degree[i] += 1;
             }
             let edges: Vec<usize> = p
-                .dependancies
+                .dependencies
                 .iter()
                 .filter_map(|dep| id_to_idx.get(dep).copied())
                 .collect();
@@ -90,7 +90,7 @@ impl LockFile {
         let remaining_ids: HashSet<MavenIdBuf> =
             self.packages.iter().map(|p| p.id.clone()).collect();
         for p in &mut self.packages {
-            p.dependancies.retain(|dep| remaining_ids.contains(dep));
+            p.dependencies.retain(|dep| remaining_ids.contains(dep));
         }
     }
 }

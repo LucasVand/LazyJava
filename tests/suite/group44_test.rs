@@ -67,7 +67,7 @@ fn normalize_output(output: &str, root: &Path) -> String {
 }
 
 #[test]
-fn group44_full_build_graph_and_incrimental_snapshots() -> Result<(), Box<dyn std::error::Error>> {
+fn group44_full_build_graph_and_incremental_snapshots() -> Result<(), Box<dyn std::error::Error>> {
     let tmp = copy_fixture();
     let dest = tmp.path().join("project");
 
@@ -77,14 +77,14 @@ fn group44_full_build_graph_and_incrimental_snapshots() -> Result<(), Box<dyn st
         normalize_output(&run(&dest, &["build", "--show-compiled"])?, &dest)
     );
 
-    // Dependency and dependant graphs
+    // Dependency and dependents graphs
     insta::assert_snapshot!(
-        "dependancy_graph",
-        normalize_output(&run(&dest, &["build", "dependancies"])?, &dest)
+        "dependency_graph",
+        normalize_output(&run(&dest, &["build", "dependencies"])?, &dest)
     );
     insta::assert_snapshot!(
-        "dependants_graph",
-        normalize_output(&run(&dest, &["build", "dependants"])?, &dest)
+        "dependents_graph",
+        normalize_output(&run(&dest, &["build", "dependents"])?, &dest)
     );
 
     // Nothing should be stale right after a build
@@ -95,7 +95,7 @@ fn group44_full_build_graph_and_incrimental_snapshots() -> Result<(), Box<dyn st
 
     // Edit a low-level utility that is imported across the whole UI,
     // expecting the incremental build to fan out to every transitive
-    // dependant.
+    // dependents.
     let color_manager = dest.join("src/utils/ColorManager.java");
     let mut contents = std::fs::read_to_string(&color_manager)?;
     contents.push_str("\n    // modified by the group44 e2e test\n");
@@ -107,21 +107,21 @@ fn group44_full_build_graph_and_incrimental_snapshots() -> Result<(), Box<dyn st
     );
 
     // The incremental build must recompile the edited file plus all its
-    // transitive dependants, and still succeed.
+    // transitive dependents, and still succeed.
     insta::assert_snapshot!(
-        "incrimental_build_after_color_manager_edit",
+        "incremental_build_after_color_manager_edit",
         normalize_output(&run(&dest, &["build", "--show-compiled"])?, &dest)
     );
 
     // After the incremental build nothing should be stale.
     insta::assert_snapshot!(
-        "stale_after_incrimental_build",
+        "stale_after_incremental_build",
         normalize_output(&run(&dest, &["build", "stale"])?, &dest)
     );
 
     // A repeated build with no further changes skips compilation entirely.
     insta::assert_snapshot!(
-        "incrimental_build_no_changes",
+        "incremental_build_no_changes",
         normalize_output(&run(&dest, &["build"])?, &dest)
     );
 

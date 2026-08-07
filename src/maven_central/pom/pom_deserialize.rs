@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     maven_central::{
         MavenError, MavenId,
-        pom::{dependancy_list_structs::MavenDependancyList, pom::MavenPom},
+        pom::{dependency_list_structs::MavenDependencyList, pom::MavenPom},
     },
     utils::XmlDeserializeError,
 };
@@ -25,7 +25,7 @@ impl MavenPom {
                 .iter()
                 .map(|bom| {
                     let hash =
-                        MavenDependancyList::hash_maven_bom_id(&bom.group_id, &bom.artifact_id);
+                        MavenDependencyList::hash_maven_bom_id(&bom.group_id, &bom.artifact_id);
 
                     (
                         hash,

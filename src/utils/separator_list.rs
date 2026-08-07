@@ -7,12 +7,12 @@ use std::fmt::Display;
 /// This avoids hand-assembling strings like
 /// `"{dir1}:{dir2}/*:{dir3}/*"` and keeps the trailing `/*` decision next to
 /// each entry.
-pub struct SeperatorList {
+pub struct SeparatorList {
     sep: char,
     entries: Vec<String>,
 }
 
-impl SeperatorList {
+impl SeparatorList {
     pub fn new(sep: char) -> Self {
         Self {
             sep,
@@ -64,16 +64,16 @@ impl SeperatorList {
 
 #[cfg(test)]
 mod tests {
-    use super::SeperatorList;
+    use super::SeparatorList;
 
     #[test]
     fn empty_builds_empty_string() {
-        assert_eq!(SeperatorList::new(':').build(), "");
+        assert_eq!(SeparatorList::new(':').build(), "");
     }
 
     #[test]
-    fn joins_with_seperator() {
-        let list = SeperatorList::new(';')
+    fn joins_with_separator() {
+        let list = SeparatorList::new(';')
             .add("a")
             .add("b")
             .add("c")
@@ -83,7 +83,7 @@ mod tests {
 
     #[test]
     fn supports_glob_suffix_per_entry() {
-        let list = SeperatorList::new(':')
+        let list = SeparatorList::new(':')
             .add("lib")
             .add_glob("jars")
             .add_glob("more")
@@ -93,13 +93,13 @@ mod tests {
 
     #[test]
     fn adds_plain_slice() {
-        let list = SeperatorList::new(';').add_slice(&["a", "b", "c"]).build();
+        let list = SeparatorList::new(';').add_slice(&["a", "b", "c"]).build();
         assert_eq!(list, "a;b;c");
     }
 
     #[test]
     fn adds_glob_slice() {
-        let list = SeperatorList::new(';')
+        let list = SeparatorList::new(';')
             .add_slice_glob(&["a", "b", "c"])
             .build();
         assert_eq!(list, "a/*;b/*;c/*");
@@ -107,7 +107,7 @@ mod tests {
 
     #[test]
     fn mixes_single_and_slice() {
-        let list = SeperatorList::new(':')
+        let list = SeparatorList::new(':')
             .add("base")
             .add_slice_glob(&["a", "b"])
             .build();

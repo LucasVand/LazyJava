@@ -22,7 +22,7 @@ impl LockFile {
         if list.is_empty() {
             return Ok(0);
         }
-        println!("    {} missing dependancies", "Fetching".bold().green());
+        println!("    {} missing dependencies", "Fetching".bold().green());
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()

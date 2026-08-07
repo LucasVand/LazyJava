@@ -9,7 +9,7 @@ use crate::{
     generate::GenerateError,
     lock_file::LockFile,
     maven_central::pom::{
-        AnnotationProcessorPaths, Build, Configuration, DependancyType, Dependencies, Dependency,
+        AnnotationProcessorPaths, Build, Configuration, DependencyType, Dependencies, Dependency,
         MavenPom, Plugin, Plugins, ProcessorPath, Properties, Scope,
     },
     utils::{IOError, XmlSerializeError, fs, jdk_version::desired_jdk_version},
@@ -85,7 +85,7 @@ fn create_pom(ctx: &Context) -> Result<MavenPom, GenerateError> {
         }
     };
 
-    let mut dependancies: Vec<Dependency> = lockfile
+    let mut dependencies: Vec<Dependency> = lockfile
         .packages
         .into_iter()
         .filter(|d| d.root)
@@ -99,13 +99,13 @@ fn create_pom(ctx: &Context) -> Result<MavenPom, GenerateError> {
             classifier: None,
         })
         .collect();
-    dependancies.sort_by(|a, b| {
+    dependencies.sort_by(|a, b| {
         a.group_id
             .cmp(&b.group_id)
             .then(a.artifact_id.cmp(&b.artifact_id))
     });
-    let dependancies = Dependencies {
-        dependency: dependancies,
+    let dependencies = Dependencies {
+        dependency: dependencies,
     };
 
     Ok(MavenPom {
@@ -113,8 +113,8 @@ fn create_pom(ctx: &Context) -> Result<MavenPom, GenerateError> {
         group_id: group_id.to_string(),
         artifact_id: artifact_id.to_string(),
         version: version_id.to_string(),
-        packaging: DependancyType::Jar,
-        dependencies: Some(dependancies),
+        packaging: DependencyType::Jar,
+        dependencies: Some(dependencies),
         dependency_management: None,
         properties: Properties {
             map: HashMap::from([("maven.compiler.release".to_string(), jdk)]),

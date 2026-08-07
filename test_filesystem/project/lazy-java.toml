@@ -4,5 +4,5 @@ name = "hello"
 [resources]
 exclude = ["*.js"]
 
-[dependancies]
+[dependencies]
 spring-boot-starter-web= { group = "org.springframework.boot", version = "4.1.0" }

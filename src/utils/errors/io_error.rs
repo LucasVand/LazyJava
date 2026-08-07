@@ -5,7 +5,7 @@ use thiserror::Error;
 use crate::utils::{Diagnostic, DiagnosticProvider};
 
 #[derive(Error, Debug)]
-#[error("IO error occured while {action} {path}: {source}")]
+#[error("IO error occurred while {action} {path}: {source}")]
 pub struct IOError {
     action: &'static str,
     path: PathBuf,

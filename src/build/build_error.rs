@@ -17,10 +17,10 @@ pub enum BuildError {
     #[error("Errors while creating the jar")]
     JarCreationError,
 
-    #[error("Classpath error occured")]
+    #[error("Classpath error occurred")]
     ClasspathError(#[from] ClasspathError),
 
-    #[error("Config error occured")]
+    #[error("Config error occurred")]
     ConfigError(#[from] ConfigError),
 
     #[error("Error serializing build metadata")]

@@ -192,7 +192,7 @@ mod tests {
 
             assert!(
                 expect.is_some(),
-                "Couldnt Find Expected Main Class Matching a Class Found "
+                "Couldn't find expected main class matching a class found"
             );
             let expect = expect.unwrap();
             let con_main = fs::canonicalize(&main.path)?;

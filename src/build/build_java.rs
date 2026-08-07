@@ -23,8 +23,8 @@ impl LazyJava {
     pub fn build(args: &BuildCommand, ctx: &Context) -> Result<(), BuildError> {
         if let Some(build_command) = &args.command {
             match build_command {
-                BuildSubCommand::Dependancies {} => Self::show_dependancy_graph(ctx),
-                BuildSubCommand::Dependants {} => Self::show_depentants_graph(ctx),
+                BuildSubCommand::Dependencies {} => Self::show_dependency_graph(ctx),
+                BuildSubCommand::Dependents {} => Self::show_dependents_graph(ctx),
                 BuildSubCommand::Stale {} => Self::show_rebuild_files(ctx),
                 BuildSubCommand::Classpath {} => Self::rebuild_classpath(ctx),
                 BuildSubCommand::Jar { args } => Self::build_jar(args, ctx),
@@ -72,7 +72,7 @@ impl LazyJava {
 
                 let stale = graph.stale_files(build_data.as_ref().unwrap().time_stamp);
                 println!(
-                    "{} using incrimental build ({} stale file{})",
+                    "{} using incremental build ({} stale file{})",
                     "Compiling".bold().green(),
                     stale.len(),
                     if stale.len() == 1 { "" } else { "s" }
@@ -87,7 +87,7 @@ impl LazyJava {
             }
         }
 
-        timings.record_current("Incrimental prcoessing");
+        timings.record_current("Incremental processing");
         let jdk = desired_jdk_version(Some(args), Some(ctx));
 
         let mut status: Option<ExitStatus> = None;
@@ -121,14 +121,14 @@ impl LazyJava {
         Ok(())
     }
 
-    fn show_dependancy_graph(ctx: &Context) -> Result<(), BuildError> {
+    fn show_dependency_graph(ctx: &Context) -> Result<(), BuildError> {
         let glob = build_globset(ctx);
 
         let graph = Graph::from_path(&ctx.src, &glob)
             .map_err(|e| IOError::new("finding modified files", &ctx.src, e))?;
 
         let src = &ctx.src;
-        println!("{}", "Dependancy graph".bold().green());
+        println!("{}", "Dependency graph".bold().green());
         for (key, entry) in graph.dependencies.iter() {
             if let Some(name) = key.file_name()
                 && let Ok(rel) = key.strip_prefix(src)
@@ -170,14 +170,14 @@ impl LazyJava {
 
         Ok(())
     }
-    fn show_depentants_graph(ctx: &Context) -> Result<(), BuildError> {
+    fn show_dependents_graph(ctx: &Context) -> Result<(), BuildError> {
         let glob = build_globset(ctx);
 
         let graph = Graph::from_path(&ctx.src, &glob)
             .map_err(|e| IOError::new("finding modified files", &ctx.src, e))?;
 
         let src = &ctx.src;
-        println!("{}", "Dependants graph".bold().green());
+        println!("{}", "Dependents graph".bold().green());
         for (key, entry) in graph.dependents.iter() {
             if let Some(name) = key.file_name()
                 && let Ok(rel) = key.strip_prefix(src)

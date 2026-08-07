@@ -7,9 +7,9 @@ use std::{
 use log::warn;
 
 use crate::{
-    Context, JAVAC_SEPERATOR,
+    Context, JAVAC_SEPARATOR,
     build::BuildError,
-    utils::{IOError, SeperatorList, join_directory, processes::java_tool_command},
+    utils::{IOError, SeparatorList, join_directory, processes::java_tool_command},
 };
 
 /// Build and run a `javac` command. Each `Option<&str>` maps to a javac flag
@@ -96,7 +96,7 @@ pub fn compile_java(
         "resolving annotation library directory",
         &ctx.lib_annotations,
     )?;
-    let ab_annotation_lib_list = join_directory(&ctx.lib_annotations, JAVAC_SEPERATOR);
+    let ab_annotation_lib_list = join_directory(&ctx.lib_annotations, JAVAC_SEPARATOR);
     let ab_src_generated = resolve("resolving generated source directory", &ctx.src_generated)?;
     let src_generated_destructured = join_directory(&ab_src_generated, ' ');
     let ab_bin_processor = resolve("resolving processor bin directory", &ctx.bin_processors)?;
@@ -108,8 +108,8 @@ pub fn compile_java(
         .map(|dep| dep.path.to_string_lossy().to_string())
         .collect();
 
-    let sep = JAVAC_SEPERATOR;
-    let classpath = SeperatorList::new(sep)
+    let sep = JAVAC_SEPARATOR;
+    let classpath = SeparatorList::new(sep)
         .add(ab_bin_processor.display())
         .add(ab_bin.display())
         .add_glob(ab_annotation_lib.display())
@@ -117,7 +117,7 @@ pub fn compile_java(
         .add_slice(&local_deps)
         .build();
 
-    let processorpath = SeperatorList::new(sep)
+    let processorpath = SeparatorList::new(sep)
         .add(ab_annotation_lib_list)
         .add(ab_bin_processor.display())
         .add_slice(&local_deps)

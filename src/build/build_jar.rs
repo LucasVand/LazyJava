@@ -8,7 +8,12 @@ use walkdir::WalkDir;
 
 use log::debug;
 
-use crate::{Context, args::JarArgs, build::BuildError, utils::{GlobalContext, IOError, fs, processes::java_tool_command}};
+use crate::{
+    Context,
+    args::JarArgs,
+    build::BuildError,
+    utils::{GlobalContext, IOError, fs, processes::java_tool_command},
+};
 
 pub fn build_jar(args: &JarArgs, ctx: &Context) -> Result<(), BuildError> {
     // ISSUE: cheap dry run this is not good and should be improved
@@ -23,7 +28,6 @@ pub fn build_jar(args: &JarArgs, ctx: &Context) -> Result<(), BuildError> {
     }
 
     let output = ctx.target.join("build.jar");
-
     if args.fat {
         build_fat_jar(&output, args, ctx)?;
     } else {
@@ -196,9 +200,10 @@ pub(crate) fn build_manifest(entry_point: &str, ctx: &Context) -> Result<String,
             })?;
             let path = entry.path();
             if path.extension().is_some_and(|e| e == "jar")
-                && let Ok(relative) = path.strip_prefix(&ctx.target) {
-                    class_path.push(relative.to_string_lossy().to_string());
-                }
+                && let Ok(relative) = path.strip_prefix(&ctx.target)
+            {
+                class_path.push(relative.to_string_lossy().to_string());
+            }
         }
     }
 

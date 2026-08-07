@@ -5,7 +5,7 @@ use crate::{
     args::BuildArgs,
     build::BuildError,
     build::compile::compile_java,
-    config::{ConfigProcesserDefinition, ProcesserType},
+    config::{ConfigProcessorDefinition, ProcessorType},
     utils::{IOError, fs},
 };
 
@@ -55,7 +55,7 @@ pub fn build_processors(build_args: &BuildArgs, ctx: &Context) -> Result<(), Bui
 
 fn create_meta_folder(
     ctx: &Context,
-    processors: HashMap<String, ConfigProcesserDefinition>,
+    processors: HashMap<String, ConfigProcessorDefinition>,
 ) -> Result<(), BuildError> {
     let dir = ctx.bin_processors.join("META-INF").join("services");
 
@@ -63,7 +63,7 @@ fn create_meta_folder(
     let mut first = true;
     for (class_name, p) in processors
         .iter()
-        .filter(|(_k, p)| p.kind == ProcesserType::Processor)
+        .filter(|(_k, p)| p.kind == ProcessorType::Processor)
     {
         if !first {
             file_contents.push('\n');
@@ -78,7 +78,7 @@ fn create_meta_folder(
     let service_file = dir.join("javax.annotation.processing.Processor");
     let processor_count = processors
         .iter()
-        .filter(|(_k, p)| p.kind == ProcesserType::Processor)
+        .filter(|(_k, p)| p.kind == ProcessorType::Processor)
         .count();
     log::info!(
         "Writing processor service file to {:?} with {} entr{}",

@@ -3,7 +3,7 @@ source: tests/suite/import_pom_test.rs
 assertion_line: 32
 expression: toml_content
 ---
-[dependancies]
+[dependencies]
 commons-lang3 = { group = "org.apache.commons", version = "3.12.0", scope = "compile" }
 guava = { group = "com.google.guava", version = "33.0.0-jre", scope = "compile" }
 

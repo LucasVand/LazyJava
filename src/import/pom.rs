@@ -49,7 +49,7 @@ pub fn import_pom(root: &Path, args: &ImportPomArgs) -> Result<(), ImportError> 
 
     let mut config = ConfigTomlEdit::parse("")?;
     if let Some(deps) = pom.dependencies {
-        let mut tomldeps = config.dependancies_mut().get_or_insert(HashMap::new());
+        let mut tomldeps = config.dependencies_mut().get_or_insert(HashMap::new());
         for dep in deps.dependency {
             let version = match &dep.version {
                 Some(v) => v.clone(),
