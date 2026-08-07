@@ -129,6 +129,7 @@ impl ConfigTomlEdit {
         ctx: &ContextNoConfig,
     ) -> Result<(), ConfigError> {
         let dep_list = self.root_package_list()?;
+        log::info!("Found {} dependencies", dep_list.len());
         lockfile.sync_with_root_packages(&dep_list)?;
 
         lockfile.validate_current_packages(ctx)?;
