@@ -4,10 +4,10 @@ use crate::utils::{Diagnostic, DiagnosticProvider, IOError};
 
 #[derive(Error, Debug)]
 pub enum CreateError {
-    #[error("Couldnt prompt user for project name")]
+    #[error("Couldn't prompt user for project name")]
     ProjectNameError,
 
-    #[error("Couldnt create project directory")]
+    #[error("Couldn't create project directory")]
     CreateDirectoryError,
 
     #[error(transparent)]

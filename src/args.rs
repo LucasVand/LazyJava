@@ -37,12 +37,12 @@ pub enum LazyJavaCommand {
         #[command(flatten)]
         args: CreateArgs,
     },
-    /// Adds a new dependancy
+    /// Adds a new dependency
     Add {
         #[command(flatten)]
         args: AddArgs,
     },
-    /// Removes a dependancy
+    /// Removes a dependency
     Remove {
         #[command(flatten)]
         args: RemoveArgs,
@@ -115,10 +115,10 @@ pub struct BuildCommand {
 }
 #[derive(Subcommand, Debug, Clone)]
 pub enum BuildSubCommand {
-    /// Shows all files and their dependancies
-    Dependancies {},
-    /// Shows all files and their dependants
-    Dependants {},
+    /// Shows all files and their dependencies
+    Dependencies {},
+    /// Shows all files and their dependents
+    Dependents {},
     /// Shows all stale files will be recompiled next build
     Stale {},
     /// Rebuilds the .classfile which is used for jdtls
@@ -136,7 +136,7 @@ pub struct JarArgs {
     #[arg(long)]
     pub entry_point: Option<String>,
 
-    /// Should create a fat jar with all dependancies bundled
+    /// Should create a fat jar with all dependencies bundled
     #[arg(short, long)]
     pub fat: bool,
 
@@ -152,11 +152,11 @@ pub struct CreateArgs {
     #[arg(long, short)]
     pub name: Option<String>,
 
-    /// Whether to initalize a git repository
+    /// Whether to initialize a git repository
     #[arg(long = "git", short = 'g')]
     pub init_git: Option<bool>,
 
-    /// Dont initalize with example files
+    /// Don't initialize with example files
     #[arg(long = "bare", short = 'b')]
     pub bare: bool,
 }
@@ -170,7 +170,7 @@ pub struct AddArgs {
     // the specific version to add
     pub artifact_version: Option<String>,
 
-    // the scope of the dependancy
+    // the scope of the dependency
     pub scope: Option<String>,
 }
 

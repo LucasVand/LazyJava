@@ -1,6 +1,6 @@
 ---
 source: tests/suite/incremental_build_test.rs
-expression: "normalize_output(&run(&dest, &[\"build\", \"dependancies\"])?, &dest)"
+expression: "normalize_output(&run(&dest, &[\"build\", \"dependencies\"])?, &dest)"
 ---
     Validating lib
     Validating lib-annotations
@@ -17,11 +17,11 @@ expression: "normalize_output(&run(&dest, &[\"build\", \"dependancies\"])?, &des
   - Subtracter.java (math/Subtracter.java)
 Adder.java (math/Adder.java)
 Calc.java (math/Calc.java)
-Dependancy graph
+Dependency graph
 Formatter.java (greeting/Formatter.java)
 Greeter.java (lib/Greeter.java)
 Main.java (Main.java)
 Painter.java (ui/Painter.java)
 Strings.java (util/Strings.java)
 Subtracter.java (math/Subtracter.java)
-Syncing dependancies
+Syncing dependencies

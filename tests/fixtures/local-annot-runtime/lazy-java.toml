@@ -1,5 +1,5 @@
 [project]
 name = "local-annot-runtime"
 
-[dependancies]
+[dependencies]
 myannot = { path = "./lib/myannot.jar" }

@@ -15,7 +15,7 @@ pub fn interactive_project_name() -> Result<String, CreateError> {
 
 pub fn interactive_git_init_name() -> Result<bool, CreateError> {
     log::debug!("Prompting user for git initialization");
-    let init = Confirm::new("Initalize git repository (y/n):")
+    let init = Confirm::new("Initialize git repository (y/n):")
         .prompt()
         .map_err(|e| {
             log::error!("Failed to get git initialization choice from user: {}", e);

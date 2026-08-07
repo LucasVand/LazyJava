@@ -26,33 +26,33 @@ pub struct Config {
 
     #[serde(default)]
     #[serde(skip_serializing_if = "is_default")]
-    pub processors: HashMap<String, ConfigProcesserDefinition>,
+    pub processors: HashMap<String, ConfigProcessorDefinition>,
 
     #[serde(default)]
     #[serde(skip_serializing_if = "HashMap::is_empty")]
-    pub dependancies: HashMap<String, ConfigDependancy>,
+    pub dependencies: HashMap<String, ConfigDependency>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, TomlEdit)]
 #[serde(deny_unknown_fields)]
-pub struct ConfigProcesserDefinition {
-    pub kind: ProcesserType,
+pub struct ConfigProcessorDefinition {
+    pub kind: ProcessorType,
     pub path: PathBuf,
     pub package: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, TomlEdit)]
 #[serde(rename_all = "lowercase")]
-pub enum ProcesserType {
+pub enum ProcessorType {
     Annotation,
     Processor,
 }
-impl<'a> ConfigProcesserDefinitionTomlEditView<'a> {
-    pub fn to_processer_definition(&self) -> Result<ConfigProcesserDefinition, ConfigError> {
+impl<'a> ConfigProcessorDefinitionTomlEditView<'a> {
+    pub fn to_processer_definition(&self) -> Result<ConfigProcessorDefinition, ConfigError> {
         let kind = assert(self.kind(), "kind")?;
         let path = assert(self.path(), "path")?;
         let package = assert(self.package(), "package")?;
-        Ok(ConfigProcesserDefinition {
+        Ok(ConfigProcessorDefinition {
             kind,
             path,
             package,
@@ -97,7 +97,7 @@ pub struct ConfigSetup {
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd, Ord, Eq, TomlEdit, Serialize, Deserialize)]
 #[toml_edit(inline)]
-pub struct ConfigDependancy {
+pub struct ConfigDependency {
     pub group: String,
     pub version: String,
     pub scope: Scope,
@@ -112,7 +112,7 @@ pub struct LocalDependency {
     pub path: PathBuf,
 }
 
-impl<'a> ConfigDependancyTomlEditView<'a> {
+impl<'a> ConfigDependencyTomlEditView<'a> {
     pub fn to_remote_dependency(&self) -> Result<Option<RemoteDependency>, ConfigError> {
         let group = self.group();
         let version = self.version();

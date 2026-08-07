@@ -11,7 +11,7 @@ group = "com.example"
 artifact = "my-app"
 version = "1.0.0"
 
-[dependancies]
+[dependencies]
 spring-core = { group_id = "org.springframework", version = "6.0.0" }
 junit = { group_id = "junit", version = "4.13.2" }
 "#
@@ -26,9 +26,9 @@ junit = { group_id = "junit", version = "4.13.2" }
         assert_eq!(loaded.project().unwrap().group().unwrap(), "com.example");
         assert_eq!(loaded.project().unwrap().artifact().unwrap(), "my-app");
         assert_eq!(loaded.project().unwrap().version().unwrap(), "1.0.0");
-        assert!(loaded.dependancies().is_some());
-        assert!(loaded.dependancies().unwrap().contains_key("spring-core"));
-        assert!(loaded.dependancies().unwrap().contains_key("junit"));
+        assert!(loaded.dependencies().is_some());
+        assert!(loaded.dependencies().unwrap().contains_key("spring-core"));
+        assert!(loaded.dependencies().unwrap().contains_key("junit"));
     }
 
     #[test]
@@ -37,13 +37,13 @@ junit = { group_id = "junit", version = "4.13.2" }
 name = "empty"
 "#;
         let loaded = ConfigTomlEdit::parse(toml_str).unwrap();
-        assert!(loaded.dependancies().is_none_or(|d| d.is_empty()));
+        assert!(loaded.dependencies().is_none_or(|d| d.is_empty()));
     }
 
     #[test]
     fn default_config_has_empty_dependencies() {
         let loaded = ConfigTomlEdit::parse("").unwrap();
-        assert!(loaded.dependancies().is_none_or(|d| d.is_empty()));
+        assert!(loaded.dependencies().is_none_or(|d| d.is_empty()));
     }
 
     #[test]
@@ -51,11 +51,11 @@ name = "empty"
         let toml_str = r#"[project]
 name = "test"
 
-[dependancies]
+[dependencies]
 my-lib = { group = "com.example", version = "2.0.0" }
 "#;
         let loaded = ConfigTomlEdit::parse(toml_str).unwrap();
-        let deps = loaded.dependancies().unwrap();
+        let deps = loaded.dependencies().unwrap();
         let entry = deps.get("my-lib").unwrap();
         assert_eq!(entry.group().unwrap(), "com.example");
         assert_eq!(entry.version().unwrap(), "2.0.0");
@@ -69,7 +69,7 @@ my-lib = { group = "com.example", version = "2.0.0" }
         let toml_str = r#"[project]
 name = "test-project"
 
-[dependancies]
+[dependencies]
 test-lib = { group = "com.test", version = "0.1.0" }
 "#;
         let config = ConfigTomlEdit::parse(toml_str)?;
@@ -77,7 +77,7 @@ test-lib = { group = "com.test", version = "0.1.0" }
 
         let loaded = ConfigTomlEdit::fetch(root)?;
         assert_eq!(loaded.project().unwrap().name().unwrap(), "test-project");
-        assert!(!loaded.dependancies().unwrap().is_empty());
+        assert!(!loaded.dependencies().unwrap().is_empty());
 
         Ok(())
     }
@@ -95,7 +95,7 @@ name = "empty"
         config.write(root)?;
 
         let loaded = ConfigTomlEdit::fetch(root)?;
-        assert!(loaded.dependancies().is_none_or(|d| d.is_empty()));
+        assert!(loaded.dependencies().is_none_or(|d| d.is_empty()));
 
         Ok(())
     }
@@ -118,7 +118,7 @@ artifact = "my-app"
 version = "1.0.0"
 
 # Dependencies section comment
-[dependancies]
+[dependencies]
 # spring-core comment
 spring-core = { group = "org.springframework", version = "6.0.0" }
 junit = { group = "junit", version = "4.13.2" } # junit inline
@@ -149,7 +149,7 @@ junit = { group = "junit", version = "4.13.2" } # junit inline
         let toml_str = r#"[project]
 name = "ordered"
 
-[dependancies]
+[dependencies]
 zeta = { group = "z.org", version = "1.0.0" }
 alpha = { group = "a.org", version = "2.0.0" }
 delta = { group = "d.org", version = "3.0.0" }
@@ -171,11 +171,11 @@ delta = { group = "d.org", version = "3.0.0" }
 name = "test"
 
 # Existing deps
-[dependancies]
+[dependencies]
 existing = { group = "com.existing", version = "1.0.0" }
 "#;
         let mut config = ConfigTomlEdit::parse(toml_str).unwrap();
-        let mut deps = config.dependancies_mut().get_or_insert(HashMap::new());
+        let mut deps = config.dependencies_mut().get_or_insert(HashMap::new());
         let mut value = deps.insert_empty("new-dep");
         value.group_mut().replace("com.new".to_string());
         value.version_mut().replace("2.0.0".to_string());
@@ -200,12 +200,12 @@ existing = { group = "com.existing", version = "1.0.0" }
         let toml_str = r#"[project]
 name = "test"
 
-[dependancies]
+[dependencies]
 oldest = { group = "o.org", version = "1.0.0" }
 older = { group = "r.org", version = "2.0.0" }
 "#;
         let mut config = ConfigTomlEdit::parse(toml_str).unwrap();
-        let mut deps = config.dependancies_mut().get_or_insert(HashMap::new());
+        let mut deps = config.dependencies_mut().get_or_insert(HashMap::new());
         let mut value = deps.insert_empty("newest");
         value.group_mut().replace("n.org".to_string());
         value.version_mut().replace("3.0.0".to_string());
@@ -229,14 +229,14 @@ older = { group = "r.org", version = "2.0.0" }
 name = "test"
 
 # Deps header
-[dependancies]
+[dependencies]
 aaa = { group = "a.org", version = "1.0.0" } # a comment
 # b comment
 bbb = { group = "b.org", version = "2.0.0" }
 ccc = { group = "c.org", version = "3.0.0" }
 "#;
         let mut config = ConfigTomlEdit::parse(toml_str).unwrap();
-        if let Some(mut deps) = config.dependancies_mut().get_mut() {
+        if let Some(mut deps) = config.dependencies_mut().get_mut() {
             deps.remove("bbb");
         }
         let output = config.to_toml_string();

@@ -5,5 +5,5 @@ expression: toml_after_add
 [project]
 name = "with-dependency"
 
-[dependancies]
+[dependencies]
 spring-boot-starter-jdbc = { version = "4.1.0", group = "org.springframework.boot" }

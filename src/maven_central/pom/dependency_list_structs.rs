@@ -8,11 +8,11 @@ use crate::{
     maven_central::{
         MavenIdBuf,
         fetch::full_maven_url,
-        pom::{DependancyType, MavenPom, Scope},
+        pom::{DependencyType, MavenPom, Scope},
     },
 };
 
-pub struct MavenDependancyList {}
+pub struct MavenDependencyList {}
 
 pub enum PomState {
     Resolved(Arc<MavenPom>),
@@ -20,40 +20,40 @@ pub enum PomState {
 }
 
 pub type Cache = Arc<RwLock<HashMap<u64, PomState>>>;
-pub type DependancyList = Arc<RwLock<Vec<MavenDependancy>>>;
+pub type DependencyList = Arc<RwLock<Vec<MavenDependency>>>;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct MavenDependancy {
+pub struct MavenDependency {
     pub id: MavenIdBuf,
-    pub dependancy_type: DependancyType,
-    pub dependancies: Vec<Dependancy>,
+    pub dependency_type: DependencyType,
+    pub dependencies: Vec<Dependency>,
     pub scope: Scope,
     pub root: bool,
 }
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Dependancy {
+pub struct Dependency {
     pub id: MavenIdBuf,
 }
 
-impl From<MavenDependancy> for LockFilePackage {
-    fn from(value: MavenDependancy) -> Self {
-        let ext = |t: &DependancyType| match t {
-            DependancyType::Jar => "jar",
-            DependancyType::War => "war",
-            DependancyType::Bundle => "jar",
-            _ => panic!("Unsupported dependancy type"),
+impl From<MavenDependency> for LockFilePackage {
+    fn from(value: MavenDependency) -> Self {
+        let ext = |t: &DependencyType| match t {
+            DependencyType::Jar => "jar",
+            DependencyType::War => "war",
+            DependencyType::Bundle => "jar",
+            _ => panic!("Unsupported dependency type"),
         };
-        let ext_str = ext(&value.dependancy_type);
+        let ext_str = ext(&value.dependency_type);
 
         let url = full_maven_url(&value.id.as_maven_id(), ext_str);
         let file_name = format!("{}-{}.{}", &value.id.artifact, &value.id.version, ext_str);
 
         LockFilePackage {
-            packaging: value.dependancy_type,
+            packaging: value.dependency_type,
             id: value.id,
             url,
             file_name,
-            dependancies: value.dependancies.into_iter().map(|v| v.id).collect(),
+            dependencies: value.dependencies.into_iter().map(|v| v.id).collect(),
             root: value.root,
             annotations: Vec::new(),
             scope: value.scope,

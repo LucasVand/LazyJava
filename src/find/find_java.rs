@@ -15,7 +15,7 @@ impl LazyJava {
             Vec::new()
         };
         let mains =
-            find_main_classes(&ctx.src, &exclude).map_err(LazyJavaError::CouldntFindMains)?;
+            find_main_classes(&ctx.src, &exclude).map_err(LazyJavaError::CouldNotFindMains)?;
         log::debug!("Found {} main classes", mains.len());
 
         for main in mains {

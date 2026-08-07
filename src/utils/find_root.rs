@@ -57,7 +57,7 @@ pub fn find_file_in_dir(dir: &Path, search_name: &str) -> Result<DirEntry, io::E
     }
 
     log::warn!("File not found: {} in {:?}", search_name, dir);
-    Err(io::Error::new(ErrorKind::NotFound, "Couldnt find file"))
+    Err(io::Error::new(ErrorKind::NotFound, "Couldn't find file"))
 }
 
 pub fn list_dir(path: &Path) -> Result<Vec<DirEntry>, io::Error> {
@@ -88,7 +88,7 @@ mod tests {
 
         assert!(
             file3.is_err(),
-            "When finding a file that doesnt exist expected error"
+            "When finding a file that doesn't exist expected error"
         );
 
         return Ok(());

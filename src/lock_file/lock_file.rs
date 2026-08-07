@@ -15,7 +15,7 @@ use crate::{
     lock_file::LockFileError,
     maven_central::{
         MavenId, MavenIdBuf, PartialMavenIdBuf,
-        pom::{DependancyType, MavenDependancyList, Scope},
+        pom::{DependencyType, MavenDependencyList, Scope},
     },
     utils::{IOError, TomlDeserializeError, TomlSerializeError, fs},
 };
@@ -35,9 +35,9 @@ pub struct LockFilePackage {
 
     pub url: String,
 
-    pub dependancies: Vec<MavenIdBuf>,
+    pub dependencies: Vec<MavenIdBuf>,
 
-    pub packaging: DependancyType,
+    pub packaging: DependencyType,
 
     pub root: bool,
     pub scope: Scope,
@@ -89,7 +89,7 @@ impl LockFile {
     pub fn write(&mut self, root: &Path) -> Result<(), LockFileError> {
         self.packages.sort();
         for pkg in &mut self.packages {
-            pkg.dependancies.sort();
+            pkg.dependencies.sort();
             pkg.annotations.sort();
         }
 
@@ -106,7 +106,7 @@ impl LockFile {
         id: MavenIdBuf,
         scope: Option<Scope>,
     ) -> Result<isize, LockFileError> {
-        let list: Vec<LockFilePackage> = MavenDependancyList::new(id, scope)?
+        let list: Vec<LockFilePackage> = MavenDependencyList::new(id, scope)?
             .into_iter()
             .map(|m| m.into())
             .collect();
@@ -116,7 +116,7 @@ impl LockFile {
             .into_iter()
             .map(|p| {
                 (
-                    MavenDependancyList::hash_maven_bom_id(&p.id.group, &p.id.artifact),
+                    MavenDependencyList::hash_maven_bom_id(&p.id.group, &p.id.artifact),
                     p,
                 )
             })
@@ -124,7 +124,7 @@ impl LockFile {
 
         for package in list {
             let hash =
-                MavenDependancyList::hash_maven_bom_id(&package.id.group, &package.id.artifact);
+                MavenDependencyList::hash_maven_bom_id(&package.id.group, &package.id.artifact);
             if let Some(old) = map.remove(&hash) {
                 let old_version = Maven3ArtifactVersion::new(&old.id.version);
                 let new_version = Maven3ArtifactVersion::new(&package.id.version);
@@ -191,7 +191,7 @@ impl LockFile {
         &mut self,
         ctx: &ContextNoConfig,
     ) -> Result<isize, LockFileError> {
-        println!("{} dependancies", "Syncing".green().bold(),);
+        println!("{} dependencies", "Syncing".green().bold(),);
         let mut added: isize = 0;
         let mut removed: isize = 0;
         let mut map: HashMap<String, &mut LockFilePackage> = self
@@ -208,9 +208,9 @@ impl LockFile {
 
         let plural = |change: isize| {
             if change.abs() != 1 {
-                "dependancies"
+                "dependencies"
             } else {
-                "dependancy"
+                "dependency"
             }
         };
         if added != 0 {

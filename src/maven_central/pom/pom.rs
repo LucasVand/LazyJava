@@ -20,7 +20,7 @@ pub struct MavenPom {
     pub version: String,
 
     #[serde(default)]
-    pub packaging: DependancyType,
+    pub packaging: DependencyType,
 
     pub dependencies: Option<Dependencies>,
 
@@ -73,7 +73,7 @@ pub struct Dependency {
     pub optional: bool,
 
     #[serde(rename = "type", default)]
-    pub dependency_type: DependancyType,
+    pub dependency_type: DependencyType,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub classifier: Option<String>,
@@ -112,7 +112,7 @@ pub enum Scope {
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default, PartialOrd, Ord, AsRefStr)]
 #[strum(serialize_all = "lowercase")]
-pub enum DependancyType {
+pub enum DependencyType {
     #[default]
     Jar,
     War,
@@ -121,7 +121,7 @@ pub enum DependancyType {
 
     Other(String),
 }
-impl Serialize for DependancyType {
+impl Serialize for DependencyType {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -130,7 +130,7 @@ impl Serialize for DependancyType {
     }
 }
 
-impl<'de> Deserialize<'de> for DependancyType {
+impl<'de> Deserialize<'de> for DependencyType {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -138,11 +138,11 @@ impl<'de> Deserialize<'de> for DependancyType {
         let s = String::deserialize(deserializer)?;
 
         Ok(match s.as_str() {
-            "jar" => DependancyType::Jar,
-            "war" => DependancyType::War,
-            "pom" => DependancyType::Pom,
-            "bundle" => DependancyType::Bundle,
-            _ => DependancyType::Other(s), // Catches absolutely any other string safely
+            "jar" => DependencyType::Jar,
+            "war" => DependencyType::War,
+            "pom" => DependencyType::Pom,
+            "bundle" => DependencyType::Bundle,
+            _ => DependencyType::Other(s), // Catches absolutely any other string safely
         })
     }
 }

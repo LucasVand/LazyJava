@@ -4,11 +4,11 @@ pub mod fs;
 pub mod jdk_version;
 mod join_dir;
 pub mod processes;
-mod seperator_list;
+mod separator_list;
 pub mod timings;
 
 pub use join_dir::join_directory;
-pub use seperator_list::SeperatorList;
+pub use separator_list::SeparatorList;
 pub use timings::Timings;
 
 mod context;

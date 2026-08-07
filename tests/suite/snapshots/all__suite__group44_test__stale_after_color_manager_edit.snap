@@ -73,4 +73,4 @@ expression: "normalize_output(&run(&dest, &[\"build\", \"stale\"])?, &dest)"
   <ROOT>/src/utils/FontManager.java
   <ROOT>/src/utils/Tuple.java
 Stale 68 files to recompile
-Syncing dependancies
+Syncing dependencies

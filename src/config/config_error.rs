@@ -11,7 +11,7 @@ use crate::{
 
 #[derive(Error, Debug)]
 pub enum ConfigError {
-    #[error("Could not parse ConfigDependancy missing field '{0}'")]
+    #[error("Could not parse ConfigDependency missing field '{0}'")]
     MissingValue(&'static str),
 
     #[error("Failed to parse")]
@@ -23,7 +23,7 @@ pub enum ConfigError {
     #[error("Error when operating on the lock file")]
     LockFileError(#[from] LockFileError),
 
-    #[error("Maven error occured")]
+    #[error("Maven error occurred")]
     MavenError(#[from] MavenError),
 
     #[error(transparent)]
@@ -32,7 +32,7 @@ pub enum ConfigError {
     #[error("Could not remove because package is not included in config file")]
     PackageNotFound,
 
-    #[error("Could not parse ConfigDependancy unexpected field '{0}'")]
+    #[error("Could not parse ConfigDependency unexpected field '{0}'")]
     UnexpectedValue(&'static str),
 
     #[error("Local dependency path does not exist")]

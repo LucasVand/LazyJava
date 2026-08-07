@@ -59,7 +59,7 @@ impl ConfigTomlEdit {
         let id = MavenIdBuf::new(add_args.group.clone(), add_args.artifact.clone(), version);
         println!("{} {} to dependency list", "Adding".green().bold(), id);
 
-        let mut deps = self.dependancies_mut().get_or_insert(HashMap::new());
+        let mut deps = self.dependencies_mut().get_or_insert(HashMap::new());
         let mut value = deps.insert_empty(&id.artifact);
 
         value.version_mut().replace(id.version.clone());
@@ -90,7 +90,7 @@ impl ConfigTomlEdit {
             PartialMavenIdBuf::new(remove_args.group.clone(), remove_args.artifact.clone());
 
         let mut version: Option<String> = None;
-        if let Some(deps) = self.dependancies()
+        if let Some(deps) = self.dependencies()
             && let Some(d) = deps.get(&partial_id.artifact)
             && d.group().as_ref() == Some(&partial_id.group)
             && let Some(v) = d.version()
@@ -113,7 +113,7 @@ impl ConfigTomlEdit {
             version
         );
 
-        let mut deps_guard = self.dependancies_mut();
+        let mut deps_guard = self.dependencies_mut();
         if let Some(mut deps) = deps_guard.get_mut() {
             deps.remove(&partial_id.artifact);
         }
@@ -139,7 +139,7 @@ impl ConfigTomlEdit {
     pub fn root_package_list(
         &self,
     ) -> Result<HashMap<PartialMavenIdBuf, RootPackage>, ConfigError> {
-        if let Some(deps) = self.dependancies() {
+        if let Some(deps) = self.dependencies() {
             let mut map = HashMap::new();
             for (k, dep) in deps {
                 let de: Option<RemoteDependency> = dep.to_remote_dependency()?;
@@ -157,7 +157,7 @@ impl ConfigTomlEdit {
         }
     }
     pub fn local_package_list(&self) -> Result<Vec<LocalDependency>, ConfigError> {
-        if let Some(deps) = self.dependancies() {
+        if let Some(deps) = self.dependencies() {
             let mut v = Vec::new();
             for (_key, dep) in deps {
                 let de: Option<LocalDependency> = dep.to_local_dependency()?;

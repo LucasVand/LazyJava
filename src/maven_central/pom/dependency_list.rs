@@ -20,25 +20,25 @@ use crate::maven_central::{
     MavenError, MavenId, MavenIdBuf,
     fetch_async::fetch_pom,
     pom::{
-        dependancy_list_structs::{
-            Cache, Dependancy, DependancyList, MavenDependancy, MavenDependancyList, PomState,
+        dependency_list_structs::{
+            Cache, Dependency, DependencyList, MavenDependency, MavenDependencyList, PomState,
         },
-        pom::{DependancyType, MavenPom, Scope},
+        pom::{DependencyType, MavenPom, Scope},
     },
 };
 
 #[derive(Clone)]
 struct ResolveContext {
     cache: Cache,
-    list: DependancyList,
+    list: DependencyList,
     client: Client,
 }
 
-impl MavenDependancyList {
+impl MavenDependencyList {
     async fn runtime_entry(
         id: MavenIdBuf,
         scope: Option<Scope>,
-    ) -> Result<Vec<MavenDependancy>, MavenError> {
+    ) -> Result<Vec<MavenDependency>, MavenError> {
         log::info!("Creating POM list for {}", id);
 
         let cache = Arc::new(RwLock::new(HashMap::new()));
@@ -52,7 +52,7 @@ impl MavenDependancyList {
         };
         Self::resolve_pom(id.clone(), ctx, scope).await?;
 
-        let mut map: HashMap<u64, MavenDependancy> = HashMap::new();
+        let mut map: HashMap<u64, MavenDependency> = HashMap::new();
 
         let dep_list = Arc::into_inner(dep_list)
             .expect("Runtime completed Arc released")
@@ -72,9 +72,9 @@ impl MavenDependancyList {
                 map.insert(hash, dep);
             }
         }
-        let mut list: Vec<MavenDependancy> = map.into_values().collect();
+        let mut list: Vec<MavenDependency> = map.into_values().collect();
 
-        // set the root dependancy
+        // set the root dependency
         for dep in list.iter_mut() {
             if dep.id == id {
                 dep.root = true;
@@ -82,7 +82,7 @@ impl MavenDependancyList {
         }
         Ok(list)
     }
-    pub fn new(id: MavenIdBuf, scope: Option<Scope>) -> Result<Vec<MavenDependancy>, MavenError> {
+    pub fn new(id: MavenIdBuf, scope: Option<Scope>) -> Result<Vec<MavenDependency>, MavenError> {
         let rt = Runtime::new().unwrap();
 
         rt.block_on(Self::runtime_entry(id, scope))
@@ -124,7 +124,7 @@ impl MavenDependancyList {
 
         let mut pom = fetch_pom(ctx.client.clone(), &id.as_maven_id()).await?;
 
-        if let DependancyType::Other(other_packaging) = &pom.packaging {
+        if let DependencyType::Other(other_packaging) = &pom.packaging {
             log::error!(
                 "Found unknown packaging type \"{}\" on {}:{}:{}",
                 other_packaging,
@@ -153,14 +153,14 @@ impl MavenDependancyList {
 
             pom.properties.map = parent_props;
 
-            // backwords for right now
+            // backwards for right now
             pom.dependency_management_map
                 .extend(parent_pom.dependency_management_map.clone());
 
             Self::resolve_properties_inital(&mut pom);
         }
 
-        let mut dependancy_list: Vec<Dependancy> = Vec::new();
+        let mut dependency_list: Vec<Dependency> = Vec::new();
 
         if scope != Some(Scope::Provided) {
             let bom_handles = Self::bom_handles(&pom, &ctx);
@@ -179,16 +179,16 @@ impl MavenDependancyList {
                     bom_props.extend(pom.properties.map);
                     pom.properties.map = bom_props;
 
-                    // backwords
+                    // backwards
                     pom.dependency_management_map
                         .extend(bom_pom.dependency_management_map.clone());
                 }
             }
             Self::resolve_properties_inital(&mut pom);
 
-            // tracks the dep list for the dependancy list
+            // tracks the dep list for the dependency list
 
-            let dependacy_handles = Self::dependancy_handles(&pom, &ctx);
+            let dependacy_handles = Self::dependency_handles(&pom, &ctx);
             if let Some(mut dependacy_handles) = dependacy_handles {
                 while let Some(result) = dependacy_handles.join_next().await {
                     let (dep_result, id) = result?;
@@ -197,21 +197,21 @@ impl MavenDependancyList {
                     dep_props.extend(pom.properties.map);
                     pom.properties.map = dep_props;
 
-                    dependancy_list.push(Dependancy { id });
+                    dependency_list.push(Dependency { id });
                 }
             }
         }
 
         Self::resolve_properties_final(&mut pom);
 
-        if pom.packaging != DependancyType::Pom
-            && !matches!(pom.packaging, DependancyType::Other(_))
+        if pom.packaging != DependencyType::Pom
+            && !matches!(pom.packaging, DependencyType::Other(_))
         {
             let mut write_list = ctx.list.write();
-            write_list.push(MavenDependancy {
+            write_list.push(MavenDependency {
                 id: MavenIdBuf::new(id.group, id.artifact, id.version),
-                dependancy_type: pom.packaging.clone(),
-                dependancies: dependancy_list,
+                dependency_type: pom.packaging.clone(),
+                dependencies: dependency_list,
                 root: false,
                 scope: Scope::Compile,
             });
@@ -332,7 +332,7 @@ impl MavenDependancyList {
         }
         None
     }
-    fn dependancy_handles(
+    fn dependency_handles(
         pom: &MavenPom,
         ctx: &ResolveContext,
     ) -> Option<JoinSet<(Result<Arc<MavenPom>, MavenError>, MavenIdBuf)>> {

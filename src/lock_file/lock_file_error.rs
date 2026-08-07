@@ -40,7 +40,7 @@ pub enum LockFileError {
 impl DiagnosticProvider for LockFileError {
     fn diagnostic(&self) -> Diagnostic {
         match self {
-            LockFileError::DownloadFailed(code) => Diagnostic::new("Downloading dependancy failed")
+            LockFileError::DownloadFailed(code) => Diagnostic::new("Downloading dependency failed")
                 .message(format!("Downloading failed with code {}", code)),
             LockFileError::ParseFailed(err) => err.diagnostic(),
             LockFileError::SerializeFailed(err) => err.diagnostic(),

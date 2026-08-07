@@ -21,7 +21,7 @@ pub enum RunError {
     #[error("Jar not found at {0}, build the jar first with `lazy-java build jar`")]
     JarNotFound(PathBuf),
 
-    #[error("Build error occured while building before running")]
+    #[error("Build error occurred while building before running")]
     BuildError(#[from] BuildError),
 
     #[error(transparent)]

@@ -1,6 +1,6 @@
 ---
 source: tests/suite/group44_test.rs
-expression: "normalize_output(&run(&dest, &[\"build\", \"dependants\"])?, &dest)"
+expression: "normalize_output(&run(&dest, &[\"build\", \"dependents\"])?, &dest)"
 ---
     Validating lib
     Validating lib-annotations
@@ -626,7 +626,7 @@ ClientState.java (state/clientState/ClientState.java)
 ColorManager.java (utils/ColorManager.java)
 Controller.java (controller/Controller.java)
 CreateAccountPage.java (parentalControls/CreateAccountPage.java)
-Dependants graph
+Dependents graph
 DisconnectEvent.java (state/clientState/events/DisconnectEvent.java)
 EchoServer.java (eventSystem/engine/EchoServer.java)
 Event.java (eventSystem/events/Event.java)
@@ -699,7 +699,7 @@ StandaloneEvent.java (eventSystem/events/StandaloneEvent.java)
 Stats.java (saveData/Stats.java)
 StyledButton.java (UIComponents/StyledButton.java)
 Subheader.java (UIComponents/Subheader.java)
-Syncing dependancies
+Syncing dependencies
 TeacherControlsPage.java (parentalControls/TeacherControlsPage.java)
 Text.java (UIComponents/Text.java)
 TraceableRawEvent.java (eventSystem/networking/server/TraceableRawEvent.java)

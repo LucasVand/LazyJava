@@ -1,0 +1,6 @@
+[tool.codespell]
+# Skip the group44 fixture, which is a separate third-party Java project
+# whose identifiers/strings intentionally contain typos as test data.
+skip = "tests/fixtures/group44/**"
+# `ser` is a serialization variable; `errorprone` is a real Maven artifact name.
+ignore-words-list = "ser,errorprone"

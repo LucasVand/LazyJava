@@ -4,7 +4,7 @@ use std::path::Path;
 use log::{debug, warn};
 use walkdir::WalkDir;
 
-pub fn join_directory(path: &Path, seperator: char) -> String {
+pub fn join_directory(path: &Path, separator: char) -> String {
     let mut des = String::new();
 
     let mut first = true;
@@ -14,7 +14,7 @@ pub fn join_directory(path: &Path, seperator: char) -> String {
             && let Ok(ab) = path::absolute(f.path()) {
                 if let Some(valid_str) = ab.to_str() {
                     if !first {
-                        des.push(seperator);
+                        des.push(separator);
                     }
                     des.push_str(valid_str);
                     first = false
