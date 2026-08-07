@@ -14,3 +14,4 @@ mod local_annot_runtime_test;
 mod remove_dependency_test;
 mod resources_copy_test;
 mod sync_build_run_test;
+mod wildcard_import_test;

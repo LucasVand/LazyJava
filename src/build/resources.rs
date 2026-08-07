@@ -1,5 +1,6 @@
 use std::{
     collections::HashSet,
+    io,
     path::{Path, PathBuf},
 };
 
@@ -24,6 +25,15 @@ pub fn copy_resources(ctx: &Context) -> Result<(), BuildError> {
     let mut resource_paths = add_resources(&ctx.src, Path::new(""), &glob_set, ctx)?;
     log::info!("Found {} resources", resource_paths.len());
 
+    let external = copy_external_resources(ctx)?;
+
+    resource_paths.extend(external);
+
+    let removed = remove_unknown_resources(&resource_paths, &ctx.bin, ctx)?;
+    log::info!("Removed {} resources", removed);
+    Ok(())
+}
+fn copy_external_resources(ctx: &Context) -> Result<HashSet<PathBuf>, BuildError> {
     let external = if let Some(r) = ctx.config.resources()
         && let Some(list) = r.external()
     {
@@ -31,16 +41,34 @@ pub fn copy_resources(ctx: &Context) -> Result<(), BuildError> {
     } else {
         Vec::new()
     };
+    let mut dest_paths = HashSet::new();
 
-    if !external.is_empty() {
-        let glob_external = build_globset(&external);
-        let external_paths = add_external_resources(&ctx.root, &glob_external, ctx)?;
-        resource_paths.extend(external_paths);
+    let (globs, paths) = remove_external_existing_paths(external);
+
+    let root = PathBuf::new();
+    for path in paths {
+        dest_paths.insert(copy_file(&path, &root, ctx)?);
     }
 
-    let removed = remove_unknown_resources(&resource_paths, &ctx.bin, ctx)?;
-    log::info!("Removed {} resources", removed);
-    Ok(())
+    if !globs.is_empty() {
+        let glob_external = build_globset(&globs);
+        dest_paths.extend(add_external_resources(&ctx.root, &glob_external, ctx)?);
+    }
+
+    Ok(dest_paths)
+}
+fn remove_external_existing_paths(external: Vec<String>) -> (Vec<String>, HashSet<PathBuf>) {
+    let mut globs = Vec::new();
+    let mut paths = HashSet::new();
+    for ex in external.into_iter() {
+        let path = Path::new(&ex);
+        if path.exists() && path.is_file() {
+            paths.insert(PathBuf::from(ex));
+        } else {
+            globs.push(ex);
+        }
+    }
+    (globs, paths)
 }
 fn add_external_resources(
     path: &Path,
@@ -68,7 +96,7 @@ fn add_external_resources(
         } else {
             let relative = p.strip_prefix(&ctx.root).unwrap_or(&p);
             if glob_set.is_match(relative) {
-                res.insert(copy_file(&entry, Path::new("."), ctx)?);
+                res.insert(copy_file(&p, Path::new("."), ctx)?);
             }
         }
     }
@@ -151,22 +179,31 @@ fn add_resources(
                 ctx,
             )?);
         } else {
-            if let Some(ext) = dir.path().extension() {
+            let path = dir.path();
+            if let Some(ext) = path.extension() {
                 if ext != "java" {
-                    resources.insert(copy_file(&dir, relative, ctx)?);
+                    resources.insert(copy_file(&path, relative, ctx)?);
                 }
             } else {
-                resources.insert(copy_file(&dir, relative, ctx)?);
+                resources.insert(copy_file(&path, relative, ctx)?);
             }
         }
     }
 
     Ok(resources)
 }
-fn copy_file(file: &fs::DirEntry, relative: &Path, ctx: &Context) -> Result<PathBuf, BuildError> {
-    let dest_path = ctx.bin.join(relative).join(file.file_name());
+fn copy_file(path: &Path, relative: &Path, ctx: &Context) -> Result<PathBuf, BuildError> {
+    let Some(file_name) = path.file_name() else {
+        return Err(IOError::new(
+            "reading file name",
+            path,
+            io::Error::new(io::ErrorKind::Other, "no filename present"),
+        ))?;
+    };
 
-    let src = file.path();
+    let dest_path = ctx.bin.join(relative).join(file_name);
+
+    let src = path;
     if !dest_path.exists() {
         if let Some(parent) = dest_path.parent() {
             fs::create_dir_all(parent)

@@ -10,6 +10,7 @@ use globset::GlobSet;
 
 use crate::{IMPORT_REGEX, PACKAGE_REGEX, build::graph::package::Package, utils::fs};
 
+#[derive(Debug)]
 pub struct NodeFile {
     pub name: String,
     pub package: Package,
@@ -18,6 +19,7 @@ pub struct NodeFile {
     pub meta: Metadata,
 }
 
+#[derive(Debug)]
 pub enum Node {
     File(NodeFile),
     Directory {
@@ -28,17 +30,11 @@ pub enum Node {
 }
 
 impl Node {
-    pub fn from_path(
-        path: &Path,
-        prev_package: &Package,
-        excluded: &GlobSet,
-    ) -> Result<Node, io::Error> {
+    pub fn from_path(path: &Path, excluded: &GlobSet) -> Result<Node, io::Error> {
         if path.is_dir() {
             let Some(p) = path.file_name() else {
                 return Err(io::Error::new(ErrorKind::Other, "No name"));
             };
-            let mut package = prev_package.join(p.to_string_lossy());
-
             let mut files = Vec::new();
             for dir in fs::read_dir(&path)? {
                 let dir = dir?;
@@ -47,9 +43,17 @@ impl Node {
                 let is_java = dir_path.extension() == Some(OsStr::new("java")) || dir_path.is_dir();
 
                 if !ex && is_java {
-                    files.push(Node::from_path(&dir_path, &package, excluded)?);
+                    files.push(Node::from_path(&dir_path, excluded)?);
                 }
             }
+            let package =
+                if let Some(Node::File(file)) = files.iter().find(|f| matches!(f, Node::File(_))) {
+                    let mut p = file.package.clone();
+                    p.pop();
+                    p.join("*")
+                } else {
+                    Package::empty()
+                };
 
             // resolving the interpackage dependencies
             // ISSUE: this should become more comprehensive but to ensure its the same as before
@@ -72,8 +76,6 @@ impl Node {
                 }
             }
 
-            // idk about this
-            package.push("*");
             Ok(Node::Directory {
                 name: p.to_string_lossy().to_string(),
                 files: files,
@@ -113,8 +115,16 @@ impl Node {
             let mut package = Package::from_string(package_str);
             package.push(stem.to_string_lossy());
 
+            let name = file_name.to_string_lossy().to_string();
+
+            log::trace!(
+                "Creating node name: {}, dependencies: {:?}, path: {}",
+                &name,
+                &dependencies,
+                &path.display(),
+            );
             Ok(Node::File(NodeFile {
-                name: file_name.to_string_lossy().to_string(),
+                name: name,
                 package,
                 path: path.to_path_buf(),
                 dependencies,

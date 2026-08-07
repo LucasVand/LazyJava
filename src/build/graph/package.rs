@@ -1,4 +1,4 @@
-#[derive(Eq, Clone, PartialEq, Hash)]
+#[derive(Eq, Clone, PartialEq, Hash, Debug)]
 pub struct Package {
     path: Vec<String>,
 }
