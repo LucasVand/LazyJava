@@ -47,7 +47,7 @@ pub fn create_maven_url(group: &str, artifact: &str) -> String {
 }
 
 pub static IMPORT_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\s*import\s*(?<import>.*);").unwrap());
+    LazyLock::new(|| Regex::new(r"\s*import\s*(?<static>static)?\s*(?<import>\S+);").unwrap());
 pub static PACKAGE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     RegexBuilder::new(r"^\s*package\s*(?<package>.*);")
         .unicode(true)

@@ -1,21 +1,17 @@
 #[derive(Eq, Clone, PartialEq, Hash, Debug)]
 pub struct Package {
     path: Vec<String>,
-    is_sat: bool,
+    is_static: bool,
 }
 
 impl Package {
     pub fn empty() -> Package {
-        Package {
-            path: Vec::new(),
-            is_sat: false,
-        }
+        Package { path: Vec::new() }
     }
-    pub fn from_string(s: impl Into<String>, sat: bool) -> Package {
+    pub fn from_string(s: impl Into<String>) -> Package {
         let s: String = s.into();
         return Package {
             path: s.split('.').into_iter().map(|s| s.to_string()).collect(),
-            is_sat: sat,
         };
     }
 
@@ -39,8 +35,8 @@ impl Package {
     pub fn push(&mut self, s: impl Into<String>) {
         self.path.push(s.into());
     }
-    pub fn pop(&mut self) -> Option<String> {
-        self.path.pop()
+    pub fn pop(&mut self) {
+        self.path.pop();
     }
     pub fn is_wildcard(&self) -> bool {
         return self.path.last() == Some(&"*".to_string());
@@ -50,10 +46,6 @@ impl Package {
         c.push(seg.into());
         c
     }
-
-    pub fn is_static(&self) -> bool {
-        self.is_sat
-    }
 }
 
 #[cfg(test)]
@@ -61,7 +53,7 @@ mod tests {
     use super::Package;
 
     fn pkg(s: &str) -> Package {
-        Package::from_string(s, false)
+        Package::from_string(s)
     }
 
     #[test]
