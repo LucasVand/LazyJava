@@ -1,0 +1,5 @@
+---
+source: tests/suite/local_annot_runtime_test.rs
+expression: lock_after_remove
+---
+package = []

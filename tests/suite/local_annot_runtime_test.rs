@@ -173,5 +173,30 @@ fn local_lib_jar_is_required_at_runtime() -> Result<(), Box<dyn std::error::Erro
         .success()
         .stdout(predicate::str::contains("full build"));
 
+    // Local dependencies have no CLI add/remove — they are managed by editing
+    // the toml. Removing the entry and re-syncing must drop it from the lock.
+    let config_path = dest.join("lazy-java.toml");
+    let mut config_content = std::fs::read_to_string(&config_path)?;
+    if let Some(idx) = config_content.find("[dependencies]") {
+        config_content.truncate(idx);
+    }
+    std::fs::write(&config_path, &config_content)?;
+    assert!(
+        !config_content.contains("myannot"),
+        "config should no longer reference the local jar after editing"
+    );
+
+    let mut cmd = Command::cargo_bin("lazy-java")?;
+    cmd.current_dir(&dest);
+    cmd.args(["sync"]);
+    cmd.assert().success();
+
+    let lock_after_remove = sanitize_lock(&std::fs::read_to_string(&lock_path)?, &dest);
+    assert!(
+        !lock_after_remove.contains("myannot"),
+        "lock should no longer reference the local jar after sync"
+    );
+    insta::assert_snapshot!("local_lock_after_remove", lock_after_remove);
+
     Ok(())
 }
