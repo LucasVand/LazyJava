@@ -92,6 +92,17 @@ public class Calc {
 }
 "#;
 
+const MODIFIED_STRINGS: &str = r#"package com.example.util;
+
+public class Strings {
+    public static final String PREFIX = "static-import-after-edit ";
+
+    public static String pad(String value) {
+        return " " + value + " ";
+    }
+}
+"#;
+
 #[test]
 fn incremental_build_dependency_and_subcommand_snapshots() -> Result<(), Box<dyn std::error::Error>>
 {
@@ -152,8 +163,22 @@ fn incremental_build_dependency_and_subcommand_snapshots() -> Result<(), Box<dyn
         normalize_output(&run(&dest, &["build"])?, &dest)
     );
 
+    // Editing a class consumed only through a `static` import must fan out to
+    // the file that imports it (`Main`), proving static-import graph edges.
+    std::fs::write(dest.join("src/util/Strings.java"), MODIFIED_STRINGS)?;
+
+    insta::assert_snapshot!(
+        "stale_after_strings_edit",
+        normalize_output(&run(&dest, &["build", "stale"])?, &dest)
+    );
+    insta::assert_snapshot!(
+        "incremental_build_after_strings_edit",
+        normalize_output(&run(&dest, &["build"])?, &dest)
+    );
+
     // Functional check: the incremental recompilation produced working output
     // reflecting both edits (Formatter appends "!", Calc.subtract is now Math.max)
+    // and the static-imported constant from the edited Strings.
     let mut cmd = Command::cargo_bin("lazy-java")?;
     cmd.current_dir(&dest);
     cmd.args(["run", "--no-build", "com.example.Main"]);
@@ -161,7 +186,8 @@ fn incremental_build_dependency_and_subcommand_snapshots() -> Result<(), Box<dyn
         .success()
         .stdout(predicate::str::contains("Hello, WORLD!"))
         .stdout(predicate::str::contains("3"))
-        .stdout(predicate::str::contains("5"));
+        .stdout(predicate::str::contains("5"))
+        .stdout(predicate::str::contains("static-import-after-edit works"));
 
     Ok(())
 }
