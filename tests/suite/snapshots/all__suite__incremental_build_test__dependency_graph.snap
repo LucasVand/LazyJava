@@ -13,6 +13,7 @@ expression: "normalize_output(&run(&dest, &[\"build\", \"dependencies\"])?, &des
   - Formatter.java (greeting/Formatter.java)
   - Greeter.java (lib/Greeter.java)
   - Greeter.java (lib/Greeter.java)
+  - Strings.java (util/Strings.java)
   - Subtracter.java (math/Subtracter.java)
   - Subtracter.java (math/Subtracter.java)
 Adder.java (math/Adder.java)

@@ -34,7 +34,14 @@ impl Graph {
         for file in root.files() {
             let mut path_list: Vec<PathBuf> = Vec::new();
             for dep in &file.dependencies {
-                if dep.is_wildcard() {
+                if dep.is_static() {
+                    let resolved_static = resolve_static_import(dep, &root);
+                    if let Some(resolved) = resolved_static
+                        && let Some(path) = package_to_path.get(&resolved)
+                    {
+                        path_list.push(path.to_path_buf());
+                    }
+                } else if dep.is_wildcard() {
                     let node = root.find_package(dep);
                     if let Some(Node::Directory { files, .. }) = node {
                         path_list.extend(files.iter().filter_map(|v| match v {
@@ -99,4 +106,13 @@ impl Graph {
 
         stale.into_iter().collect()
     }
+}
+fn resolve_static_import(package: &Package, root: &Node) -> Option<Package> {
+    let mut package_owned = package.clone();
+    package_owned.remove_static();
+    while root.find_package(&package_owned).is_none() {
+        // could not find a package that matches the static import
+        package_owned.pop()?;
+    }
+    Some(package_owned)
 }

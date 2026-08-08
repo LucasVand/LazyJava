@@ -104,7 +104,8 @@ impl Node {
                 .captures_iter(&contents)
                 .filter_map(|cap| {
                     if let Some(import) = cap.name("import") {
-                        let package = Package::from_string(import.as_str());
+                        let stat = cap.name("static");
+                        let package = Package::from_string(import.as_str(), stat.is_some());
 
                         return Some(package);
                     }
@@ -112,7 +113,7 @@ impl Node {
                 })
                 .collect();
 
-            let mut package = Package::from_string(package_str);
+            let mut package = Package::from_string(package_str, false);
             package.push(stem.to_string_lossy());
 
             let name = file_name.to_string_lossy().to_string();
@@ -124,7 +125,7 @@ impl Node {
                 &path.display(),
             );
             Ok(Node::File(NodeFile {
-                name: name,
+                name,
                 package,
                 path: path.to_path_buf(),
                 dependencies,
@@ -151,10 +152,10 @@ impl Node {
     }
 
     /// Returns the file node whose path matches `path`.
-    pub fn find_package(&self, pack: &Package) -> Option<&Node> {
+    pub fn find_package(&self, search_package: &Package) -> Option<&Node> {
         self.iter().find(|file| match file {
-            Node::File(file) => file.package == *pack,
-            Node::Directory { package, .. } => package == pack,
+            Node::File(file) => file.package == *search_package,
+            Node::Directory { package, .. } => search_package == package,
         })
     }
 }

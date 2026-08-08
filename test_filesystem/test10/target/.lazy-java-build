@@ -1,8 +1,0 @@
-java_version = "25"
-lib_hash = 14424794241362824581
-bin_hash = 13914183444989212301
-build_passed = true
-
-[time_stamp]
-secs_since_epoch = 1785786894
-nanos_since_epoch = 26859000

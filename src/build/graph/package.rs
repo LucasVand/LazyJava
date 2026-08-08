@@ -1,17 +1,24 @@
+use std::fmt::Display;
+
 #[derive(Eq, Clone, PartialEq, Hash, Debug)]
 pub struct Package {
     path: Vec<String>,
+    is_static: bool,
 }
 
 impl Package {
     pub fn empty() -> Package {
-        Package { path: Vec::new() }
+        Package {
+            path: Vec::new(),
+            is_static: false,
+        }
     }
-    pub fn from_string(s: impl Into<String>) -> Package {
+    pub fn from_string(s: impl Into<String>, is_static: bool) -> Package {
         let s: String = s.into();
-        return Package {
+        Package {
             path: s.split('.').into_iter().map(|s| s.to_string()).collect(),
-        };
+            is_static,
+        }
     }
 
     pub fn includes(&self, other: &Self) -> bool {
@@ -34,8 +41,8 @@ impl Package {
     pub fn push(&mut self, s: impl Into<String>) {
         self.path.push(s.into());
     }
-    pub fn pop(&mut self) {
-        self.path.pop();
+    pub fn pop(&mut self) -> Option<String> {
+        self.path.pop()
     }
     pub fn is_wildcard(&self) -> bool {
         return self.path.last() == Some(&"*".to_string());
@@ -45,6 +52,24 @@ impl Package {
         c.push(seg.into());
         c
     }
+
+    pub fn is_static(&self) -> bool {
+        self.is_static
+    }
+    pub fn remove_static(&mut self) {
+        self.is_static = false;
+    }
+}
+impl Display for Package {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.is_static() {
+            write!(f, "static ")?;
+        }
+        let join = self.path.join(".");
+        write!(f, "{join}")?;
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -52,7 +77,7 @@ mod tests {
     use super::Package;
 
     fn pkg(s: &str) -> Package {
-        Package::from_string(s)
+        Package::from_string(s, false)
     }
 
     #[test]
