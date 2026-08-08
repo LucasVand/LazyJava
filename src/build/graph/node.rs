@@ -125,7 +125,7 @@ impl Node {
                 &path.display(),
             );
             Ok(Node::File(NodeFile {
-                name: name,
+                name,
                 package,
                 path: path.to_path_buf(),
                 dependencies,
@@ -152,10 +152,10 @@ impl Node {
     }
 
     /// Returns the file node whose path matches `path`.
-    pub fn find_package(&self, package: &Package) -> Option<&Node> {
+    pub fn find_package(&self, search_package: &Package) -> Option<&Node> {
         self.iter().find(|file| match file {
-            Node::File(file) => file.package == *package,
-            Node::Directory { package, .. } => package == package,
+            Node::File(file) => file.package == *search_package,
+            Node::Directory { package, .. } => search_package == package,
         })
     }
 }

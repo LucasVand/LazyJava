@@ -1,22 +1,24 @@
+use std::fmt::Display;
+
 #[derive(Eq, Clone, PartialEq, Hash, Debug)]
 pub struct Package {
     path: Vec<String>,
-    is_sat: bool,
+    is_static: bool,
 }
 
 impl Package {
     pub fn empty() -> Package {
         Package {
             path: Vec::new(),
-            is_sat: false,
+            is_static: false,
         }
     }
-    pub fn from_string(s: impl Into<String>, sat: bool) -> Package {
+    pub fn from_string(s: impl Into<String>, is_static: bool) -> Package {
         let s: String = s.into();
-        return Package {
+        Package {
             path: s.split('.').into_iter().map(|s| s.to_string()).collect(),
-            is_sat: sat,
-        };
+            is_static,
+        }
     }
 
     pub fn includes(&self, other: &Self) -> bool {
@@ -52,7 +54,21 @@ impl Package {
     }
 
     pub fn is_static(&self) -> bool {
-        self.is_sat
+        self.is_static
+    }
+    pub fn remove_static(&mut self) {
+        self.is_static = false;
+    }
+}
+impl Display for Package {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.is_static() {
+            write!(f, "static ")?;
+        }
+        let join = self.path.join(".");
+        write!(f, "{join}")?;
+
+        Ok(())
     }
 }
 
