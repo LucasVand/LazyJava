@@ -1,11 +1,12 @@
 #[cfg(test)]
 mod tests {
+
     use crate::{
-        lock_file::{LockFile, LockFilePackage},
+        lock_file::{LockFile, LockFilePackageRemote},
         maven_central::{MavenIdBuf, pom::DependencyType},
     };
 
-    fn package(id: &str, deps: &[&str]) -> LockFilePackage {
+    fn package(id: &str, deps: &[&str]) -> LockFilePackageRemote {
         let parts: Vec<&str> = id.split(':').collect();
         let dep_ids: Vec<MavenIdBuf> = deps
             .iter()
@@ -15,7 +16,7 @@ mod tests {
             })
             .collect();
 
-        LockFilePackage {
+        LockFilePackageRemote {
             id: MavenIdBuf::new(parts[0], parts[1], parts[2]),
             file_name: String::new(),
             url: String::new(),
@@ -24,11 +25,15 @@ mod tests {
             root: false,
             scope: crate::maven_central::pom::Scope::Compile,
             annotations: Vec::new(),
+            path: None,
         }
     }
 
-    fn lockfile(packages: Vec<LockFilePackage>) -> LockFile {
-        LockFile { packages }
+    fn lockfile(packages: Vec<LockFilePackageRemote>) -> LockFile {
+        LockFile {
+            packages,
+            local_packages: Vec::new(),
+        }
     }
 
     #[test]

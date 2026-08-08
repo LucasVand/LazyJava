@@ -1,0 +1,13 @@
+---
+source: tests/suite/dependency_scopes_test.rs
+expression: lock
+---
+package = []
+
+[[package-local]]
+file_name = "scopelib.jar"
+packaging = "jar"
+root = true
+scope = "runtime"
+path = "<ROOT>/lib/scopelib.jar"
+annotations = []

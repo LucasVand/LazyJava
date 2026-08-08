@@ -1,4 +1,9 @@
-use std::{collections::HashMap, io::ErrorKind, path::Path, str::FromStr};
+use std::{
+    collections::HashMap,
+    io::ErrorKind,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use colored::Colorize;
 use log::debug;
@@ -7,7 +12,7 @@ use crate::{
     CONFIG_FILE_NAME, ContextNoConfig,
     args::{AddArgs, RemoveArgs},
     config::{ConfigTomlEdit, LocalDependency, RemoteDependency, config_error::ConfigError},
-    lock_file::{LockFile, RootPackage},
+    lock_file::{LocalRootPackage, LockFile, RootPackage},
     maven_central::{
         MavenError, MavenIdBuf, PartialMavenIdBuf, fetch_artifact_metadata, pom::Scope,
     },
@@ -129,8 +134,9 @@ impl ConfigTomlEdit {
         ctx: &ContextNoConfig,
     ) -> Result<(), ConfigError> {
         let dep_list = self.root_package_list()?;
+        let local_list = self.local_package_list()?;
         log::info!("Found {} dependencies", dep_list.len());
-        lockfile.sync_with_root_packages(&dep_list)?;
+        lockfile.sync_with_root_packages(&dep_list, &local_list)?;
 
         lockfile.validate_current_packages(ctx)?;
 
@@ -148,7 +154,7 @@ impl ConfigTomlEdit {
                 if let Some(dep) = de {
                     let id = PartialMavenIdBuf::new(&dep.group, k);
 
-                    map.insert(id, dep.into());
+                    map.insert(id, dep);
                 }
             }
 
@@ -157,18 +163,18 @@ impl ConfigTomlEdit {
             Ok(HashMap::new())
         }
     }
-    pub fn local_package_list(&self) -> Result<Vec<LocalDependency>, ConfigError> {
+    pub fn local_package_list(&self) -> Result<HashMap<PathBuf, LocalRootPackage>, ConfigError> {
         if let Some(deps) = self.dependencies() {
-            let mut v = Vec::new();
+            let mut v = HashMap::new();
             for (_key, dep) in deps {
                 let de: Option<LocalDependency> = dep.to_local_dependency()?;
                 if let Some(dep) = de {
-                    v.push(dep);
+                    v.insert(dep.path.clone(), dep);
                 }
             }
             Ok(v)
         } else {
-            Ok(Vec::new())
+            Ok(HashMap::new())
         }
     }
 

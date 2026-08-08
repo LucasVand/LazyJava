@@ -1,8 +1,8 @@
 use std::{
     collections::{HashMap, HashSet},
-    io::ErrorKind,
+    io::{self, ErrorKind},
     mem,
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 use colored::Colorize;
@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     ContextNoConfig, LOCK_FILE_NAME,
-    lock_file::LockFileError,
+    lock_file::{LockFileError, fetch_packages::process_annotations},
     maven_central::{
         MavenId, MavenIdBuf, PartialMavenIdBuf,
         pom::{DependencyType, MavenDependencyList, Scope},
@@ -23,11 +23,15 @@ use crate::{
 #[derive(Serialize, Deserialize)]
 pub struct LockFile {
     #[serde(default, rename = "package")]
-    pub packages: Vec<LockFilePackage>,
+    pub packages: Vec<LockFilePackageRemote>,
+
+    #[serde(default, rename = "package-local")]
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub local_packages: Vec<LockFilePackageLocal>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
-pub struct LockFilePackage {
+pub struct LockFilePackageRemote {
     #[serde(flatten)]
     pub id: MavenIdBuf,
 
@@ -42,6 +46,22 @@ pub struct LockFilePackage {
     pub root: bool,
     pub scope: Scope,
 
+    pub path: Option<PathBuf>,
+
+    #[serde(default)]
+    pub annotations: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
+pub struct LockFilePackageLocal {
+    pub file_name: String,
+    pub packaging: DependencyType,
+
+    pub root: bool,
+    pub scope: Scope,
+
+    pub path: PathBuf,
+
     #[serde(default)]
     pub annotations: Vec<String>,
 }
@@ -52,11 +72,17 @@ pub struct RootPackage {
     pub group: String,
     pub version: String,
 }
+#[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
+pub struct LocalRootPackage {
+    pub scope: Option<Scope>,
+    pub path: PathBuf,
+}
 
 impl LockFile {
     fn new() -> Self {
         LockFile {
             packages: Vec::new(),
+            local_packages: Vec::new(),
         }
     }
     pub fn fetch(root: &Path) -> Result<LockFile, LockFileError> {
@@ -106,13 +132,13 @@ impl LockFile {
         id: MavenIdBuf,
         scope: Option<Scope>,
     ) -> Result<isize, LockFileError> {
-        let list: Vec<LockFilePackage> = MavenDependencyList::new(id, scope)?
+        let list: Vec<LockFilePackageRemote> = MavenDependencyList::new(id, scope)?
             .into_iter()
             .map(|m| m.into())
             .collect();
         let list_len = list.len();
 
-        let mut map: HashMap<u64, LockFilePackage> = mem::take(&mut self.packages)
+        let mut map: HashMap<u64, LockFilePackageRemote> = mem::take(&mut self.packages)
             .into_iter()
             .map(|p| {
                 (
@@ -150,7 +176,7 @@ impl LockFile {
     }
     fn validate_dir(
         path: &Path,
-        map: &mut HashMap<String, &mut LockFilePackage>,
+        map: &mut HashMap<String, &mut LockFilePackageRemote>,
     ) -> Result<isize, LockFileError> {
         println!(
             "    {} {}",
@@ -194,7 +220,7 @@ impl LockFile {
         println!("{} dependencies", "Syncing".green().bold(),);
         let mut added: isize = 0;
         let mut removed: isize = 0;
-        let mut map: HashMap<String, &mut LockFilePackage> = self
+        let mut map: HashMap<String, &mut LockFilePackageRemote> = self
             .packages
             .iter_mut()
             .map(|p| (p.file_name.as_str().to_string(), p))
@@ -224,6 +250,7 @@ impl LockFile {
                 plural(removed)
             );
         }
+
         Ok(added - removed)
     }
     pub fn contains_package(&self, id: &MavenId) -> bool {
@@ -232,6 +259,7 @@ impl LockFile {
     pub fn sync_with_root_packages(
         &mut self,
         root_packages: &HashMap<PartialMavenIdBuf, RootPackage>,
+        local_root_packages: &HashMap<PathBuf, LocalRootPackage>,
     ) -> Result<(), LockFileError> {
         let mut map: HashSet<PartialMavenIdBuf> = self
             .packages
@@ -257,6 +285,92 @@ impl LockFile {
         }
 
         self.remove_unneed_packages();
+
+        let mut local_map: HashMap<&PathBuf, &LocalRootPackage> =
+            local_root_packages.iter().collect();
+
+        self.local_packages = mem::take(&mut self.local_packages)
+            .into_iter()
+            .filter(|local| local_map.remove(&local.path).is_some())
+            .collect();
+
+        for (_, local) in local_map {
+            let package = Self::validate_local_package(local)?;
+            self.local_packages.push(package);
+        }
+
         Ok(())
+    }
+    fn remote_packages_with_scopes(
+        &self,
+        scopes: &[Scope],
+    ) -> impl Iterator<Item = &LockFilePackageRemote> {
+        self.packages
+            .iter()
+            .filter(move |package| scopes.contains(&package.scope))
+    }
+    fn local_packages_with_scopes(
+        &self,
+        scopes: &[Scope],
+    ) -> impl Iterator<Item = &LockFilePackageLocal> {
+        self.local_packages
+            .iter()
+            .filter(move |package| scopes.contains(&package.scope))
+    }
+
+    pub fn package_paths_with_scopes(&self, scopes: &[Scope]) -> Vec<PathBuf> {
+        self.remote_packages_with_scopes(scopes)
+            .filter_map(|package| package.path.as_ref().map(|p| p.to_path_buf()))
+            .chain(
+                self.local_packages_with_scopes(scopes)
+                    .map(|package| package.path.to_path_buf()),
+            )
+            .collect()
+    }
+    pub fn processor_package_paths_with_scopes(&self, scopes: &[Scope]) -> Vec<PathBuf> {
+        self.remote_packages_with_scopes(scopes)
+            .filter(|p| !p.annotations.is_empty())
+            .filter_map(|package| package.path.as_ref().map(|p| p.to_path_buf()))
+            .chain(
+                self.local_packages_with_scopes(scopes)
+                    .filter(|p| !p.annotations.is_empty())
+                    .map(|package| package.path.to_path_buf()),
+            )
+            .collect()
+    }
+
+    pub fn compile_time_packages(&self) -> Vec<PathBuf> {
+        self.package_paths_with_scopes(&[Scope::System, Scope::Provided, Scope::Compile])
+    }
+    pub fn runtime_packages(&self) -> Vec<PathBuf> {
+        self.package_paths_with_scopes(&[Scope::System, Scope::Runtime, Scope::Compile])
+    }
+    pub fn processor_compile_time_packages(&self) -> Vec<PathBuf> {
+        self.processor_package_paths_with_scopes(&[Scope::System, Scope::Provided, Scope::Compile])
+    }
+
+    fn validate_local_package(
+        package: &LocalRootPackage,
+    ) -> Result<LockFilePackageLocal, LockFileError> {
+        let Some(name) = package.path.file_name() else {
+            return Err(IOError::new(
+                "resolving filename of local package",
+                &package.path,
+                io::Error::new(io::ErrorKind::NotFound, "could not resolve filename"),
+            ))?;
+        };
+
+        let bin = fs::read(&package.path)
+            .map_err(|e| IOError::new("reading local jar", &package.path, e))?;
+        let annots = process_annotations(&bin)?;
+
+        Ok(LockFilePackageLocal {
+            file_name: name.to_string_lossy().to_string(),
+            packaging: DependencyType::Jar,
+            root: true,
+            scope: package.scope.unwrap_or(Scope::default()),
+            path: package.path.clone(),
+            annotations: annots,
+        })
     }
 }

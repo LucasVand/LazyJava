@@ -2,6 +2,7 @@ use thiserror::Error;
 
 use crate::{
     config::ConfigError,
+    lock_file::LockFileError,
     lsp::classpath_error::ClasspathError,
     utils::{Diagnostic, DiagnosticProvider, IOError, TomlSerializeError},
 };
@@ -42,11 +43,15 @@ pub enum BuildError {
 
     #[error("`java` was not found on the PATH, ensure a JDK is installed and on the PATH")]
     JavaNotFound,
+
+    #[error(transparent)]
+    LockFileError(#[from] LockFileError),
 }
 
 impl DiagnosticProvider for BuildError {
     fn diagnostic(&self) -> Diagnostic {
         match self {
+            BuildError::LockFileError(e) => e.diagnostic(),
             BuildError::ProcessorCompilationErrors => {
                 Diagnostic::new("Annotation processor compilation failed")
                     .message("Errors occurred while compiling the annotation processors.")

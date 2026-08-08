@@ -1,6 +1,6 @@
 use crate::{
     config::ConfigError,
-    lock_file::RootPackage,
+    lock_file::{LocalRootPackage, RootPackage},
     maven_central::pom::Scope,
     utils::{IOError, fs::canonicalize},
 };
@@ -103,14 +103,8 @@ pub struct ConfigDependency {
     pub scope: Scope,
     pub path: String,
 }
-pub struct RemoteDependency {
-    pub group: String,
-    pub version: String,
-    pub scope: Option<Scope>,
-}
-pub struct LocalDependency {
-    pub path: PathBuf,
-}
+pub type RemoteDependency = RootPackage;
+pub type LocalDependency = LocalRootPackage;
 
 impl<'a> ConfigDependencyTomlEditView<'a> {
     pub fn to_remote_dependency(&self) -> Result<Option<RemoteDependency>, ConfigError> {
@@ -144,7 +138,6 @@ impl<'a> ConfigDependencyTomlEditView<'a> {
         }
         assert_none(group, "group")?;
         assert_none(version, "version")?;
-        assert_none(scope, "scope")?;
 
         let path = assert(path, "path")?;
 
@@ -160,16 +153,10 @@ impl<'a> ConfigDependencyTomlEditView<'a> {
         let con = canonicalize(&path)
             .map_err(|e| IOError::new("resolving local dependency path", path, e))?;
 
-        Ok(Some(LocalDependency { path: con }))
-    }
-}
-impl Into<RootPackage> for RemoteDependency {
-    fn into(self) -> RootPackage {
-        RootPackage {
-            scope: self.scope,
-            group: self.group,
-            version: self.version,
-        }
+        Ok(Some(LocalDependency {
+            path: con,
+            scope: scope,
+        }))
     }
 }
 
