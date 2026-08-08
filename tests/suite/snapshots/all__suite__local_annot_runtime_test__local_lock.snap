@@ -1,0 +1,13 @@
+---
+source: tests/suite/local_annot_runtime_test.rs
+expression: lock_content
+---
+package = []
+
+[[package-local]]
+file_name = "myannot.jar"
+packaging = "jar"
+root = true
+scope = "compile"
+path = "<ROOT>/lib/myannot.jar"
+annotations = ["runtime.gen.MyProcessor"]

@@ -84,6 +84,23 @@ fn copy_dir(from: &Path, to: &Path) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/// Replaces the absolute project root with `<ROOT>` so lock snapshots are
+/// deterministic across machines. The lock file embeds jar `path` entries that
+/// are absolute paths under the temp project dir, in either canonical
+/// (`/private/var/...`) or symlinked (`/var/...`) form, so both are substituted.
+fn sanitize_lock(content: &str, root: &Path) -> String {
+    let root = root.to_string_lossy().replace('\\', "/");
+    let canonical = std::fs::canonicalize(&root)
+        .map(|p| p.to_string_lossy().replace('\\', "/"))
+        .unwrap_or_else(|_| root.clone());
+
+    let mut normalized = content.replace('\\', "/");
+    if !canonical.is_empty() && canonical != root {
+        normalized = normalized.replace(&canonical, "<ROOT>");
+    }
+    normalized.replace(&root, "<ROOT>")
+}
+
 #[test]
 fn local_lib_jar_is_required_at_runtime() -> Result<(), Box<dyn std::error::Error>> {
     let tmp = tempfile::tempdir()?;
@@ -102,6 +119,16 @@ fn local_lib_jar_is_required_at_runtime() -> Result<(), Box<dyn std::error::Erro
     cmd.current_dir(&dest);
     cmd.args(["build"]);
     cmd.assert().success();
+
+    // The lock file records the local dependency jar with its detected
+    // annotation processor configuration.
+    let lock_path = dest.join("lazy-java.lock");
+    assert!(
+        lock_path.exists(),
+        "lazy-java.lock should exist after build"
+    );
+    let lock_content = sanitize_lock(&std::fs::read_to_string(&lock_path)?, &dest);
+    insta::assert_snapshot!("local_lock", lock_content);
 
     assert!(
         dest.join("target")
