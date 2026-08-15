@@ -1,44 +1,21 @@
-use assert_cmd::Command;
 use predicates::prelude::predicate;
-use std::path::Path;
 use std::process::Command as StdCommand;
 
-fn fixture_build_and_run() -> std::path::PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("fixtures")
-        .join("build-and-run")
-}
-
-fn fixture_with_dependency() -> std::path::PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("fixtures")
-        .join("with-dependency")
-}
+use crate::support::{lazy_java, Project};
 
 #[test]
 fn build_jar_creates_executable_jar() -> Result<(), Box<dyn std::error::Error>> {
-    let tmp = tempfile::tempdir()?;
-    let dest = tmp.path().join("project");
-
-    fs_extra::dir::copy(
-        fixture_build_and_run(),
-        &dest,
-        &fs_extra::dir::CopyOptions::new().content_only(true),
-    )?;
+    let p = Project::from_fixture("build-and-run")?;
+    let dest = &p.dir;
 
     // Build first
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["build"]);
-    cmd.assert().success();
+    lazy_java(dest)?.args(["build"]).assert().success();
 
     // Create jar
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["build", "jar", "--entry-point", "Main"]);
-    cmd.assert().success();
+    lazy_java(dest)?
+        .args(["build", "jar", "--entry-point", "Main"])
+        .assert()
+        .success();
 
     assert!(
         dest.join("target").join("build.jar").exists(),
@@ -61,31 +38,22 @@ fn build_jar_creates_executable_jar() -> Result<(), Box<dyn std::error::Error>> 
 
 #[test]
 fn build_fat_jar_self_contained() -> Result<(), Box<dyn std::error::Error>> {
-    let tmp = tempfile::tempdir()?;
-    let dest = tmp.path().join("project");
-
-    fs_extra::dir::copy(
-        fixture_with_dependency(),
-        &dest,
-        &fs_extra::dir::CopyOptions::new().content_only(true),
-    )?;
+    let p = Project::from_fixture("with-dependency")?;
+    let dest = &p.dir;
 
     // Add a dependency and build
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["add", "org.apache.commons", "commons-lang3"]);
-    cmd.assert().success();
+    lazy_java(dest)?
+        .args(["add", "org.apache.commons", "commons-lang3"])
+        .assert()
+        .success();
 
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["build"]);
-    cmd.assert().success();
+    lazy_java(dest)?.args(["build"]).assert().success();
 
     // Create fat jar
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["build", "jar", "--entry-point", "Main", "--fat"]);
-    cmd.assert().success();
+    lazy_java(dest)?
+        .args(["build", "jar", "--entry-point", "Main", "--fat"])
+        .assert()
+        .success();
 
     assert!(
         dest.join("target").join("build.jar").exists(),
@@ -115,26 +83,19 @@ fn build_fat_jar_self_contained() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn run_jar_using_lazy_java() -> Result<(), Box<dyn std::error::Error>> {
-    let tmp = tempfile::tempdir()?;
-    let dest = tmp.path().join("project");
-
-    fs_extra::dir::copy(
-        fixture_build_and_run(),
-        &dest,
-        &fs_extra::dir::CopyOptions::new().content_only(true),
-    )?;
+    let p = Project::from_fixture("build-and-run")?;
+    let dest = &p.dir;
 
     // Build and create jar
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["build", "jar", "--entry-point", "Main"]);
-    cmd.assert().success();
+    lazy_java(dest)?
+        .args(["build", "jar", "--entry-point", "Main"])
+        .assert()
+        .success();
 
     // Run via lazy-java --jar
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["run", "--jar", "--no-build"]);
-    cmd.assert()
+    lazy_java(dest)?
+        .args(["run", "--jar", "--no-build"])
+        .assert()
         .success()
         .stdout(predicate::str::contains("Hello world!"));
 
@@ -143,20 +104,14 @@ fn run_jar_using_lazy_java() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn run_jar_errors_when_not_built() -> Result<(), Box<dyn std::error::Error>> {
-    let tmp = tempfile::tempdir()?;
-    let dest = tmp.path().join("project");
-
-    fs_extra::dir::copy(
-        fixture_build_and_run(),
-        &dest,
-        &fs_extra::dir::CopyOptions::new().content_only(true),
-    )?;
+    let p = Project::from_fixture("build-and-run")?;
+    let dest = &p.dir;
 
     // Try running jar without building it first
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["run", "--jar", "--no-build"]);
-    cmd.assert().failure();
+    lazy_java(dest)?
+        .args(["run", "--jar", "--no-build"])
+        .assert()
+        .failure();
 
     Ok(())
 }

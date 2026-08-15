@@ -1,29 +1,16 @@
-use assert_cmd::Command;
 use predicates::prelude::predicate;
-use std::path::Path;
 
-fn fixture_path() -> std::path::PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("fixtures")
-        .join("resource-files")
-}
+use crate::support::{lazy_java, Project};
 
 #[test]
 fn build_copies_resources_to_bin_and_run_reads_them() -> Result<(), Box<dyn std::error::Error>> {
-    let tmp = tempfile::tempdir()?;
-    let dest = tmp.path().join("project");
-
-    fs_extra::dir::copy(
-        fixture_path(),
-        &dest,
-        &fs_extra::dir::CopyOptions::new().content_only(true),
-    )?;
+    let p = Project::from_fixture("resource-files")?;
+    let dest = &p.dir;
 
     // Place a file OUTSIDE the project root and reference it with a relative
     // path that escapes the root (`../outside.txt`), to exercise true external
     // file support (paths that point outside of the project root).
-    let outside = tmp.path().join("outside.txt");
+    let outside = p.root().join("outside.txt");
     std::fs::write(&outside, "hello from outside the project root\n")?;
 
     let config_path = dest.join("lazy-java.toml");
@@ -35,10 +22,7 @@ fn build_copies_resources_to_bin_and_run_reads_them() -> Result<(), Box<dyn std:
     std::fs::write(&config_path, config)?;
 
     // Build copies the non-java resources into bin
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["build"]);
-    cmd.assert().success();
+    lazy_java(dest)?.args(["build"]).assert().success();
 
     assert!(
         dest.join("target").join("bin").join("hello.txt").exists(),
@@ -61,10 +45,9 @@ fn build_copies_resources_to_bin_and_run_reads_them() -> Result<(), Box<dyn std:
     );
 
     // Run reads the resources from the classpath
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["run", "Main"]);
-    cmd.assert()
+    lazy_java(dest)?
+        .args(["run", "Main"])
+        .assert()
         .success()
         .stdout(predicate::str::contains(
             "Resource content: Hello from resource file!",
