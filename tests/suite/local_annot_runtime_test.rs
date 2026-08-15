@@ -97,16 +97,24 @@ fn sanitize_lock(content: &str, root: &Path) -> String {
     let mut normalized = content.replace('\\', "/");
 
     // The toml serializer emits literal (single-quoted) strings when a path
-    // contains backslashes (e.g. Windows), so handle both quote styles.
-    for path in [&canonical, &root] {
-        normalized = normalized
-            .replace(&format!("\"{path}\""), "\"<ROOT>\"")
-            .replace(&format!("'{path}'"), "\"<ROOT>\"");
-    }
+    // contains backslashes, so after substituting <ROOT> re-quote any path
+    // lines that came out single-quoted back to basic double-quoted strings.
     if !canonical.is_empty() && canonical != root {
         normalized = normalized.replace(&canonical, "<ROOT>");
     }
-    normalized.replace(&root, "<ROOT>")
+    normalized = normalized.replace(&root, "<ROOT>");
+
+    normalized
+        .lines()
+        .map(|line| {
+            if line.contains("<ROOT>") && !line.contains('"') {
+                line.replace('\'', "\"")
+            } else {
+                line.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 #[test]
