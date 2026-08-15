@@ -1,31 +1,15 @@
-use assert_cmd::Command;
 use predicates::prelude::predicate;
 use predicates::prelude::PredicateBooleanExt;
-use std::path::Path;
 
-fn fixture_path() -> std::path::PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("fixtures")
-        .join("exclude-files")
-}
+use crate::support::{lazy_java, Project};
 
 #[test]
 fn build_excludes_configured_java_files() -> Result<(), Box<dyn std::error::Error>> {
-    let tmp = tempfile::tempdir()?;
-    let dest = tmp.path().join("project");
-
-    fs_extra::dir::copy(
-        fixture_path(),
-        &dest,
-        &fs_extra::dir::CopyOptions::new().content_only(true),
-    )?;
+    let p = Project::from_fixture("exclude-files")?;
+    let dest = &p.dir;
 
     // Build succeeds even though src/Broken.java does not compile, because it is excluded
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["build"]);
-    cmd.assert().success();
+    lazy_java(dest)?.args(["build"]).assert().success();
 
     assert!(
         dest.join("target").join("bin").join("Main.class").exists(),
@@ -37,19 +21,17 @@ fn build_excludes_configured_java_files() -> Result<(), Box<dyn std::error::Erro
     );
 
     // The excluded file should not be listed by find
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["find"]);
-    cmd.assert()
+    lazy_java(dest)?
+        .args(["find"])
+        .assert()
         .success()
         .stdout(predicate::str::contains("Main"))
         .stdout(predicate::str::contains("Broken").not());
 
     // Run the included main class
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["run", "Main"]);
-    cmd.assert()
+    lazy_java(dest)?
+        .args(["run", "Main"])
+        .assert()
         .success()
         .stdout(predicate::str::contains("Hello from excluded build!"));
 
@@ -58,14 +40,8 @@ fn build_excludes_configured_java_files() -> Result<(), Box<dyn std::error::Erro
 
 #[test]
 fn build_fails_without_exclude_configured() -> Result<(), Box<dyn std::error::Error>> {
-    let tmp = tempfile::tempdir()?;
-    let dest = tmp.path().join("project");
-
-    fs_extra::dir::copy(
-        fixture_path(),
-        &dest,
-        &fs_extra::dir::CopyOptions::new().content_only(true),
-    )?;
+    let p = Project::from_fixture("exclude-files")?;
+    let dest = &p.dir;
 
     // Remove the exclude list so the broken file participates in the build
     std::fs::write(
@@ -73,10 +49,7 @@ fn build_fails_without_exclude_configured() -> Result<(), Box<dyn std::error::Er
         "[project]\nname = \"exclude-files\"\n",
     )?;
 
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["build"]);
-    cmd.assert().failure();
+    lazy_java(dest)?.args(["build"]).assert().failure();
 
     Ok(())
 }

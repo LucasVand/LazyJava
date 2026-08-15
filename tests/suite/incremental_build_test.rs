@@ -1,41 +1,6 @@
-use assert_cmd::Command;
 use predicates::prelude::predicate;
-use std::path::{Path, PathBuf};
 
-use crate::support::normalize_output;
-
-fn fixture_path() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("fixtures")
-        .join("incremental-build")
-}
-
-fn copy_fixture() -> tempfile::TempDir {
-    let tmp = tempfile::tempdir().unwrap();
-    let dest = tmp.path().join("project");
-    fs_extra::dir::copy(
-        fixture_path(),
-        &dest,
-        &fs_extra::dir::CopyOptions::new().content_only(true),
-    )
-    .unwrap();
-    tmp
-}
-
-fn run(dest: &Path, args: &[&str]) -> Result<String, Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(dest);
-    cmd.args(args);
-    let output = cmd.output()?;
-    assert!(
-        output.status.success(),
-        "`lazy-java {}` failed: {}",
-        args.join(" "),
-        String::from_utf8_lossy(&output.stderr)
-    );
-    Ok(String::from_utf8(output.stdout)?)
-}
+use crate::support::{lazy_java, normalize_output, run, Project};
 
 const MODIFIED_FORMATTER: &str = r#"package com.example.greeting;
 
@@ -76,29 +41,29 @@ public class Strings {
 #[test]
 fn incremental_build_dependency_and_subcommand_snapshots() -> Result<(), Box<dyn std::error::Error>>
 {
-    let tmp = copy_fixture();
-    let dest = tmp.path().join("project");
+    let p = Project::from_fixture("incremental-build")?;
+    let dest = &p.dir;
 
     // Baseline: full build
     insta::assert_snapshot!(
         "full_build_output",
-        normalize_output(&run(&dest, &["build", "--show-compiled"])?, &dest)
+        normalize_output(&run(dest, &["build", "--show-compiled"])?, dest)
     );
 
     // Dependency and dependents graphs
     insta::assert_snapshot!(
         "dependency_graph",
-        normalize_output(&run(&dest, &["build", "dependencies"])?, &dest)
+        normalize_output(&run(dest, &["build", "dependencies"])?, dest)
     );
     insta::assert_snapshot!(
         "dependents_graph",
-        normalize_output(&run(&dest, &["build", "dependents"])?, &dest)
+        normalize_output(&run(dest, &["build", "dependents"])?, dest)
     );
 
     // Nothing should be stale right after a build
     insta::assert_snapshot!(
         "stale_after_full_build",
-        normalize_output(&run(&dest, &["build", "stale"])?, &dest)
+        normalize_output(&run(dest, &["build", "stale"])?, dest)
     );
 
     // Editing a leaf file (no dependents of its own) fans out to all transitive dependents
@@ -106,19 +71,19 @@ fn incremental_build_dependency_and_subcommand_snapshots() -> Result<(), Box<dyn
 
     insta::assert_snapshot!(
         "stale_after_leaf_edit",
-        normalize_output(&run(&dest, &["build", "stale"])?, &dest)
+        normalize_output(&run(dest, &["build", "stale"])?, dest)
     );
 
     // Incremental build recompiles the file plus its transitive dependents
     insta::assert_snapshot!(
         "incremental_build_after_leaf_edit",
-        normalize_output(&run(&dest, &["build", "--show-compiled"])?, &dest)
+        normalize_output(&run(dest, &["build", "--show-compiled"])?, dest)
     );
 
     // A second build with no changes skips compilation entirely
     insta::assert_snapshot!(
         "incremental_build_no_changes",
-        normalize_output(&run(&dest, &["build"])?, &dest)
+        normalize_output(&run(dest, &["build"])?, dest)
     );
 
     // Editing a mid-graph file fans out to its same-package files and dependents
@@ -126,11 +91,11 @@ fn incremental_build_dependency_and_subcommand_snapshots() -> Result<(), Box<dyn
 
     insta::assert_snapshot!(
         "stale_after_mid_edit",
-        normalize_output(&run(&dest, &["build", "stale"])?, &dest)
+        normalize_output(&run(dest, &["build", "stale"])?, dest)
     );
     insta::assert_snapshot!(
         "incremental_build_after_mid_edit",
-        normalize_output(&run(&dest, &["build"])?, &dest)
+        normalize_output(&run(dest, &["build"])?, dest)
     );
 
     // Editing a class consumed only through a `static` import must fan out to
@@ -139,20 +104,19 @@ fn incremental_build_dependency_and_subcommand_snapshots() -> Result<(), Box<dyn
 
     insta::assert_snapshot!(
         "stale_after_strings_edit",
-        normalize_output(&run(&dest, &["build", "stale"])?, &dest)
+        normalize_output(&run(dest, &["build", "stale"])?, dest)
     );
     insta::assert_snapshot!(
         "incremental_build_after_strings_edit",
-        normalize_output(&run(&dest, &["build"])?, &dest)
+        normalize_output(&run(dest, &["build"])?, dest)
     );
 
     // Functional check: the incremental recompilation produced working output
     // reflecting both edits (Formatter appends "!", Calc.subtract is now Math.max)
     // and the static-imported constant from the edited Strings.
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["run", "--no-build", "com.example.Main"]);
-    cmd.assert()
+    lazy_java(dest)?
+        .args(["run", "--no-build", "com.example.Main"])
+        .assert()
         .success()
         .stdout(predicate::str::contains("Hello, WORLD!"))
         .stdout(predicate::str::contains("3"))

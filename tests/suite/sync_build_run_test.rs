@@ -1,30 +1,17 @@
-use assert_cmd::Command;
 use predicates::prelude::{PredicateBooleanExt, predicate};
-use std::path::Path;
 
-fn fixture_path() -> std::path::PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("fixtures")
-        .join("with-dependency")
-}
+use crate::support::{lazy_java, Project};
 
 #[test]
 fn sync_build_run_with_maven_dependency() -> Result<(), Box<dyn std::error::Error>> {
-    let tmp = tempfile::tempdir()?;
-    let dest = tmp.path().join("project");
-
-    fs_extra::dir::copy(
-        fixture_path(),
-        &dest,
-        &fs_extra::dir::CopyOptions::new().content_only(true),
-    )?;
+    let p = Project::from_fixture("with-dependency")?;
+    let dest = &p.dir;
 
     // Step 1: Add dependency — resolves from Maven, downloads JAR, creates lock file
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["add", "org.apache.commons", "commons-lang3"]);
-    cmd.assert().success();
+    lazy_java(dest)?
+        .args(["add", "org.apache.commons", "commons-lang3"])
+        .assert()
+        .success();
 
     assert!(
         dest.join("lazy-java.lock").exists(),
@@ -37,10 +24,9 @@ fn sync_build_run_with_maven_dependency() -> Result<(), Box<dyn std::error::Erro
     );
 
     // Step 2: Build — first build is a full build
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["build"]);
-    cmd.assert()
+    lazy_java(dest)?
+        .args(["build"])
+        .assert()
         .success()
         .stdout(predicate::str::contains("full build"));
 
@@ -50,50 +36,46 @@ fn sync_build_run_with_maven_dependency() -> Result<(), Box<dyn std::error::Erro
     );
 
     // Step 3: A build with no changes must not trigger a full rebuild.
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["build"]);
-    cmd.assert()
+    lazy_java(dest)?
+        .args(["build"])
+        .assert()
         .success()
         .stdout(predicate::str::contains("full build").not());
 
     // Step 4: Adding a new remote dependency must force a full rebuild.
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["add", "org.apache.commons", "commons-collections4"]);
-    cmd.assert().success();
+    lazy_java(dest)?
+        .args(["add", "org.apache.commons", "commons-collections4"])
+        .assert()
+        .success();
 
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["build"]);
-    cmd.assert()
+    lazy_java(dest)?
+        .args(["build"])
+        .assert()
         .success()
         .stdout(predicate::str::contains("full build"));
 
     // Step 5: Adding a remote dependency that bundles an annotation processor
     // (lands in lib-annotations) must also force a full rebuild.
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["add", "org.immutables", "value"]);
-    cmd.assert().success();
+    lazy_java(dest)?
+        .args(["add", "org.immutables", "value"])
+        .assert()
+        .success();
 
     assert!(
         dest.join("target").join("lib-annotations").is_dir(),
         "lib-annotations dir should exist after add"
     );
 
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["build"]);
-    cmd.assert()
+    lazy_java(dest)?
+        .args(["build"])
+        .assert()
         .success()
         .stdout(predicate::str::contains("full build"));
 
     // Step 6: Run and assert output from commons-lang3 usage
-    let mut cmd = Command::cargo_bin("lazy-java")?;
-    cmd.current_dir(&dest);
-    cmd.args(["run", "--no-build", "Main"]);
-    cmd.assert()
+    lazy_java(dest)?
+        .args(["run", "--no-build", "Main"])
+        .assert()
         .success()
         .stdout(predicate::str::contains("Hello world from lazy-java"))
         .stdout(predicate::str::contains("hello wor..."))
