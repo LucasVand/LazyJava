@@ -132,10 +132,11 @@ pub fn import_pom(root: &Path, args: &ImportPomArgs) -> Result<(), ImportError> 
 }
 fn resolve_root(str: String, base: &Path) -> PathBuf {
     let base_replace = if cfg!(target_os = "windows") {
-        r"${project.basedir}\"
+        r"${project.basedir}"
     } else {
-        "${project.basedir}/"
+        "${project.basedir}"
     };
-    let replaced = str.replace(base_replace, "");
+    let mut replaced = str.replace(base_replace, "");
+    replaced.remove(0);
     base.join(replaced)
 }
