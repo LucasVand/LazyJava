@@ -95,6 +95,14 @@ fn sanitize_lock(content: &str, root: &Path) -> String {
         .unwrap_or_else(|_| root.clone());
 
     let mut normalized = content.replace('\\', "/");
+
+    // The toml serializer emits literal (single-quoted) strings when a path
+    // contains backslashes (e.g. Windows), so handle both quote styles.
+    for path in [&canonical, &root] {
+        normalized = normalized
+            .replace(&format!("\"{path}\""), "\"<ROOT>\"")
+            .replace(&format!("'{path}'"), "\"<ROOT>\"");
+    }
     if !canonical.is_empty() && canonical != root {
         normalized = normalized.replace(&canonical, "<ROOT>");
     }
