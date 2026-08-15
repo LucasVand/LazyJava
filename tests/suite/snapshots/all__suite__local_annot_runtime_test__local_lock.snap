@@ -5,6 +5,7 @@ expression: lock_content
 package = []
 
 [[package-local]]
+name = "myannot"
 file_name = "myannot.jar"
 packaging = "jar"
 root = true

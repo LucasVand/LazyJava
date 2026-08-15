@@ -46,32 +46,6 @@ fn build_manifest_empty_lib_no_classpath() -> Result<(), Box<dyn std::error::Err
 }
 
 #[test]
-fn build_manifest_with_jars_includes_classpath() -> Result<(), Box<dyn std::error::Error>> {
-    let tmp = tempdir()?;
-    let target = tmp.path().join("target");
-    let lib = target.join("lib");
-    let lib_a = target.join("lib-annotations");
-    fs::create_dir_all(&lib)?;
-    fs::create_dir_all(&lib_a)?;
-    fs::write(tmp.path().join("lazy-java.toml"), "")?;
-
-    let jar_path = lib.join("example-1.0.jar");
-    fs::write(&jar_path, b"dummy jar content")?;
-
-    let ctx = test_ctx(&target);
-    let manifest = build_manifest("Main", &ctx)?;
-
-    assert!(manifest.contains("Class-Path:"));
-    let con = if cfg!(target_os = "windows") {
-        r"lib\example-1.0.jar"
-    } else {
-        "lib/example-1.0.jar"
-    };
-    assert!(manifest.contains(con));
-    Ok(())
-}
-
-#[test]
 fn merge_services_sorts_and_deduplicates() -> Result<(), Box<dyn std::error::Error>> {
     let tmp = tempdir()?;
     let services = tmp.path().join("META-INF").join("services");

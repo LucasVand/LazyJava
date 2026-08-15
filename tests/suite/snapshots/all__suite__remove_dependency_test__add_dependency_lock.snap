@@ -1,5 +1,6 @@
 ---
 source: tests/suite/remove_dependency_test.rs
+assertion_line: 57
 expression: lock_after_add
 ---
 [[package]]
@@ -181,7 +182,7 @@ url = "https://repo1.maven.org/maven2/org/osgi/org.osgi.core/6.0.0/org.osgi.core
 dependencies = []
 packaging = "jar"
 root = false
-scope = "compile"
+scope = "provided"
 path = "<ROOT>/target/lib/org.osgi.core-6.0.0.jar"
 annotations = []
 

@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     hash::{DefaultHasher, Hash, Hasher},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 use colored::Colorize;
@@ -9,7 +9,10 @@ use colored::Colorize;
 use crate::{
     args::ImportPomArgs,
     config::ConfigTomlEdit,
-    maven_central::{fetch_artifact_metadata, pom::MavenPom},
+    maven_central::{
+        fetch_artifact_metadata,
+        pom::{MavenPom, Scope},
+    },
     utils::{IOError, XmlDeserializeError, fs},
 };
 
@@ -78,9 +81,18 @@ pub fn import_pom(root: &Path, args: &ImportPomArgs) -> Result<(), ImportError> 
                 }
             };
             let mut entry = tomldeps.insert_empty(&dep.artifact_id);
-            entry.group_mut().set(dep.group_id.clone());
-            entry.version_mut().set(version);
-            entry.scope_mut().set(dep.scope);
+            if dep.scope == Scope::System {
+                let path = dep
+                    .system_path
+                    .ok_or_else(|| ImportError::InvalidPom("missing <systemPath> in dependency"))?;
+                entry
+                    .path_mut()
+                    .set(resolve_root(path, &root).to_string_lossy().to_string());
+            } else {
+                entry.group_mut().set(dep.group_id.clone());
+                entry.version_mut().set(version);
+                entry.scope_mut().set(dep.scope);
+            }
         }
     }
 
@@ -117,4 +129,13 @@ pub fn import_pom(root: &Path, args: &ImportPomArgs) -> Result<(), ImportError> 
     println!("{} lazy-java.toml from pom.xml", "Imported".green().bold());
 
     Ok(())
+}
+fn resolve_root(str: String, base: &Path) -> PathBuf {
+    let base_replace = if cfg!(target_os = "windows") {
+        r"${project.basedir}\"
+    } else {
+        "${project.basedir}/"
+    };
+    let replaced = str.replace(base_replace, "");
+    base.join(replaced)
 }

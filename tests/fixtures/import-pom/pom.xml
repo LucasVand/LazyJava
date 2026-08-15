@@ -15,5 +15,12 @@
             <artifactId>guava</artifactId>
             <version>33.0.0-jre</version>
         </dependency>
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>local-lib</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/local-lib.jar</systemPath>
+        </dependency>
     </dependencies>
 </project>

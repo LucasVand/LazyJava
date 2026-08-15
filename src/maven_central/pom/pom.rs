@@ -77,6 +77,10 @@ pub struct Dependency {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub classifier: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "systemPath")]
+    pub system_path: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, PartialEq, Eq)]

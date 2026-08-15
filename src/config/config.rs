@@ -1,9 +1,4 @@
-use std::{
-    collections::HashMap,
-    io::ErrorKind,
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::{collections::HashMap, io::ErrorKind, path::Path, str::FromStr};
 
 use colored::Colorize;
 use log::debug;
@@ -75,6 +70,9 @@ impl ConfigTomlEdit {
             && scope.is_none()
         {
             println!("{}: unknown scope `{}`", "Warning".yellow().bold(), s)
+        }
+        if let Some(scope) = scope {
+            value.scope_mut().set(scope);
         }
 
         lockfile.add_package(id, scope)?;
@@ -163,13 +161,16 @@ impl ConfigTomlEdit {
             Ok(HashMap::new())
         }
     }
-    pub fn local_package_list(&self) -> Result<HashMap<PathBuf, LocalRootPackage>, ConfigError> {
+    pub fn local_package_list(&self) -> Result<HashMap<String, LocalRootPackage>, ConfigError> {
         if let Some(deps) = self.dependencies() {
             let mut v = HashMap::new();
-            for (_key, dep) in deps {
+            for (key, dep) in deps {
                 let de: Option<LocalDependency> = dep.to_local_dependency()?;
                 if let Some(dep) = de {
-                    v.insert(dep.path.clone(), dep);
+                    if v.contains_key(&key) {
+                        return Err(ConfigError::DuplicateLocalDependencies(key));
+                    }
+                    v.insert(key, dep);
                 }
             }
             Ok(v)

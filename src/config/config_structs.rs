@@ -110,7 +110,7 @@ impl<'a> ConfigDependencyTomlEditView<'a> {
     pub fn to_remote_dependency(&self) -> Result<Option<RemoteDependency>, ConfigError> {
         let group = self.group();
         let version = self.version();
-        let scope = self.scope();
+        let scope = self.scope().unwrap_or(Scope::Compile);
         let path = self.path();
 
         if group.is_none() && version.is_none() {
@@ -155,7 +155,7 @@ impl<'a> ConfigDependencyTomlEditView<'a> {
 
         Ok(Some(LocalDependency {
             path: con,
-            scope: scope,
+            scope: scope.unwrap_or(Scope::Compile),
         }))
     }
 }

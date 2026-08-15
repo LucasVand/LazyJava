@@ -5,6 +5,7 @@ expression: lock
 package = []
 
 [[package-local]]
+name = "scopelib"
 file_name = "scopelib.jar"
 packaging = "jar"
 root = true

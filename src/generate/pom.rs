@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
 use colored::Colorize;
 use quick_xml::se::Serializer;
@@ -9,7 +9,7 @@ use crate::{
     generate::GenerateError,
     lock_file::LockFile,
     maven_central::pom::{
-        AnnotationProcessorPaths, Build, Configuration, DependencyType, Dependencies, Dependency,
+        AnnotationProcessorPaths, Build, Configuration, Dependencies, Dependency, DependencyType,
         MavenPom, Plugin, Plugins, ProcessorPath, Properties, Scope,
     },
     utils::{IOError, XmlSerializeError, fs, jdk_version::desired_jdk_version},
@@ -93,11 +93,34 @@ fn create_pom(ctx: &Context) -> Result<MavenPom, GenerateError> {
             group_id: d.id.group,
             artifact_id: d.id.artifact,
             version: Some(d.id.version),
-            scope: Scope::Compile,
+            scope: d.scope,
             optional: false,
             dependency_type: d.packaging,
             classifier: None,
+            system_path: None,
         })
+        .chain(
+            lockfile
+                .local_packages
+                .into_iter()
+                .map(|local_d| {
+                    let path = if local_d.path.is_relative() {
+                        PathBuf::from("${project.basedir}").join(&local_d.path)
+                    } else {
+                        local_d.path.clone()
+                    };
+                    Dependency {
+                        group_id: format!("local-{}-group", local_d.name),
+                        artifact_id: format!("local-{}-artifact", local_d.name),
+                        version: None,
+                        scope: Scope::System,
+                        optional: false,
+                        dependency_type: local_d.packaging,
+                        classifier: None,
+                        system_path: Some(path.to_string_lossy().to_string()),
+                    }
+                }),
+        )
         .collect();
     dependencies.sort_by(|a, b| {
         a.group_id
