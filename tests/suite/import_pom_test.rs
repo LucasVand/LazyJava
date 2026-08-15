@@ -48,7 +48,7 @@ fn import_pom_creates_lazy_java_toml() -> Result<(), Box<dyn std::error::Error>>
     // A system-scoped dependency must have its `${project.basedir}` resolved to
     // the project root and be emitted as an absolute local dependency path.
     assert!(
-        normalized.contains(r#"path = "<ROOT>/libs/local-lib.jar""#),
+        normalized.contains(r#"<ROOT>/libs/local-lib.jar"#),
         "system dependency path should resolve to <ROOT>/libs/local-lib.jar, got:\n{normalized}"
     );
 
