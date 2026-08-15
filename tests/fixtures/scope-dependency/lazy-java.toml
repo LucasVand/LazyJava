@@ -1,0 +1,5 @@
+[project]
+name = "scope-dependency"
+
+[dependencies]
+scopelib = { path = "./lib/scopelib.jar", scope = "provided" }

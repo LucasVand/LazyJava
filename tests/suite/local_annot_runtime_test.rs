@@ -84,6 +84,39 @@ fn copy_dir(from: &Path, to: &Path) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/// Replaces the absolute project root with `<ROOT>` so lock snapshots are
+/// deterministic across machines. The lock file embeds jar `path` entries that
+/// are absolute paths under the temp project dir, in either canonical
+/// (`/private/var/...`) or symlinked (`/var/...`) form, so both are substituted.
+fn sanitize_lock(content: &str, root: &Path) -> String {
+    let root = root.to_string_lossy().replace('\\', "/");
+    let canonical = std::fs::canonicalize(&root)
+        .map(|p| p.to_string_lossy().replace('\\', "/"))
+        .unwrap_or_else(|_| root.clone());
+
+    let mut normalized = content.replace('\\', "/");
+
+    // The toml serializer emits literal (single-quoted) strings when a path
+    // contains backslashes, so after substituting <ROOT> re-quote any path
+    // lines that came out single-quoted back to basic double-quoted strings.
+    if !canonical.is_empty() && canonical != root {
+        normalized = normalized.replace(&canonical, "<ROOT>");
+    }
+    normalized = normalized.replace(&root, "<ROOT>");
+
+    normalized
+        .lines()
+        .map(|line| {
+            if line.contains("<ROOT>") && !line.contains('"') {
+                line.replace('\'', "\"")
+            } else {
+                line.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 #[test]
 fn local_lib_jar_is_required_at_runtime() -> Result<(), Box<dyn std::error::Error>> {
     let tmp = tempfile::tempdir()?;
@@ -102,6 +135,16 @@ fn local_lib_jar_is_required_at_runtime() -> Result<(), Box<dyn std::error::Erro
     cmd.current_dir(&dest);
     cmd.args(["build"]);
     cmd.assert().success();
+
+    // The lock file records the local dependency jar with its detected
+    // annotation processor configuration.
+    let lock_path = dest.join("lazy-java.lock");
+    assert!(
+        lock_path.exists(),
+        "lazy-java.lock should exist after build"
+    );
+    let lock_content = sanitize_lock(&std::fs::read_to_string(&lock_path)?, &dest);
+    insta::assert_snapshot!("local_lock", lock_content);
 
     assert!(
         dest.join("target")
@@ -145,6 +188,31 @@ fn local_lib_jar_is_required_at_runtime() -> Result<(), Box<dyn std::error::Erro
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("full build"));
+
+    // Local dependencies have no CLI add/remove — they are managed by editing
+    // the toml. Removing the entry and re-syncing must drop it from the lock.
+    let config_path = dest.join("lazy-java.toml");
+    let mut config_content = std::fs::read_to_string(&config_path)?;
+    if let Some(idx) = config_content.find("[dependencies]") {
+        config_content.truncate(idx);
+    }
+    std::fs::write(&config_path, &config_content)?;
+    assert!(
+        !config_content.contains("myannot"),
+        "config should no longer reference the local jar after editing"
+    );
+
+    let mut cmd = Command::cargo_bin("lazy-java")?;
+    cmd.current_dir(&dest);
+    cmd.args(["sync"]);
+    cmd.assert().success();
+
+    let lock_after_remove = sanitize_lock(&std::fs::read_to_string(&lock_path)?, &dest);
+    assert!(
+        !lock_after_remove.contains("myannot"),
+        "lock should no longer reference the local jar after sync"
+    );
+    insta::assert_snapshot!("local_lock_after_remove", lock_after_remove);
 
     Ok(())
 }

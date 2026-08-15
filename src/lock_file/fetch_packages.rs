@@ -1,6 +1,4 @@
-use std::{
-    io::{Cursor, Read},
-};
+use std::io::{Cursor, Read};
 
 use colored::Colorize;
 use reqwest::{Client, Response, StatusCode};
@@ -10,14 +8,14 @@ use zip::{ZipArchive, result::ZipError};
 
 use crate::{
     ContextNoConfig,
-    lock_file::{LockFile, LockFileError, LockFilePackage},
+    lock_file::{LockFile, LockFileError, LockFilePackageRemote},
     utils::{IOError, fs},
 };
 
 impl LockFile {
     pub fn fetch_packages(
         ctx: &ContextNoConfig,
-        mut list: Vec<&mut LockFilePackage>,
+        mut list: Vec<&mut LockFilePackageRemote>,
     ) -> Result<isize, LockFileError> {
         if list.is_empty() {
             return Ok(0);
@@ -78,15 +76,15 @@ impl LockFile {
             for result in clean_results {
                 let (package_file_name, bin) = result;
 
-                let annotations = process_annotations(&bin).await?;
+                let annotations = process_annotations(&bin)?;
                 let has_annotations = !annotations.is_empty();
                 log::debug!("Annotations for {}, {:#?}", package_file_name, &annotations);
-                if has_annotations {
-                    let index = list
-                        .iter()
-                        .position(|p| p.file_name == package_file_name)
-                        .expect("This must exist");
+                let index = list
+                    .iter()
+                    .position(|p| p.file_name == package_file_name)
+                    .expect("This must exist");
 
+                if has_annotations {
                     list[index].annotations = annotations;
                 }
                 changes += 1;
@@ -96,7 +94,8 @@ impl LockFile {
                     &ctx.lib
                 };
                 let p = path.join(&package_file_name);
-                fs::write(&p, bin).map_err(|s| IOError::new("writing package jar", p, s))?;
+                fs::write(&p, bin).map_err(|s| IOError::new("writing package jar", &p, s))?;
+                list[index].path = Some(p);
             }
 
             Ok(changes)
@@ -126,7 +125,7 @@ async fn fetch_bin(client: Client, url: String) -> Result<Vec<u8>, FetchError> {
         }
     }
 }
-async fn process_annotations(bin: &Vec<u8>) -> Result<Vec<String>, ZipError> {
+pub fn process_annotations(bin: &Vec<u8>) -> Result<Vec<String>, ZipError> {
     let cursor = Cursor::new(bin);
     let mut archive = ZipArchive::new(cursor)?;
 

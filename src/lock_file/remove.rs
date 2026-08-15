@@ -6,7 +6,7 @@ use std::{
 use log::info;
 
 use crate::{
-    lock_file::{LockFile, LockFileError, LockFilePackage},
+    lock_file::{LockFile, LockFileError, LockFilePackageRemote},
     maven_central::MavenIdBuf,
 };
 
@@ -15,7 +15,7 @@ impl LockFile {
         &mut self,
         group: &str,
         artifact: &str,
-    ) -> Result<LockFilePackage, LockFileError> {
+    ) -> Result<LockFilePackageRemote, LockFileError> {
         let pos = self.packages.iter().position(|v| {
             log::debug!("Checking {} against {}:{}", v.id, group, artifact);
             v.id.group == group && v.id.artifact == artifact

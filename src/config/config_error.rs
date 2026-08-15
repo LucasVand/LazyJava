@@ -11,6 +11,9 @@ use crate::{
 
 #[derive(Error, Debug)]
 pub enum ConfigError {
+    #[error("Duplicate local dependencies")]
+    DuplicateLocalDependencies(String),
+
     #[error("Could not parse ConfigDependency missing field '{0}'")]
     MissingValue(&'static str),
 
@@ -45,6 +48,14 @@ pub enum ConfigError {
 impl DiagnosticProvider for ConfigError {
     fn diagnostic(&self) -> Diagnostic {
         match self {
+            ConfigError::DuplicateLocalDependencies(name) => {
+                Diagnostic::new("Duplicate local dependencies found")
+                    .message(format!(
+                        "Found more then one local dependency tagged `{}`",
+                        name
+                    ))
+                    .help("Remove one dependency or rename it")
+            }
             ConfigError::LocalDependencyNotFound(path) => {
                 Diagnostic::new("Local dependency path does not exist")
                     .message(format!(

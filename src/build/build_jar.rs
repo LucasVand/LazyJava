@@ -1,7 +1,8 @@
 use colored::Colorize;
 use std::{
+    collections::HashSet,
     io,
-    path::{Path, absolute},
+    path::{Path, PathBuf, absolute},
     process::Stdio,
 };
 use walkdir::WalkDir;
@@ -12,6 +13,7 @@ use crate::{
     Context,
     args::JarArgs,
     build::BuildError,
+    lock_file::LockFile,
     utils::{GlobalContext, IOError, fs, processes::java_tool_command},
 };
 
@@ -42,6 +44,15 @@ pub fn build_jar(args: &JarArgs, ctx: &Context) -> Result<(), BuildError> {
     );
 
     Ok(())
+}
+
+/// Jars that belong inside a bundled fat jar or on a jar's `Class-Path` are the
+/// runtime-scope dependencies (`compile`, `runtime`, `system`). `provided` and
+/// `test` scoped dependencies are excluded: the runtime/container is expected to
+/// supply those.
+fn runtime_bundle_paths(ctx: &Context) -> Result<HashSet<PathBuf>, BuildError> {
+    let lockfile = LockFile::fetch(&ctx.root)?;
+    Ok(lockfile.runtime_packages().into_iter().collect())
 }
 fn entry_point(args: &JarArgs, ctx: &Context) -> Result<String, BuildError> {
     if let Some(point) = &args.entry_point {
@@ -92,12 +103,15 @@ fn build_fat_jar_inner(
     temp: &Path,
 ) -> Result<(), BuildError> {
     let lib_dirs = [&ctx.lib, &ctx.lib_annotations];
+    let bundle = runtime_bundle_paths(ctx)?;
     for lib_dir in &lib_dirs {
         for entry in WalkDir::new(lib_dir) {
             let entry =
                 entry.map_err(|e| IOError::new("reading library entry", lib_dir, e.into()))?;
             let path = entry.path();
-            if path.extension().is_some_and(|e| e == "jar") {
+            if path.extension().is_some_and(|e| e == "jar")
+                && bundle.contains(path)
+            {
                 extract_jar(path, temp)?;
             }
         }
@@ -193,6 +207,7 @@ pub(crate) fn merge_services(dir: &Path) -> Result<(), BuildError> {
 pub(crate) fn build_manifest(entry_point: &str, ctx: &Context) -> Result<String, BuildError> {
     let mut class_path = Vec::new();
 
+    let bundle = runtime_bundle_paths(ctx)?;
     for lib_dir in [&ctx.lib, &ctx.lib_annotations] {
         for entry in WalkDir::new(lib_dir) {
             let entry = entry.map_err(|e| {
@@ -200,6 +215,7 @@ pub(crate) fn build_manifest(entry_point: &str, ctx: &Context) -> Result<String,
             })?;
             let path = entry.path();
             if path.extension().is_some_and(|e| e == "jar")
+                && bundle.contains(path)
                 && let Ok(relative) = path.strip_prefix(&ctx.target)
             {
                 class_path.push(relative.to_string_lossy().to_string());

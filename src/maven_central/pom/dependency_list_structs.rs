@@ -4,7 +4,7 @@ use parking_lot::RwLock;
 use tokio::sync::Notify;
 
 use crate::{
-    lock_file::LockFilePackage,
+    lock_file::LockFilePackageRemote,
     maven_central::{
         MavenIdBuf,
         fetch::full_maven_url,
@@ -35,7 +35,7 @@ pub struct Dependency {
     pub id: MavenIdBuf,
 }
 
-impl From<MavenDependency> for LockFilePackage {
+impl From<MavenDependency> for LockFilePackageRemote {
     fn from(value: MavenDependency) -> Self {
         let ext = |t: &DependencyType| match t {
             DependencyType::Jar => "jar",
@@ -48,7 +48,7 @@ impl From<MavenDependency> for LockFilePackage {
         let url = full_maven_url(&value.id.as_maven_id(), ext_str);
         let file_name = format!("{}-{}.{}", &value.id.artifact, &value.id.version, ext_str);
 
-        LockFilePackage {
+        LockFilePackageRemote {
             packaging: value.dependency_type,
             id: value.id,
             url,
@@ -57,6 +57,7 @@ impl From<MavenDependency> for LockFilePackage {
             root: value.root,
             annotations: Vec::new(),
             scope: value.scope,
+            path: None,
         }
     }
 }

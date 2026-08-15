@@ -42,6 +42,7 @@
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/test10/target/lib/spring-context-7.0.8.jar"/>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/test10/target/lib/spring-boot-servlet-4.1.0.jar"/>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/test10/target/lib/tomcat-embed-el-11.0.22.jar"/>
+    <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/test10/target/lib/org.osgi.core-6.0.0.jar"/>
     <classpathentry kind="lib" path="/Users/lucasvanderwielen/Projects/Rust/lazy-java/test_filesystem/test10/target/lib-annotations/auto-value-1.11.1.jar"/>
     <classpathentry kind="src" path="src" including="**/*.java"/>
     <classpathentry kind="src" path="target/generated-source" including="**/*.java">

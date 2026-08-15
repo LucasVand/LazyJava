@@ -78,6 +78,7 @@ impl MavenDependencyList {
         for dep in list.iter_mut() {
             if dep.id == id {
                 dep.root = true;
+                dep.scope = scope.unwrap_or(Scope::Compile);
             }
         }
         Ok(list)
@@ -213,7 +214,7 @@ impl MavenDependencyList {
                 dependency_type: pom.packaging.clone(),
                 dependencies: dependency_list,
                 root: false,
-                scope: Scope::Compile,
+                scope: scope.unwrap_or(Scope::Compile),
             });
         }
 

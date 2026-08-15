@@ -8,6 +8,40 @@ fn fixture_path() -> std::path::PathBuf {
         .join("with-dependency")
 }
 
+/// Replaces the absolute project root with `<ROOT>` so lock snapshots are
+/// deterministic across machines. The lock file embeds each jar's `path`,
+/// which on the generating machine is an absolute path under the temp project
+/// dir, in either canonical (`/private/var/...`) or symlinked (`/var/...`)
+/// form, so both are substituted.
+fn sanitize_lock(content: &str, root: &Path) -> String {
+    let root = root.to_string_lossy().replace('\\', "/");
+    let canonical = std::fs::canonicalize(&root)
+        .map(|p| p.to_string_lossy().replace('\\', "/"))
+        .unwrap_or_else(|_| root.clone());
+
+    let mut normalized = content.replace('\\', "/");
+
+    // The toml serializer emits literal (single-quoted) strings when a path
+    // contains backslashes, so after substituting <ROOT> re-quote any path
+    // lines that came out single-quoted back to basic double-quoted strings.
+    if !canonical.is_empty() && canonical != root {
+        normalized = normalized.replace(&canonical, "<ROOT>");
+    }
+    normalized = normalized.replace(&root, "<ROOT>");
+
+    normalized
+        .lines()
+        .map(|line| {
+            if line.contains("<ROOT>") && !line.contains('"') {
+                line.replace('\'', "\"")
+            } else {
+                line.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 #[test]
 fn remove_dependency_cleans_config_and_lock() -> Result<(), Box<dyn std::error::Error>> {
     let tmp = tempfile::tempdir()?;
@@ -32,7 +66,10 @@ fn remove_dependency_cleans_config_and_lock() -> Result<(), Box<dyn std::error::
     let toml_after_add = std::fs::read_to_string(dest.join("lazy-java.toml"))?;
     insta::assert_snapshot!("add_dependency_config", toml_after_add);
 
-    let lock_after_add = std::fs::read_to_string(dest.join("lazy-java.lock"))?;
+    let lock_after_add = sanitize_lock(
+        &std::fs::read_to_string(dest.join("lazy-java.lock"))?,
+        &dest,
+    );
     insta::assert_snapshot!("add_dependency_lock", lock_after_add);
 
     // Remove commons-lang3
@@ -48,7 +85,10 @@ fn remove_dependency_cleans_config_and_lock() -> Result<(), Box<dyn std::error::
     let toml_after_remove = std::fs::read_to_string(dest.join("lazy-java.toml"))?;
     insta::assert_snapshot!("remove_dependency_config", toml_after_remove);
 
-    let lock_after_remove = std::fs::read_to_string(dest.join("lazy-java.lock"))?;
+    let lock_after_remove = sanitize_lock(
+        &std::fs::read_to_string(dest.join("lazy-java.lock"))?,
+        &dest,
+    );
     insta::assert_snapshot!("remove_dependency_lock", lock_after_remove);
 
     Ok(())

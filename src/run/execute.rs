@@ -7,6 +7,7 @@ use crate::{
     Context, JAVAC_SEPARATOR,
     args::RunArgs,
     build::BuildError,
+    lock_file::LockFile,
     utils::{IOError, SeparatorList, processes::java_tool_command},
 };
 
@@ -32,35 +33,28 @@ fn run_command(classpath: Option<&str>, class: &str, args: &[String]) -> Result<
 /// the `Context`: the compiled `bin` output dir, every jar in `lib` (`lib/*`),
 /// and any local dependency jars declared in the config.
 pub fn execute_java(class: &str, args: &RunArgs, ctx: &Context) -> Result<ExitStatus, BuildError> {
-    let local_deps: Vec<String> = ctx
-        .config
-        .local_package_list()?
-        .into_iter()
-        .map(|dep| dep.path.to_string_lossy().to_string())
-        .collect();
-
     let ab_bin = path::absolute(&ctx.bin)
         .map_err(|e| BuildError::IoError(IOError::new("resolving classpath", &ctx.bin, e)))?;
-    let ab_bin_processors = path::absolute(&ctx.bin_processors)
-        .map_err(|e| {
-            BuildError::IoError(IOError::new("resolving processor bin directory", &ctx.bin_processors, e))
-        })?;
-    let ab_lib = path::absolute(&ctx.lib)
-        .map_err(|e| BuildError::IoError(IOError::new("resolving library path", &ctx.lib, e)))?;
-    let ab_lib_annotations = path::absolute(&ctx.lib_annotations).map_err(|e| {
+    let ab_bin_processors = path::absolute(&ctx.bin_processors).map_err(|e| {
         BuildError::IoError(IOError::new(
-            "resolving annotation library directory",
-            &ctx.lib_annotations,
+            "resolving processor bin directory",
+            &ctx.bin_processors,
             e,
         ))
     })?;
 
+    let lockfile = LockFile::fetch(&ctx.root)?;
+
+    let lib: Vec<String> = lockfile
+        .runtime_packages()
+        .into_iter()
+        .map(|s| s.to_string_lossy().to_string())
+        .collect();
+
     let classpath = SeparatorList::new(JAVAC_SEPARATOR)
         .add(ab_bin_processors.display())
         .add(ab_bin.display())
-        .add_glob(ab_lib_annotations.display())
-        .add_glob(ab_lib.display())
-        .add_slice(&local_deps)
+        .add_slice(&lib)
         .build();
 
     let output = run_command(Some(&classpath), class, &args.args).map_err(|e| {
@@ -117,4 +111,3 @@ mod tests {
         Ok(())
     }
 }
-

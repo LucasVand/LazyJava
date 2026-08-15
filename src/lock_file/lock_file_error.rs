@@ -34,12 +34,20 @@ pub enum LockFileError {
     MavenError(#[from] MavenError),
 
     #[error("Error when processing downloaded file")]
-    ZipError(#[from] ZipError),
+    RemoteProcesserParsingError(#[from] ZipError),
+
+    #[error("Error processing local dependency")]
+    LocalProcessorParsingError(String),
 }
 
 impl DiagnosticProvider for LockFileError {
     fn diagnostic(&self) -> Diagnostic {
         match self {
+            LockFileError::LocalProcessorParsingError(name) => {
+                Diagnostic::new("Failed to process local jar")
+                    .message(format!("Processing local dependency `{}` failed", name))
+                    .help("Ensure that the file is a valid jar")
+            }
             LockFileError::DownloadFailed(code) => Diagnostic::new("Downloading dependency failed")
                 .message(format!("Downloading failed with code {}", code)),
             LockFileError::ParseFailed(err) => err.diagnostic(),
@@ -63,10 +71,12 @@ impl DiagnosticProvider for LockFileError {
                 diag
             }
             LockFileError::MavenError(err) => err.diagnostic(),
-            LockFileError::ZipError(err) => Diagnostic::new("Failed to process downloaded file")
-                .message("An error occurred while processing the downloaded archive.")
-                .help("The downloaded file may be corrupt or incomplete.")
-                .note(err.to_string()),
+            LockFileError::RemoteProcesserParsingError(err) => {
+                Diagnostic::new("Failed to process downloaded file")
+                    .message("An error occurred while processing the downloaded archive.")
+                    .help("The downloaded file may be corrupt or incomplete.")
+                    .note(err.to_string())
+            }
         }
     }
 }

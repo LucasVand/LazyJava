@@ -9,6 +9,7 @@ use log::warn;
 use crate::{
     Context, JAVAC_SEPARATOR,
     build::BuildError,
+    lock_file::LockFile,
     utils::{IOError, SeparatorList, join_directory, processes::java_tool_command},
 };
 
@@ -90,37 +91,36 @@ pub fn compile_java(
     };
 
     let ab_dest = resolve("resolving output directory", dest)?;
-    let ab_lib = resolve("resolving library directory", &ctx.lib)?;
     let ab_bin = resolve("resolving bin directory", &ctx.bin)?;
-    let ab_annotation_lib = resolve(
-        "resolving annotation library directory",
-        &ctx.lib_annotations,
-    )?;
-    let ab_annotation_lib_list = join_directory(&ctx.lib_annotations, JAVAC_SEPARATOR);
+
     let ab_src_generated = resolve("resolving generated source directory", &ctx.src_generated)?;
     let src_generated_destructured = join_directory(&ab_src_generated, ' ');
     let ab_bin_processor = resolve("resolving processor bin directory", &ctx.bin_processors)?;
 
-    let local_deps: Vec<_> = ctx
-        .config
-        .local_package_list()?
+    let lock_file = LockFile::fetch(&ctx.root)?;
+
+    let compile_lib: Vec<String> = lock_file
+        .compile_time_packages()
         .into_iter()
-        .map(|dep| dep.path.to_string_lossy().to_string())
+        .map(|s| s.to_string_lossy().to_string())
+        .collect();
+
+    let processor_lib: Vec<String> = lock_file
+        .processor_compile_time_packages()
+        .into_iter()
+        .map(|s| s.to_string_lossy().to_string())
         .collect();
 
     let sep = JAVAC_SEPARATOR;
     let classpath = SeparatorList::new(sep)
         .add(ab_bin_processor.display())
         .add(ab_bin.display())
-        .add_glob(ab_annotation_lib.display())
-        .add_glob(ab_lib.display())
-        .add_slice(&local_deps)
+        .add_slice(&compile_lib)
         .build();
 
     let processorpath = SeparatorList::new(sep)
-        .add(ab_annotation_lib_list)
+        .add_slice(&processor_lib)
         .add(ab_bin_processor.display())
-        .add_slice(&local_deps)
         .build();
 
     let mut source_files = string_list;

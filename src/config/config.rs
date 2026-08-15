@@ -7,7 +7,7 @@ use crate::{
     CONFIG_FILE_NAME, ContextNoConfig,
     args::{AddArgs, RemoveArgs},
     config::{ConfigTomlEdit, LocalDependency, RemoteDependency, config_error::ConfigError},
-    lock_file::{LockFile, RootPackage},
+    lock_file::{LocalRootPackage, LockFile, RootPackage},
     maven_central::{
         MavenError, MavenIdBuf, PartialMavenIdBuf, fetch_artifact_metadata, pom::Scope,
     },
@@ -71,6 +71,9 @@ impl ConfigTomlEdit {
         {
             println!("{}: unknown scope `{}`", "Warning".yellow().bold(), s)
         }
+        if let Some(scope) = scope {
+            value.scope_mut().set(scope);
+        }
 
         lockfile.add_package(id, scope)?;
 
@@ -129,8 +132,9 @@ impl ConfigTomlEdit {
         ctx: &ContextNoConfig,
     ) -> Result<(), ConfigError> {
         let dep_list = self.root_package_list()?;
+        let local_list = self.local_package_list()?;
         log::info!("Found {} dependencies", dep_list.len());
-        lockfile.sync_with_root_packages(&dep_list)?;
+        lockfile.sync_with_root_packages(&dep_list, &local_list)?;
 
         lockfile.validate_current_packages(ctx)?;
 
@@ -148,7 +152,7 @@ impl ConfigTomlEdit {
                 if let Some(dep) = de {
                     let id = PartialMavenIdBuf::new(&dep.group, k);
 
-                    map.insert(id, dep.into());
+                    map.insert(id, dep);
                 }
             }
 
@@ -157,18 +161,21 @@ impl ConfigTomlEdit {
             Ok(HashMap::new())
         }
     }
-    pub fn local_package_list(&self) -> Result<Vec<LocalDependency>, ConfigError> {
+    pub fn local_package_list(&self) -> Result<HashMap<String, LocalRootPackage>, ConfigError> {
         if let Some(deps) = self.dependencies() {
-            let mut v = Vec::new();
-            for (_key, dep) in deps {
+            let mut v = HashMap::new();
+            for (key, dep) in deps {
                 let de: Option<LocalDependency> = dep.to_local_dependency()?;
                 if let Some(dep) = de {
-                    v.push(dep);
+                    if v.contains_key(&key) {
+                        return Err(ConfigError::DuplicateLocalDependencies(key));
+                    }
+                    v.insert(key, dep);
                 }
             }
             Ok(v)
         } else {
-            Ok(Vec::new())
+            Ok(HashMap::new())
         }
     }
 

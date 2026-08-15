@@ -13,6 +13,7 @@ use crate::{
     BUILD_METADATA_NAME, Context,
     args::BuildArgs,
     build::BuildError,
+    lock_file::LocalRootPackage,
     utils::{IOError, TomlSerializeError, fs, jdk_version::desired_jdk_version},
 };
 
@@ -78,8 +79,7 @@ pub fn required_full_build(
     let lib_hash_match = current_lib_hash == meta.lib_hash;
 
     let current_lib_annotations_hash = hash_directory(&ctx.lib_annotations);
-    let lib_annotations_hash_match =
-        current_lib_annotations_hash == meta.lib_annotations_hash;
+    let lib_annotations_hash_match = current_lib_annotations_hash == meta.lib_annotations_hash;
 
     let current_local_hash = hash_local_libs(ctx)?;
     let local_hash_match = current_local_hash == meta.local_libs_hash;
@@ -153,7 +153,12 @@ pub fn hash_directory(path: &Path) -> u64 {
 /// Hash the local dependency jars referenced by the project's config so a full
 /// rebuild is triggered whenever one of them changes.
 pub fn hash_local_libs(ctx: &Context) -> Result<u64, BuildError> {
-    let deps = ctx.config.local_package_list()?;
+    let deps: Vec<LocalRootPackage> = ctx
+        .config
+        .local_package_list()?
+        .into_iter()
+        .map(|(_k, v)| v)
+        .collect();
     let paths: Vec<PathBuf> = deps.into_iter().map(|dep| dep.path).collect();
 
     let hash = hash_files(&paths);
