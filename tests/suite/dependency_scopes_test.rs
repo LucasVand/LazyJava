@@ -2,6 +2,8 @@ use assert_cmd::Command;
 use predicates::prelude::{predicate, PredicateBooleanExt};
 use std::path::Path;
 
+use crate::support::sanitize_toml;
+
 fn fixture_path() -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests")
@@ -70,37 +72,6 @@ fn walkdir(dir: &std::path::Path, ext: &str) -> Result<Vec<String>, Box<dyn std:
     Ok(out)
 }
 
-/// Replace the absolute temp project root with `<ROOT>` so lock snapshots are
-/// deterministic across machines (canonical and symlinked forms).
-fn sanitize_lock(content: &str, root: &std::path::Path) -> String {
-    let root = root.to_string_lossy().replace('\\', "/");
-    let canonical = std::fs::canonicalize(&root)
-        .map(|p| p.to_string_lossy().replace('\\', "/"))
-        .unwrap_or_else(|_| root.clone());
-
-    let mut normalized = content.replace('\\', "/");
-
-    // The toml serializer emits literal (single-quoted) strings when a path
-    // contains backslashes, so after substituting <ROOT> re-quote any path
-    // lines that came out single-quoted back to basic double-quoted strings.
-    if !canonical.is_empty() && canonical != root {
-        normalized = normalized.replace(&canonical, "<ROOT>");
-    }
-    normalized = normalized.replace(&root, "<ROOT>");
-
-    normalized
-        .lines()
-        .map(|line| {
-            if line.contains("<ROOT>") && !line.contains('"') {
-                line.replace('\'', "\"")
-            } else {
-                line.to_string()
-            }
-        })
-        .collect::<Vec<_>>()
-        .join("\n")
-}
-
 /// A `scope = "provided"` local dependency must be on the compileclasspath
 /// (the project compiles against it) but absent from the runtime classpath (the
 /// compiled `Main` fails with `NoClassDefFoundError` when the JVM loads it).
@@ -148,7 +119,7 @@ fn provided_scoped_dependency_missing_from_runtime_classpath(
         .success()
         .stderr(predicate::str::contains("NoClassDefFoundError"));
 
-    let lock = sanitize_lock(
+    let lock = sanitize_toml(
         &std::fs::read_to_string(dest.join("lazy-java.lock"))?,
         &dest,
     );
@@ -186,7 +157,7 @@ fn runtime_scoped_dependency_not_available_at_compile_time(
         .failure()
         .stderr(predicate::str::contains("does not exist"));
 
-    let lock = sanitize_lock(
+    let lock = sanitize_toml(
         &std::fs::read_to_string(dest.join("lazy-java.lock"))?,
         &dest,
     );

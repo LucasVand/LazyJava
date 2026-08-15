@@ -2,6 +2,8 @@ use assert_cmd::Command;
 use predicates::prelude::predicate;
 use std::path::{Path, PathBuf};
 
+use crate::support::normalize_output;
+
 fn fixture_path() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests")
@@ -33,38 +35,6 @@ fn run(dest: &Path, args: &[&str]) -> Result<String, Box<dyn std::error::Error>>
         String::from_utf8_lossy(&output.stderr)
     );
     Ok(String::from_utf8(output.stdout)?)
-}
-
-/// Normalizes command output for deterministic snapshot comparison:
-/// - absolute paths under the temp project dir become `<ROOT>`
-/// - the non-deterministic `Compiled in X.XXs` line becomes `Compiled in <TIME>s`
-/// - lines are sorted, since graph and HashSet iteration order is not stable
-fn normalize_output(output: &str, root: &Path) -> String {
-    // Normalize separators up front so the project root matches on both
-    // Unix (`/`) and Windows (`\`) before substituting `<ROOT>`.
-    let root_path = root.to_string_lossy().replace('\\', "/");
-    let canonical_root = std::fs::canonicalize(root)
-        .map(|p| p.to_string_lossy().replace('\\', "/"))
-        .unwrap_or_else(|_| root_path.clone());
-
-    let mut lines: Vec<String> = output
-        .lines()
-        .filter(|l| !l.trim().is_empty())
-        .map(|l| {
-            let l = if l.starts_with("Compiled in") {
-                "Compiled in <TIME>s"
-            } else {
-                l
-            };
-            let l = l.replace('\\', "/");
-            // replace the canonical (symlink-resolved) path first so a
-            // `/private/var/...` path does not leave a `/private` prefix
-            l.replace(&canonical_root, "<ROOT>")
-                .replace(&root_path, "<ROOT>")
-        })
-        .collect();
-    lines.sort();
-    lines.join("\n")
 }
 
 #[test]

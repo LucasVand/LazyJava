@@ -2,6 +2,8 @@ use assert_cmd::Command;
 use predicates::prelude::{PredicateBooleanExt, predicate};
 use std::path::Path;
 
+use crate::support::sanitize_toml;
+
 /// Locate a JDK tool (`javac`, `jar`), preferring `$JAVA_HOME/bin`, falling
 /// back to the system PATH — mirrors the binary's own `java_tool_command`.
 /// Locate a JDK tool (`javac`, `jar`), preferring `$JAVA_HOME/bin`, then falling
@@ -84,39 +86,6 @@ fn copy_dir(from: &Path, to: &Path) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/// Replaces the absolute project root with `<ROOT>` so lock snapshots are
-/// deterministic across machines. The lock file embeds jar `path` entries that
-/// are absolute paths under the temp project dir, in either canonical
-/// (`/private/var/...`) or symlinked (`/var/...`) form, so both are substituted.
-fn sanitize_lock(content: &str, root: &Path) -> String {
-    let root = root.to_string_lossy().replace('\\', "/");
-    let canonical = std::fs::canonicalize(&root)
-        .map(|p| p.to_string_lossy().replace('\\', "/"))
-        .unwrap_or_else(|_| root.clone());
-
-    let mut normalized = content.replace('\\', "/");
-
-    // The toml serializer emits literal (single-quoted) strings when a path
-    // contains backslashes, so after substituting <ROOT> re-quote any path
-    // lines that came out single-quoted back to basic double-quoted strings.
-    if !canonical.is_empty() && canonical != root {
-        normalized = normalized.replace(&canonical, "<ROOT>");
-    }
-    normalized = normalized.replace(&root, "<ROOT>");
-
-    normalized
-        .lines()
-        .map(|line| {
-            if line.contains("<ROOT>") && !line.contains('"') {
-                line.replace('\'', "\"")
-            } else {
-                line.to_string()
-            }
-        })
-        .collect::<Vec<_>>()
-        .join("\n")
-}
-
 #[test]
 fn local_lib_jar_is_required_at_runtime() -> Result<(), Box<dyn std::error::Error>> {
     let tmp = tempfile::tempdir()?;
@@ -143,7 +112,7 @@ fn local_lib_jar_is_required_at_runtime() -> Result<(), Box<dyn std::error::Erro
         lock_path.exists(),
         "lazy-java.lock should exist after build"
     );
-    let lock_content = sanitize_lock(&std::fs::read_to_string(&lock_path)?, &dest);
+    let lock_content = sanitize_toml(&std::fs::read_to_string(&lock_path)?, &dest);
     insta::assert_snapshot!("local_lock", lock_content);
 
     assert!(
@@ -207,7 +176,7 @@ fn local_lib_jar_is_required_at_runtime() -> Result<(), Box<dyn std::error::Erro
     cmd.args(["sync"]);
     cmd.assert().success();
 
-    let lock_after_remove = sanitize_lock(&std::fs::read_to_string(&lock_path)?, &dest);
+    let lock_after_remove = sanitize_toml(&std::fs::read_to_string(&lock_path)?, &dest);
     assert!(
         !lock_after_remove.contains("myannot"),
         "lock should no longer reference the local jar after sync"

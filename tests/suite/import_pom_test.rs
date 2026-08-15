@@ -1,42 +1,13 @@
 use assert_cmd::Command;
 use std::path::Path;
 
+use crate::support::sanitize_toml;
+
 fn fixture_path() -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests")
         .join("fixtures")
         .join("import-pom")
-}
-
-/// Replace the absolute temp project root with `<ROOT>` so the imported toml
-/// snapshot is deterministic across machines (canonical and symlinked forms).
-fn sanitize_toml(content: &str, root: &Path) -> String {
-    let root = root.to_string_lossy().replace('\\', "/");
-    let canonical = std::fs::canonicalize(&root)
-        .map(|p| p.to_string_lossy().replace('\\', "/"))
-        .unwrap_or_else(|_| root.clone());
-
-    let mut normalized = content.replace('\\', "/");
-
-    // The toml serializer emits literal (single-quoted) strings when a path
-    // contains backslashes, so after substituting <ROOT> re-quote any path
-    // lines that came out single-quoted back to basic double-quoted strings.
-    if !canonical.is_empty() && canonical != root {
-        normalized = normalized.replace(&canonical, "<ROOT>");
-    }
-    normalized = normalized.replace(&root, "<ROOT>");
-
-    normalized
-        .lines()
-        .map(|line| {
-            if line.contains("<ROOT>") && !line.contains('"') {
-                line.replace('\'', "\"")
-            } else {
-                line.to_string()
-            }
-        })
-        .collect::<Vec<_>>()
-        .join("\n")
 }
 
 #[test]
